@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg-primary: #05070b;
+  --color-bg-secondary: #090d14;
+  --color-card: #0d131d;
+  --color-card-elevated: #111925;
+  --color-card-active: #151b26;
+  --color-border: #1c2635;
+  --color-border-strong: #293548;
+
+  --color-gold: #f5c451;
+  --color-gold-light: #ffd978;
+  --color-gold-dark: #c89524;
+
+  --color-text-primary: #f5f7fa;
+  --color-text-secondary: #a8b1bf;
+  --color-text-muted: #687386;
+
+  --color-success: #35d07f;
+  --color-error: #f05d5e;
+  --color-info: #5b8def;
+  --color-exclusive: #8b6cff;
+
+  --color-rank-1: #f5c451;
+  --color-rank-2: #b8c0cc;
+  --color-rank-3: #b87333;
+
+  --background: var(--color-bg-primary);
+  --foreground: var(--color-text-primary);
+}
+
+@theme inline {
+  --color-background: var(--color-bg-primary);
+  --color-foreground: var(--color-text-primary);
+
+  --color-bg-primary: var(--color-bg-primary);
+  --color-bg-secondary: var(--color-bg-secondary);
+  --color-card: var(--color-card);
+  --color-card-elevated: var(--color-card-elevated);
+  --color-card-active: var(--color-card-active);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+
+  --color-gold: var(--color-gold);
+  --color-gold-light: var(--color-gold-light);
+  --color-gold-dark: var(--color-gold-dark);
+
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+
+  --color-success: var(--color-success);
+  --color-error: var(--color-error);
+  --color-info: var(--color-info);
+  --color-exclusive: var(--color-exclusive);
+
+  --color-rank-1: var(--color-rank-1);
+  --color-rank-2: var(--color-rank-2);
+  --color-rank-3: var(--color-rank-3);
+
+  --font-sans: var(--font-inter);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01" on, "cv01" on;
+}
+
+::selection {
+  background: var(--color-gold);
+  color: #0a0a0a;
+}
+
+* {
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out both;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-card) 25%, var(--color-card-elevated) 50%, var(--color-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}

@@ -1,0 +1,64 @@
+import type { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { getLeaderboard, getUserRank } from "@/services/leaderboard.service";
+import { LeaderboardControls } from "@/components/leaderboard/LeaderboardControls";
+import { LeaderboardTable } from "@/components/leaderboard/LeaderboardTable";
+import { Card } from "@/components/ui/Card";
+import { formatCurrency, formatPercent } from "@/lib/utils";
+import type { LeaderboardScope } from "@/types/database.types";
+
+export const metadata: Metadata = { title: "Leaderboard" };
+
+export default async function LeaderboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ scope?: string; value?: string }>;
+}) {
+  const params = await searchParams;
+  const scope = (params.scope as LeaderboardScope) ?? "global";
+  const scopeValue = params.value ?? "";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const rows = await getLeaderboard(scope, scopeValue, 50, 0);
+  const yourRank = user ? await getUserRank(user.id, scope, scopeValue) : null;
+  const isOnPage = rows.some((r) => r.is_current_user);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Leaderboard</h1>
+        <p className="mt-1 text-sm text-text-secondary">
+          Only verified founders appear here. Ranked by monthly revenue.
+        </p>
+      </div>
+
+      <LeaderboardControls scope={scope} scopeValue={scopeValue} />
+
+      {yourRank && !isOnPage && (
+        <Card className="flex items-center justify-between p-4" elevated>
+          <div className="flex items-center gap-3">
+            <span className="text-lg font-semibold tabular-nums text-gold">#{yourRank.rank}</span>
+            <span className="text-sm text-text-secondary">Your rank · {yourRank.total} ranked founders</span>
+          </div>
+          {yourRank.growth_percent != null && (
+            <span className={yourRank.growth_percent >= 0 ? "text-success text-sm" : "text-error text-sm"}>
+              {formatPercent(yourRank.growth_percent)}
+            </span>
+          )}
+        </Card>
+      )}
+
+      <LeaderboardTable rows={rows} />
+
+      {yourRank && (
+        <p className="text-center text-xs text-text-muted">
+          Your revenue: {yourRank.revenue_display_cents != null ? formatCurrency(yourRank.revenue_display_cents) : "hidden by your privacy settings"}
+        </p>
+      )}
+    </div>
+  );
+}
