@@ -6,13 +6,12 @@ import { Problem } from "@/components/landing/Problem";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Features } from "@/components/landing/Features";
 import { LeaderboardPreview } from "@/components/landing/LeaderboardPreview";
-import { ChallengesPreview } from "@/components/landing/ChallengesPreview";
-import { AchievementsPreview } from "@/components/landing/AchievementsPreview";
 import { ProfileShowcase } from "@/components/landing/ProfileShowcase";
+import { AchievementsPreview } from "@/components/landing/AchievementsPreview";
+import { TitlesPreview } from "@/components/landing/TitlesPreview";
 import { ComingSoonStrip } from "@/components/landing/ComingSoonStrip";
-import { WhoItsFor } from "@/components/landing/WhoItsFor";
+import { ChallengesPreview } from "@/components/landing/ChallengesPreview";
 import { Pricing } from "@/components/landing/Pricing";
-import { FoundingMembers } from "@/components/landing/FoundingMembers";
 import { FAQ } from "@/components/landing/FAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 
@@ -27,13 +26,12 @@ export default function LandingPage() {
         <HowItWorks />
         <Features />
         <LeaderboardPreview />
-        <ChallengesPreview />
-        <AchievementsPreview />
         <ProfileShowcase />
+        <AchievementsPreview />
+        <TitlesPreview />
         <ComingSoonStrip />
-        <WhoItsFor />
+        <ChallengesPreview />
         <Pricing />
-        <FoundingMembers />
         <FAQ />
         <FinalCTA />
       </main>

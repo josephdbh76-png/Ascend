@@ -5,7 +5,7 @@ import { Reveal } from "@/components/motion/Reveal";
 export function ProfileShowcase() {
   return (
     <section className="border-b border-border bg-bg-secondary">
-      <div className="mx-auto max-w-[1440px] px-4 py-20 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           <Reveal as="div" className="order-2 lg:order-1">
             <div className="mx-auto max-w-sm rounded-lg border border-border bg-card p-6">

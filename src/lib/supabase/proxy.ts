@@ -1,14 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = [
-  "/dashboard",
-  "/settings",
-  "/challenges",
-  "/achievements",
-  "/onboarding",
-  "/verification",
-];
+const PROTECTED_PREFIXES = ["/app", "/onboarding"];
 
 const AUTH_PREFIXES = ["/login", "/signup"];
 
@@ -46,12 +39,13 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", path);
+    url.searchParams.set("reason", "auth");
     return NextResponse.redirect(url);
   }
 
   if (user && isAuthPage) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/app/dashboard";
     url.search = "";
     return NextResponse.redirect(url);
   }

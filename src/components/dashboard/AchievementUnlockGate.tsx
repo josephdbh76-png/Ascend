@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AchievementUnlockModal } from "@/components/achievements/AchievementUnlockModal";
-import { markNotificationReadAction } from "@/app/(app)/dashboard/actions";
+import { markNotificationReadAction } from "@/app/app/(shell)/dashboard/actions";
 
 export function AchievementUnlockGate({
   notificationId,

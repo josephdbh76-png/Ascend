@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get("state");
   const oauthError = searchParams.get("error");
 
-  const dashboardUrl = new URL("/dashboard", appUrl);
+  const dashboardUrl = new URL("/app/dashboard", appUrl);
 
   if (oauthError) {
     dashboardUrl.searchParams.set("stripe_error", oauthError);
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     // the rank/revenue/milestone itself server-side rather than trusting
     // values carried in the redirect URL.
     if (syncResult.isFirstVerification) {
-      return NextResponse.redirect(new URL("/verification", appUrl));
+      return NextResponse.redirect(new URL("/app/verification", appUrl));
     }
 
     dashboardUrl.searchParams.set("stripe_connected", "1");

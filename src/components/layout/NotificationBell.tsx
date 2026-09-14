@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
-import { markAllNotificationsReadAction } from "@/app/(app)/actions";
+import { markAllNotificationsReadAction } from "@/app/app/(shell)/actions";
 import type { NotificationType } from "@/types/database.types";
 
 export interface NotificationItem {

@@ -17,6 +17,9 @@ export type NotificationType =
   | "challenge_started"
   | "milestone_reached"
   | "verification_completed";
+export type TitleRarity = "common" | "rare" | "epic" | "legendary" | "exclusive";
+export type TitleType = "earned" | "purchasable";
+export type SubscriptionTier = "free" | "pro" | "elite";
 
 export interface Database {
   public: {
@@ -285,6 +288,53 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["notifications"]["Row"]>;
         Relationships: [];
       };
+      titles: {
+        Row: {
+          id: string;
+          name: string;
+          description: string;
+          icon: string;
+          rarity: TitleRarity;
+          type: TitleType;
+          price_cents: number | null;
+          supply: number | null;
+          remaining_supply: number | null;
+          requirement: Record<string, unknown>;
+          created_at: string;
+        };
+        Insert: Database["public"]["Tables"]["titles"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["titles"]["Row"]>;
+        Relationships: [];
+      };
+      user_titles: {
+        Row: {
+          id: string;
+          user_id: string;
+          title_id: string;
+          acquired_at: string;
+          acquisition_type: "earned" | "purchased";
+          is_active: boolean;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["user_titles"]["Row"], "id">> & {
+          user_id: string;
+          title_id: string;
+          acquisition_type: "earned" | "purchased";
+        };
+        Update: Partial<Database["public"]["Tables"]["user_titles"]["Row"]>;
+        Relationships: [];
+      };
+      subscriptions: {
+        Row: {
+          user_id: string;
+          tier: SubscriptionTier;
+          status: "active" | "canceled";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["subscriptions"]["Row"]> & { user_id: string };
+        Update: Partial<Database["public"]["Tables"]["subscriptions"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -304,6 +354,10 @@ export interface Database {
       get_public_profile: {
         Args: { p_username: string };
         Returns: PublicProfileRow[];
+      };
+      purchase_exclusive_title: {
+        Args: { p_title_id: string };
+        Returns: boolean;
       };
     };
   };

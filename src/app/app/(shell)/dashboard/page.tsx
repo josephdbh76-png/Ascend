@@ -192,7 +192,7 @@ export default async function DashboardPage() {
             )}
             <p className="text-xs text-text-muted">{milestone.progressPercent.toFixed(0)} % atteint</p>
             <Link
-              href="/challenges"
+              href="/app/challenges"
               className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-gold hover:text-gold-light"
             >
               Continue de grimper <ArrowRight className="h-3.5 w-3.5" />
@@ -205,7 +205,7 @@ export default async function DashboardPage() {
         <Card className="p-6" elevated>
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Défis en cours</h2>
-            <Link href="/challenges" className="text-xs font-medium text-gold hover:text-gold-light">
+            <Link href="/app/challenges" className="text-xs font-medium text-gold hover:text-gold-light">
               Tout voir
             </Link>
           </div>
@@ -229,7 +229,7 @@ export default async function DashboardPage() {
         <Card className="p-6" elevated>
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Accomplissements</h2>
-            <Link href="/achievements" className="text-xs font-medium text-gold hover:text-gold-light">
+            <Link href="/app/achievements" className="text-xs font-medium text-gold hover:text-gold-light">
               Tout voir
             </Link>
           </div>

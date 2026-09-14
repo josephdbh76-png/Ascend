@@ -6,6 +6,8 @@ import { evaluateRevenueAchievements, evaluateRankAchievements } from "@/service
 import { evaluateChallengeProgress } from "@/services/challenge.service";
 import { createNotification } from "@/services/notification.service";
 import { getUserRank } from "@/services/leaderboard.service";
+import { evaluateEarnedTitles } from "@/services/title.service";
+import { getProfile } from "@/services/profile.service";
 
 const STRIPE_OAUTH_AUTHORIZE_URL = "https://connect.stripe.com/oauth/authorize";
 const MONTHS_OF_HISTORY = 6;
@@ -172,6 +174,15 @@ export async function syncStripeRevenue(
         await evaluateRankAchievements(userId, rankResult.rank);
       }
       milestoneCents = nextRevenueMilestone(current.amountCents).targetCents;
+
+      const profile = await getProfile(userId);
+      await evaluateEarnedTitles(userId, {
+        revenueCents: current.amountCents,
+        growthPercent: growth,
+        globalRank: rank,
+        foundingMemberNumber: profile?.foundingMemberNumber ?? null,
+        isVerified: true,
+      });
     }
 
     if (!wasAlreadyVerified) {

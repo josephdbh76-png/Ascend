@@ -13,7 +13,7 @@ export default function NotFound() {
       <Button href="/" className="mt-2">
         Retour à ASCEND
       </Button>
-      <Link href="/leaderboard" className="text-sm text-text-muted hover:text-text-primary">
+      <Link href="/app/leaderboard" className="text-sm text-text-muted hover:text-text-primary">
         Ou explorer le classement
       </Link>
     </div>

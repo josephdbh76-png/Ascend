@@ -10,7 +10,7 @@ const PLANS = [
     price: "0 €",
     note: "Pendant la bêta",
     features: ["Profil", "Vérification", "Classement", "Accomplissements", "Défis", "Réseau de base"],
-    cta: "Rejoindre la bêta",
+    cta: "Rejoindre ASCEND",
     href: "/signup",
     highlighted: true,
   },
@@ -35,7 +35,7 @@ const PLANS = [
 export function Pricing() {
   return (
     <section id="tarifs" className="border-b border-border">
-      <div className="mx-auto max-w-[1440px] px-4 py-20 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 lg:px-8">
         <Reveal as="div" className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
             Des tarifs simples, gratuit pendant la bêta
@@ -47,7 +47,7 @@ export function Pricing() {
               key={plan.name}
               className={cn(
                 "flex flex-col rounded-lg border p-6",
-                plan.highlighted ? "border-gold/40 bg-gradient-to-b from-gold/5 to-card" : "border-border bg-card",
+                plan.highlighted ? "border-gold/40 bg-card" : "border-border bg-card",
               )}
             >
               <div className="flex items-center justify-between">

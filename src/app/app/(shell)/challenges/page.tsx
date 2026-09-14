@@ -28,7 +28,7 @@ export default async function ChallengesPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="rounded-lg border border-gold/30 bg-gradient-to-br from-gold/10 via-card to-card p-6">
+      <div className="rounded-lg border border-gold/30 bg-card p-6">
         <span className="text-xs font-semibold uppercase tracking-wide text-gold">
           {season?.name ?? "Saison ASCEND"}
         </span>

@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { href: "/", label: "Accueil" },
   { href: "#produit", label: "Produit" },
   { href: "#classement", label: "Classement" },
-  { href: "#defis", label: "Défis" },
+  { href: "#recompenses", label: "Récompenses" },
   { href: "#communaute", label: "Communauté" },
   { href: "#tarifs", label: "Tarifs" },
   { href: "#faq", label: "FAQ" },
@@ -33,31 +32,28 @@ export function PublicNav() {
     <header
       className={cn(
         "sticky top-0 z-40 border-b transition-colors duration-300",
-        scrolled ? "border-border bg-bg-primary/95 backdrop-blur-md" : "border-transparent bg-bg-primary/60 backdrop-blur",
+        scrolled ? "border-border bg-bg-primary/95 backdrop-blur-md" : "border-transparent bg-bg-primary/70 backdrop-blur",
       )}
     >
-      <nav className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="text-lg font-semibold tracking-tight text-text-primary">
+      <nav className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="text-base font-semibold tracking-tight text-text-primary">
           ASCEND
         </Link>
 
-        <div className="hidden items-center gap-7 lg:flex">
+        <div className="hidden items-center gap-8 lg:flex">
           {LINKS.map((l) => (
-            <a key={l.href} href={l.href} className="text-sm font-medium text-text-secondary hover:text-text-primary">
+            <a key={l.href} href={l.href} className="text-sm text-text-secondary hover:text-text-primary">
               {l.label}
             </a>
           ))}
         </div>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <span className="rounded-full border border-border-strong px-2 py-1 text-[11px] font-semibold text-text-muted">
-            FR
-          </span>
           <Button href="/login" variant="ghost" size="sm">
             Se connecter
           </Button>
           <Button href="/signup" variant="primary" size="sm">
-            Rejoindre la bêta
+            Rejoindre ASCEND
           </Button>
         </div>
 
@@ -85,7 +81,7 @@ export function PublicNav() {
               Se connecter
             </Button>
             <Button href="/signup" variant="primary">
-              Rejoindre la bêta
+              Rejoindre ASCEND
             </Button>
           </div>
         </div>

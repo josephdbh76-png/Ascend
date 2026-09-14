@@ -25,7 +25,7 @@ export default function ResetPasswordConfirmPage() {
       const supabase = createClient();
       const { error } = await supabase.auth.updateUser({ password });
       if (error) return setError(toFriendlyAuthError(error.message));
-      router.push("/dashboard");
+      router.push("/app/dashboard");
       router.refresh();
     });
   }

@@ -13,7 +13,7 @@ const FEATURES = [
 export function Features() {
   return (
     <section id="produit" className="border-b border-border bg-bg-secondary">
-      <div className="mx-auto max-w-[1440px] px-4 py-20 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 lg:px-8">
         <Reveal as="div" className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
             Tout ce qu&apos;il te faut pour aller plus loin.

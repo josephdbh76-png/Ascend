@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 import { loginAction } from "../actions";
@@ -14,6 +14,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const needsAuth = searchParams.get("reason") === "auth";
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,7 +22,7 @@ export function LoginForm() {
     startTransition(async () => {
       const result = await loginAction({ email, password });
       if (!result.success) return setError(result.error);
-      router.push(searchParams.get("next") ?? "/dashboard");
+      router.push(searchParams.get("next") ?? "/app/dashboard");
       router.refresh();
     });
   }
@@ -32,6 +33,13 @@ export function LoginForm() {
         <h1 className="text-xl font-semibold text-text-primary">Ravi de te revoir</h1>
         <p className="mt-1 text-sm text-text-secondary">Connecte-toi pour voir où tu en es.</p>
       </div>
+
+      {needsAuth && !error && (
+        <div className="flex items-center gap-2 rounded-md border border-border-strong bg-card-elevated px-3.5 py-2.5 text-sm text-text-secondary">
+          <Lock className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+          Connecte-toi pour accéder à ton espace ASCEND.
+        </div>
+      )}
 
       {error && (
         <div className="rounded-md border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
@@ -70,7 +78,7 @@ export function LoginForm() {
       <p className="text-center text-sm text-text-muted">
         Nouveau sur ASCEND ?{" "}
         <a href="/signup" className="text-gold hover:text-gold-light">
-          Rejoindre la bêta
+          Rejoindre ASCEND
         </a>
       </p>
     </form>

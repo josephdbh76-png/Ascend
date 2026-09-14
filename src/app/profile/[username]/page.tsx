@@ -5,13 +5,15 @@ import { createClient } from "@/lib/supabase/server";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { AchievementCard } from "@/components/achievements/AchievementCard";
 import { TrophyCard } from "@/components/achievements/TrophyCard";
+import { TitleCard } from "@/components/titles/TitleCard";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Navbar } from "@/components/layout/Navbar";
+import { AppShell } from "@/components/layout/AppShell";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { getProfile } from "@/services/profile.service";
 import { getNotifications, getUnreadCount } from "@/services/notification.service";
+import { getUserTitles } from "@/services/title.service";
 import { formatCurrency, formatCurrencyRange } from "@/lib/utils";
-import { Award, Trophy } from "lucide-react";
+import { Award, Trophy, Gem } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -62,10 +64,36 @@ export default async function PublicProfilePage({
   const [notifications, unreadCount] = viewerProfile
     ? await Promise.all([getNotifications(user!.id, 8), getUnreadCount(user!.id)])
     : [[], 0];
+  const titles = await getUserTitles(profile.userId);
 
   const body = (
     <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
       <ProfileHeader profile={profile} isOwner={isOwner} />
+
+      <section>
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
+          <Gem className="h-4 w-4" /> Titres
+        </h2>
+        {titles.length === 0 ? (
+          <EmptyState title="Pas encore de titre." />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {titles.map((t) => (
+              <TitleCard
+                key={t.id}
+                id={t.id}
+                name={t.name}
+                description={t.description}
+                icon={t.icon}
+                rarity={t.rarity}
+                owned
+                isActive={t.isActive}
+                interactive={isOwner}
+              />
+            ))}
+          </div>
+        )}
+      </section>
 
       <section>
         <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
@@ -101,23 +129,22 @@ export default async function PublicProfilePage({
 
   if (viewerProfile) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg-primary">
-        <Navbar
-          username={viewerProfile.username}
-          avatarUrl={viewerProfile.avatarUrl}
-          firstName={viewerProfile.firstName}
-          notifications={notifications.map((n) => ({
-            id: n.id,
-            type: n.type,
-            title: n.title,
-            body: n.body,
-            createdAt: n.createdAt,
-            readAt: n.readAt,
-          }))}
-          unreadCount={unreadCount}
-        />
+      <AppShell
+        username={viewerProfile.username}
+        avatarUrl={viewerProfile.avatarUrl}
+        firstName={viewerProfile.firstName}
+        notifications={notifications.map((n) => ({
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          body: n.body,
+          createdAt: n.createdAt,
+          readAt: n.readAt,
+        }))}
+        unreadCount={unreadCount}
+      >
         {body}
-      </div>
+      </AppShell>
     );
   }
 

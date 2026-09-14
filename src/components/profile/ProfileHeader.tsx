@@ -41,6 +41,7 @@ export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; is
             <h1 className="text-xl font-semibold text-text-primary">
               {profile.firstName} {profile.lastName}
             </h1>
+            {profile.activeTitle && <Badge variant="gold">{profile.activeTitle.name}</Badge>}
             {profile.foundingMemberNumber && (
               <Badge variant="exclusive">Membre fondateur #{String(profile.foundingMemberNumber).padStart(3, "0")}</Badge>
             )}

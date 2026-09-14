@@ -2,7 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { RESERVED_USERNAMES } from "@/lib/constants";
 import { getUserAchievements } from "@/services/achievement.service";
-import type { Profile, PublicProfile, EarnedTrophy } from "@/types";
+import { getActiveTitle } from "@/services/title.service";
+import type { Profile, PublicProfile, EarnedTrophy, EarnedTitle } from "@/types";
 import type { PublicProfileRow } from "@/types/database.types";
 
 export async function getProfile(userId: string): Promise<Profile | null> {
@@ -45,7 +46,12 @@ export async function isUsernameAvailable(username: string): Promise<boolean> {
   return !data;
 }
 
-function mapPublicProfileRow(row: PublicProfileRow, achievements: PublicProfile["achievements"], trophies: EarnedTrophy[]): PublicProfile {
+function mapPublicProfileRow(
+  row: PublicProfileRow,
+  achievements: PublicProfile["achievements"],
+  trophies: EarnedTrophy[],
+  activeTitle: EarnedTitle | null,
+): PublicProfile {
   return {
     userId: row.user_id,
     username: row.username,
@@ -69,6 +75,7 @@ function mapPublicProfileRow(row: PublicProfileRow, achievements: PublicProfile[
     countryRank: row.country_rank,
     achievements,
     trophies,
+    activeTitle,
   };
 }
 
@@ -80,6 +87,7 @@ export async function getPublicProfileByUsername(username: string): Promise<Publ
   if (!row) return null;
 
   const achievements = await getUserAchievements(row.user_id);
+  const activeTitle = await getActiveTitle(row.user_id);
 
   const { data: trophyRows } = await supabase
     .from("user_trophies")
@@ -106,5 +114,5 @@ export async function getPublicProfileByUsername(username: string): Promise<Publ
       };
     });
 
-  return mapPublicProfileRow(row, achievements, trophies);
+  return mapPublicProfileRow(row, achievements, trophies, activeTitle);
 }

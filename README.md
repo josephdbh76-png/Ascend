@@ -32,6 +32,36 @@ comments stay in English for the dev team). Brand terms — ASCEND,
   landing on the dashboard — it re-fetches the data server-side rather than
   trusting anything passed through the redirect URL.
 
+### V3 additions — marketing site vs. application split
+
+- **Two distinct experiences.** `/` is the public marketing site (own nav,
+  editorial layout, no product chrome). Everything authenticated lives under
+  `/app/*` (`/app/dashboard`, `/app/leaderboard`, `/app/challenges`,
+  `/app/titles`, `/app/network`, `/app/opportunities`, `/app/settings`),
+  behind its own shell — a sidebar on desktop, a bottom tab bar + slide-in
+  menu on mobile (`src/components/layout/AppShell.tsx`). `/app/verification`
+  is a sibling of the shell group so the first-verification reveal renders
+  full-screen, with no nav chrome. A visitor in an incognito window should
+  never see anything under `/app` — the proxy (`src/lib/supabase/proxy.ts`)
+  redirects to `/login?reason=auth` for any unauthenticated request there.
+- **Titles**: a collectible-status system, separate from achievements.
+  "Earned" titles (Top 100, Growth Machine, Membre fondateur, …) mirror the
+  achievement engine. "Exclusive" titles (e.g. a 1-of-1) can **only** ever be
+  granted through the `purchase_exclusive_title()` Postgres function
+  (migration `...000007`), which atomically decrements `remaining_supply` —
+  scarcity is enforced by the database, never by the client. No real payment
+  flow is wired yet, so exclusive titles show their price but the purchase
+  CTA stays disabled ("Bientôt disponible") rather than faking a checkout.
+- **Subscriptions**: a `subscriptions` table (migration `...000008`) tracks
+  plan tier (free/pro/elite) independently of authentication — every user is
+  authenticated-and-free by default. Settings shows the current plan; Pro/
+  Elite upgrade buttons are disabled until real billing exists.
+- **Visual language refresh**: new, less-saturated palette (see
+  `globals.css`), and gradient/glow decoration was stripped from cards
+  throughout (trophy cards, the challenges season banner, the pricing
+  highlight, the hero, the final CTA) in favor of flat borders and
+  typography-led hierarchy.
+
 ## Stack
 
 | Layer | Choice |
@@ -49,7 +79,10 @@ comments stay in English for the dev team). Brand terms — ASCEND,
 
 ```
 src/
-  app/            Routes (App Router). Route groups: (auth), (app)
+  app/            Routes (App Router): (auth) for login/signup, app/(shell)
+                  for the authenticated product, app/verification as its
+                  chrome-less sibling, everything else (/, /profile/[user],
+                  /legal/*) is the public marketing site
   components/     Reusable UI (ui/), and per-domain components
   services/       Business logic — the only code that talks to Supabase/Stripe
                   for anything beyond simple CRUD. UI never computes revenue,
@@ -83,9 +116,8 @@ npm install
 ### 2. Create a Supabase project
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In the SQL Editor, run the four files in `supabase/migrations/` **in
-   order** (or link the project with the Supabase CLI and run
-   `supabase db push`).
+2. In the SQL Editor, run every file in `supabase/migrations/` **in order**
+   (or link the project with the Supabase CLI and run `supabase db push`).
 3. Copy `.env.example` to `.env.local` and fill in:
    - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Project
      Settings → API.
@@ -148,6 +180,11 @@ manually verify:
   achievement-unlock modal appears once on next dashboard visit, then not
   again
 - Notification bell shows new events and clears the unread badge on open
+- Incognito window on `/`: no dashboard, sidebar, revenue, or account data is
+  ever visible; visiting any `/app/*` URL redirects to `/login?reason=auth`
+- Titles: earned titles unlock automatically from real revenue/rank data;
+  "Afficher sur mon profil" toggles the active title (only one at a time);
+  the exclusive title's purchase button stays disabled (no real payment yet)
 - Privacy setting changes (exact/range/private) reflect immediately on the
   public profile and leaderboard
 - Leaderboard scopes (global/country/category), current-user highlighting

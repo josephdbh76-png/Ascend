@@ -1,30 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --color-bg-primary: #05070b;
-  --color-bg-secondary: #090d14;
-  --color-card: #0d131d;
-  --color-card-elevated: #111925;
-  --color-card-active: #151b26;
-  --color-border: #1c2635;
-  --color-border-strong: #293548;
+  --color-bg-primary: #0a0b0d;
+  --color-bg-secondary: #111316;
+  --color-card: #17191d;
+  --color-card-elevated: #1c1f24;
+  --color-card-active: #22262c;
+  --color-border: #282c32;
+  --color-border-strong: #34393f;
 
-  --color-gold: #f5c451;
-  --color-gold-light: #ffd978;
-  --color-gold-dark: #c89524;
+  --color-gold: #d6a84f;
+  --color-gold-light: #e8c875;
+  --color-gold-dark: #9a722d;
 
-  --color-text-primary: #f5f7fa;
-  --color-text-secondary: #a8b1bf;
-  --color-text-muted: #687386;
+  --color-text-primary: #f4f1ea;
+  --color-text-secondary: #a8a9ad;
+  --color-text-muted: #6f7278;
 
-  --color-success: #35d07f;
-  --color-error: #f05d5e;
+  --color-success: #39b980;
+  --color-error: #d95c5c;
   --color-info: #5b8def;
   --color-exclusive: #8b6cff;
 
-  --color-rank-1: #f5c451;
-  --color-rank-2: #b8c0cc;
-  --color-rank-3: #b87333;
+  --color-rank-1: #d6a84f;
+  --color-rank-2: #a8a9ad;
+  --color-rank-3: #9a722d;
 
   --background: var(--color-bg-primary);
   --foreground: var(--color-text-primary);

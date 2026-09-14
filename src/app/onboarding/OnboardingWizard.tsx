@@ -69,7 +69,7 @@ export function OnboardingWizard({
         track("stripe_connection_started");
         router.push("/api/stripe/connect");
       } else {
-        router.push("/dashboard");
+        router.push("/app/dashboard");
         router.refresh();
       }
     });

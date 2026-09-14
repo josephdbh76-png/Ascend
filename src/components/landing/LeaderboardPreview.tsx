@@ -55,7 +55,7 @@ export function LeaderboardPreview() {
 
   return (
     <section id="classement" className="border-b border-border">
-      <div className="mx-auto max-w-[1440px] px-4 py-20 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 lg:px-8">
         <Reveal as="div" className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <h2 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">

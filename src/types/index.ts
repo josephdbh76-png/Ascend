@@ -4,6 +4,9 @@ import type {
   ChallengeType,
   OnboardingStep,
   RevenueVisibility,
+  SubscriptionTier,
+  TitleRarity,
+  TitleType,
   VerificationStatus,
 } from "./database.types";
 
@@ -112,4 +115,34 @@ export interface PublicProfile {
   countryRank: number | null;
   achievements: EarnedAchievement[];
   trophies: EarnedTrophy[];
+  activeTitle: EarnedTitle | null;
+}
+
+export interface TitleRow {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  rarity: TitleRarity;
+  type: TitleType;
+  price_cents: number | null;
+  supply: number | null;
+  remaining_supply: number | null;
+  requirement: Record<string, unknown>;
+}
+
+export interface EarnedTitle {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  rarity: TitleRarity;
+  acquiredAt: string;
+  acquisitionType: "earned" | "purchased";
+  isActive: boolean;
+}
+
+export interface SubscriptionInfo {
+  tier: SubscriptionTier;
+  status: "active" | "canceled";
 }

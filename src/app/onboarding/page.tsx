@@ -12,7 +12,7 @@ export default async function OnboardingPage() {
 
   const profile = await getProfile(user.id);
   if (!profile) redirect("/login");
-  if (profile.onboardingStep === "done") redirect("/dashboard");
+  if (profile.onboardingStep === "done") redirect("/app/dashboard");
 
   const { data: business } = await supabase
     .from("businesses")

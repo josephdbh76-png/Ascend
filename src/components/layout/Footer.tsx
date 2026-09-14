@@ -3,7 +3,7 @@ import Link from "next/link";
 export function Footer() {
   return (
     <footer className="border-t border-border bg-bg-secondary">
-      <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
             <span className="text-lg font-semibold tracking-tight text-text-primary">ASCEND</span>
@@ -21,7 +21,7 @@ export function Footer() {
             <h4 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Entreprise</h4>
             <ul className="mt-3 space-y-2 text-sm text-text-secondary">
               <li><a href="#faq" className="hover:text-text-primary">FAQ</a></li>
-              <li><Link href="/signup" className="hover:text-text-primary">Rejoindre la bêta</Link></li>
+              <li><Link href="/signup" className="hover:text-text-primary">Rejoindre ASCEND</Link></li>
             </ul>
           </div>
           <div>

@@ -17,7 +17,7 @@ export async function GET() {
     const url = buildStripeConnectUrl(user.id, appUrl);
     return NextResponse.redirect(url);
   } catch {
-    const dashboardUrl = new URL("/dashboard", appUrl);
+    const dashboardUrl = new URL("/app/dashboard", appUrl);
     dashboardUrl.searchParams.set("stripe_error", "not_configured");
     return NextResponse.redirect(dashboardUrl);
   }

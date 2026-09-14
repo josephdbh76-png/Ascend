@@ -8,6 +8,7 @@ import { BusinessSettingsForm } from "./BusinessSettingsForm";
 import { PrivacySettingsForm } from "./PrivacySettingsForm";
 import { ConnectedAccounts } from "./ConnectedAccounts";
 import { DangerZone } from "./DangerZone";
+import { SubscriptionCard } from "./SubscriptionCard";
 
 export const metadata: Metadata = { title: "Réglages" };
 
@@ -21,12 +22,14 @@ export default async function SettingsPage() {
   const profile = await getProfile(user.id);
   if (!profile) return null;
 
-  const [{ data: business }, { data: privacy }, { data: source }, verificationStatus] = await Promise.all([
-    supabase.from("businesses").select("name, category, website").eq("user_id", user.id).maybeSingle(),
-    supabase.from("privacy_settings").select("*").eq("user_id", user.id).maybeSingle(),
-    supabase.from("revenue_sources").select("status").eq("user_id", user.id).eq("provider", "stripe").maybeSingle(),
-    getVerificationStatus(user.id),
-  ]);
+  const [{ data: business }, { data: privacy }, { data: source }, verificationStatus, { data: subscription }] =
+    await Promise.all([
+      supabase.from("businesses").select("name, category, website").eq("user_id", user.id).maybeSingle(),
+      supabase.from("privacy_settings").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("revenue_sources").select("status").eq("user_id", user.id).eq("provider", "stripe").maybeSingle(),
+      getVerificationStatus(user.id),
+      supabase.from("subscriptions").select("tier").eq("user_id", user.id).maybeSingle(),
+    ]);
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
@@ -34,6 +37,11 @@ export default async function SettingsPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Réglages</h1>
         <p className="mt-1 text-sm text-text-secondary">Gère ton profil, ta confidentialité et tes connexions.</p>
       </div>
+
+      <Card className="p-6" elevated>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Abonnement</h2>
+        <SubscriptionCard currentTier={subscription?.tier ?? "free"} />
+      </Card>
 
       <Card className="p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Profil</h2>
