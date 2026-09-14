@@ -26,8 +26,24 @@ if (!supabaseUrl || !serviceRoleKey) {
   process.exit(1);
 }
 
+// supabase-js always constructs a Realtime client, even though this script
+// only ever does plain REST/Auth-admin calls. On Node 20 (no native global
+// WebSocket) that constructor throws unless a `transport` is supplied — so
+// hand it an inert stand-in; it's never actually opened or used here.
+class NoopWebSocket {
+  static readonly CONNECTING = 0;
+  static readonly OPEN = 1;
+  static readonly CLOSING = 2;
+  static readonly CLOSED = 3;
+  close() {}
+  send() {}
+  addEventListener() {}
+  removeEventListener() {}
+}
+
 const admin = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
+  realtime: { transport: NoopWebSocket as unknown as never },
 });
 
 interface SeedFounder {
