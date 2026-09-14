@@ -8,8 +8,13 @@
  * named test-* account) so it can never be confused with a real,
  * independently-verified beta user.
  */
-import "dotenv/config";
+import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+
+// dotenv's bare "dotenv/config" import only loads .env by default — our
+// secrets live in .env.local (the Next.js convention), so it must be named
+// explicitly or every var below comes back undefined.
+config({ path: ".env.local" });
 
 const SEED_PASSWORD = "AscendDemo123!";
 
