@@ -23,7 +23,18 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   verification_completed: CheckCircle2,
 };
 
-export function NotificationBell({ initial, unreadCount }: { initial: NotificationItem[]; unreadCount: number }) {
+export function NotificationBell({
+  initial,
+  unreadCount,
+  align = "right",
+}: {
+  initial: NotificationItem[];
+  unreadCount: number;
+  /** Which edge of the trigger button the dropdown hangs from. Use "left"
+   * when the button sits near the left edge of the viewport (the desktop
+   * sidebar) — a right-anchored dropdown there renders mostly off-screen. */
+  align?: "left" | "right";
+}) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState(initial);
   const [unread, setUnread] = useState(unreadCount);
@@ -60,7 +71,12 @@ export function NotificationBell({ initial, unreadCount }: { initial: Notificati
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
-          <div className="absolute right-0 z-50 mt-2 w-80 rounded-lg border border-border-strong bg-card-elevated shadow-2xl">
+          <div
+            className={cn(
+              "fixed z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-lg border border-border-strong bg-card-elevated shadow-2xl sm:absolute sm:mt-2",
+              align === "left" ? "left-4 sm:left-0" : "right-4 sm:right-0",
+            )}
+          >
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <span className="text-sm font-semibold text-text-primary">Notifications</span>
             </div>
@@ -83,9 +99,11 @@ export function NotificationBell({ initial, unreadCount }: { initial: Notificati
                       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card">
                         <Icon className="h-4 w-4 text-gold" />
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-text-primary">{n.title}</p>
-                        <p className="mt-0.5 text-xs text-text-secondary">{n.body}</p>
+                        <p className="mt-0.5 whitespace-normal break-words text-xs text-text-secondary">
+                          {n.body}
+                        </p>
                         <p className="mt-1 text-[11px] text-text-muted">{timeAgo(n.createdAt)}</p>
                       </div>
                     </div>

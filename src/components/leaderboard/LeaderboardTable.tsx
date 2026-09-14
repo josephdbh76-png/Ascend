@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { Crown } from "lucide-react";
-import { cn, formatCurrency, formatPercent, initials } from "@/lib/utils";
+import { cn, formatCurrency, formatCurrencyRange, formatPercent, initials } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
 import type { LeaderboardRow } from "@/types/database.types";
@@ -90,8 +90,10 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
               <td className="px-4 py-3.5 text-right font-medium tabular-nums text-text-primary">
                 {row.revenue_visibility === "exact" && row.revenue_display_cents != null
                   ? formatCurrency(row.revenue_display_cents)
-                  : row.revenue_visibility === "range"
-                    ? "Vérifié"
+                  : row.revenue_visibility === "range" &&
+                      row.revenue_range_min_cents != null &&
+                      row.revenue_range_max_cents != null
+                    ? formatCurrencyRange(row.revenue_range_min_cents, row.revenue_range_max_cents)
                     : "Privé"}
               </td>
               <td

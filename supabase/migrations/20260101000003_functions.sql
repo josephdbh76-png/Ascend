@@ -220,7 +220,7 @@ begin
     target.username,
     target.first_name,
     target.last_name,
-    case when coalesce((select show_country from privacy_settings where user_id = target.id), true)
+    case when coalesce((select show_country from privacy_settings where privacy_settings.user_id = target.id), true)
       then target.country else null end,
     target.bio,
     target.avatar_url,

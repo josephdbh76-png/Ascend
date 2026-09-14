@@ -86,8 +86,11 @@ export function TitleCard({
   const Icon = ICONS[icon] ?? Gem;
   const [pending, startTransition] = useTransition();
   const toast = useToast();
-  const isExclusive = rarity === "exclusive";
-  const soldOut = isExclusive && (remainingSupply ?? 0) <= 0 && !owned;
+  // Purchasable is a mechanic (price_cents is only ever set on purchasable
+  // titles); rarity is purely cosmetic and independent of it — a title can
+  // be paid and still not be a 1-of-1 "exclusive".
+  const isPurchasable = priceCents != null;
+  const soldOut = isPurchasable && supply != null && (remainingSupply ?? 0) <= 0 && !owned;
 
   function toggleActive() {
     startTransition(async () => {
@@ -126,12 +129,12 @@ export function TitleCard({
         )}
       </div>
 
-      {isExclusive && (
+      {isPurchasable && (
         <div className="flex items-center justify-between border-t border-border pt-3 text-xs">
           <span className="text-text-muted">
             {supply != null ? `${remainingSupply ?? 0} / ${supply} exemplaire${supply > 1 ? "s" : ""}` : "Illimité"}
           </span>
-          {priceCents != null && <span className="font-medium text-gold">{formatCurrency(priceCents)}</span>}
+          <span className="font-medium text-gold">{formatCurrency(priceCents!)}</span>
         </div>
       )}
 
@@ -153,7 +156,7 @@ export function TitleCard({
                 "Afficher sur mon profil"
               )}
             </Button>
-          ) : isExclusive ? (
+          ) : isPurchasable ? (
             <Button size="sm" className="w-full" disabled>
               {soldOut ? "Épuisé" : "Bientôt disponible"}
             </Button>

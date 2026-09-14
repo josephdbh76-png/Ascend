@@ -18,7 +18,7 @@ const OPTIONS: { value: RevenueVisibility; label: string; description: string; i
   {
     value: "range",
     label: "Fourchette",
-    description: "Affiche une fourchette d'1 M€ plutôt que le montant exact.",
+    description: "Affiche une fourchette de 10 000 € plutôt que le montant exact.",
     icon: Minus,
     preview: formatCurrencyRange(2000000, 3000000),
   },

@@ -375,6 +375,8 @@ export interface LeaderboardRow {
   business_name: string;
   business_category: string;
   revenue_display_cents: number | null;
+  revenue_range_min_cents: number | null;
+  revenue_range_max_cents: number | null;
   revenue_visibility: RevenueVisibility;
   growth_percent: number | null;
   is_current_user: boolean;
@@ -384,6 +386,8 @@ export interface UserRankRow {
   rank: number;
   total: number;
   revenue_display_cents: number | null;
+  revenue_range_min_cents: number | null;
+  revenue_range_max_cents: number | null;
   revenue_visibility: RevenueVisibility;
   growth_percent: number | null;
 }

@@ -45,7 +45,7 @@ export function AppSidebar({
         <Link href="/app/dashboard" className="text-base font-semibold tracking-tight text-text-primary">
           ASCEND
         </Link>
-        <NotificationBell initial={notifications} unreadCount={unreadCount} />
+        <NotificationBell initial={notifications} unreadCount={unreadCount} align="left" />
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-3 py-2">

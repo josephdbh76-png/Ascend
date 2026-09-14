@@ -4,7 +4,7 @@ import { getLeaderboard, getUserRank } from "@/services/leaderboard.service";
 import { LeaderboardControls } from "@/components/leaderboard/LeaderboardControls";
 import { LeaderboardTable } from "@/components/leaderboard/LeaderboardTable";
 import { Card } from "@/components/ui/Card";
-import { formatCurrency, formatPercent } from "@/lib/utils";
+import { formatCurrency, formatCurrencyRange, formatPercent } from "@/lib/utils";
 import type { LeaderboardScope } from "@/types/database.types";
 
 export const metadata: Metadata = { title: "Classement" };
@@ -59,7 +59,9 @@ export default async function LeaderboardPage({
           Tes revenus :{" "}
           {yourRank.revenue_display_cents != null
             ? formatCurrency(yourRank.revenue_display_cents)
-            : "masqués par tes réglages de confidentialité"}
+            : yourRank.revenue_range_min_cents != null && yourRank.revenue_range_max_cents != null
+              ? formatCurrencyRange(yourRank.revenue_range_min_cents, yourRank.revenue_range_max_cents)
+              : "masqués par tes réglages de confidentialité"}
         </p>
       )}
     </div>
