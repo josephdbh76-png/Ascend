@@ -8,6 +8,7 @@ import {
   loginSchema,
 } from "@/lib/validations";
 import { toFriendlyAuthError } from "@/lib/errors";
+import { getAppUrl } from "@/lib/utils";
 import { isUsernameAvailable } from "@/services/profile.service";
 
 export type ActionResult<T = undefined> =
@@ -37,7 +38,7 @@ export async function createAccountAction(input: {
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
+      emailRedirectTo: `${getAppUrl()}/api/auth/callback`,
     },
   });
 
@@ -153,7 +154,7 @@ export async function loginAction(input: {
 export async function requestPasswordResetAction(email: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password/confirm`,
+    redirectTo: `${getAppUrl()}/reset-password/confirm`,
   });
   if (error) return { success: false, error: toFriendlyAuthError(error.message) };
   return { success: true, data: undefined };

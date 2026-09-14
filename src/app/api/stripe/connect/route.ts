@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { buildStripeConnectUrl } from "@/services/stripe.service";
+import { getAppUrl } from "@/lib/utils";
 
 export async function GET() {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appUrl = getAppUrl();
   const supabase = await createClient();
   const {
     data: { user },

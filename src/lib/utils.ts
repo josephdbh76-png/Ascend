@@ -4,6 +4,16 @@ export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
 
+/**
+ * Resolves the app's public base URL. Uses `||` rather than `??` on
+ * purpose — an env var that exists but was saved as an empty string (a
+ * real misconfiguration we've hit on Vercel) must fall back too, not just
+ * a missing/undefined one.
+ */
+export function getAppUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+}
+
 export function formatCurrency(cents: number, currency = "EUR"): string {
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",

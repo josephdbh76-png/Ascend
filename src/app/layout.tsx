@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ToastProvider } from "@/components/ui/Toast";
+import { getAppUrl } from "@/lib/utils";
 import "./globals.css";
 
 const inter = Inter({
@@ -13,7 +14,7 @@ const DESCRIPTION =
   "ASCEND est le réseau de performance des entrepreneurs ambitieux. Vérifie tes performances, grimpe au classement et construis ta réputation.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(getAppUrl()),
   title: {
     default: "ASCEND — Construis. Prouve. Progresse.",
     template: "%s — ASCEND",
