@@ -23,9 +23,9 @@ export function Features() {
           {FEATURES.map((f) => (
             <RevealItem
               key={f.title}
-              className="rounded-lg border border-border bg-card p-6 transition-colors hover:border-border-strong"
+              className="group rounded-lg border border-border bg-card p-6 transition-all duration-200 ease-out hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_12px_30px_rgba(0,0,0,0.15)]"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gold/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gold/10 transition-transform duration-200 group-hover:scale-110">
                 <f.icon className="h-4 w-4 text-gold" />
               </div>
               <h3 className="mt-4 text-sm font-semibold text-text-primary">{f.title}</h3>

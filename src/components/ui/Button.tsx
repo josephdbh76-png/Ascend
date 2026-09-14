@@ -3,10 +3,10 @@ import { cn } from "@/lib/utils";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap";
+  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-[color,background-color,border-color,transform,box-shadow] duration-150 ease-out hover:-translate-y-0.5 active:translate-y-0 active:duration-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 disabled:opacity-40 disabled:pointer-events-none disabled:hover:translate-y-0 whitespace-nowrap";
 
 const variants = {
-  primary: "bg-gold text-[#0a0a0a] hover:bg-gold-light",
+  primary: "bg-gold text-[#0a0a0a] hover:bg-gold-light hover:shadow-[0_8px_24px_rgba(245,196,81,0.35)]",
   secondary: "bg-card-elevated text-text-primary border border-border-strong hover:bg-card-active",
   ghost: "text-text-secondary hover:text-text-primary hover:bg-card",
   outline: "border border-border-strong text-text-primary hover:border-gold/50 hover:text-gold",

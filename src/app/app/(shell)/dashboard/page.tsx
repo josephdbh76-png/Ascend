@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { ArrowRight, TrendingUp, Globe2, Flag as FlagIcon, Award, Link2 } from "lucide-react";
+import { ArrowRight, TrendingUp, Globe2, Flag as FlagIcon, Award } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profile.service";
 import {
@@ -17,12 +17,12 @@ import { getActiveChallengesWithProgress } from "@/services/challenge.service";
 import { getLatestUnreadOfType } from "@/services/notification.service";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { StripeStatusToast } from "@/components/dashboard/StripeStatusToast";
+import { VerificationCTA } from "@/components/dashboard/VerificationCTA";
 import { AchievementUnlockGate } from "@/components/dashboard/AchievementUnlockGate";
 import { RankTransition } from "@/components/motion/RankTransition";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
@@ -68,6 +68,18 @@ export default async function DashboardPage() {
   const milestone = nextRevenueMilestone(current?.amountCents ?? null);
   const remainingToMilestone = current ? milestone.targetCents - current.amountCents : milestone.targetCents;
 
+  let foundingSupply: number | null = null;
+  let remainingFoundingSlots: number | null = null;
+  if (!isVerified) {
+    const { data: foundingTitle } = await supabase
+      .from("titles")
+      .select("supply, remaining_supply")
+      .eq("id", "founding-member")
+      .maybeSingle();
+    foundingSupply = foundingTitle?.supply ?? null;
+    remainingFoundingSlots = foundingTitle?.remaining_supply ?? null;
+  }
+
   let unlockedAchievement: { id: string; name: string; description: string } | null = null;
   if (unreadAchievement) {
     const achievementId = unreadAchievement.metadata.achievement_id as string | undefined;
@@ -105,19 +117,7 @@ export default async function DashboardPage() {
       </div>
 
       {!isVerified && (
-        <Card className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-text-primary">
-              Ton activité n&apos;est pas encore vérifiée.
-            </h2>
-            <p className="mt-1 text-sm text-text-secondary">
-              Connecte Stripe en mode test pour vérifier tes revenus et apparaître au classement.
-            </p>
-          </div>
-          <Button href="/api/stripe/connect" className="shrink-0">
-            <Link2 className="h-4 w-4" /> Connecter Stripe
-          </Button>
-        </Card>
+        <VerificationCTA remainingFoundingSlots={remainingFoundingSlots} foundingSupply={foundingSupply} />
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -153,7 +153,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="p-6 lg:col-span-2" elevated>
+        <Card className="p-6 lg:col-span-2" elevated hover>
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Performance</h2>
             <VerificationBadge status={verificationStatus} />
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
           </div>
         </Card>
 
-        <Card className="p-6" elevated>
+        <Card className="p-6" elevated hover>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Prochain palier</h2>
           <div className="mt-4">
             <div className="flex items-baseline justify-between">
@@ -202,7 +202,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="p-6" elevated>
+        <Card className="p-6" elevated hover>
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Défis en cours</h2>
             <Link href="/app/challenges" className="text-xs font-medium text-gold hover:text-gold-light">
@@ -214,7 +214,7 @@ export default async function DashboardPage() {
               <EmptyState title="Le prochain défi arrive bientôt." />
             ) : (
               challenges.slice(0, 3).map((c) => (
-                <div key={c.id} className="rounded-md border border-border bg-card p-4">
+                <div key={c.id} className="rounded-md border border-border bg-card p-4 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-gold/30">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-text-primary">{c.title}</span>
                     <span className="text-xs text-text-muted">{c.progress.toFixed(0)} %</span>
@@ -226,7 +226,7 @@ export default async function DashboardPage() {
           </div>
         </Card>
 
-        <Card className="p-6" elevated>
+        <Card className="p-6" elevated hover>
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Accomplissements</h2>
             <Link href="/app/achievements" className="text-xs font-medium text-gold hover:text-gold-light">
@@ -242,7 +242,7 @@ export default async function DashboardPage() {
                   <div
                     key={a.id}
                     title={a.description}
-                    className="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-md border border-border bg-card text-center"
+                    className="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-md border border-border bg-card text-center transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-gold/40 hover:bg-gold/5"
                   >
                     <Award className="h-4 w-4 text-gold" />
                     <span className="px-1 text-[9px] leading-tight text-text-secondary">{a.name}</span>

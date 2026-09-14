@@ -21,7 +21,7 @@ export function StatCard({
   className?: string;
 }) {
   return (
-    <Card className={cn("p-5", className)} elevated>
+    <Card className={cn("p-5", className)} elevated hover>
       <div className="flex items-start justify-between">
         <span className="text-xs font-medium uppercase tracking-wide text-text-muted">
           {label}

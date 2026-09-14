@@ -90,7 +90,9 @@ export function TitleCard({
   // titles); rarity is purely cosmetic and independent of it — a title can
   // be paid and still not be a 1-of-1 "exclusive".
   const isPurchasable = priceCents != null;
+  const hasSupplyInfo = supply != null || isPurchasable;
   const soldOut = isPurchasable && supply != null && (remainingSupply ?? 0) <= 0 && !owned;
+  const isScarce = supply != null && (remainingSupply ?? 0) / supply <= 0.2;
 
   function toggleActive() {
     startTransition(async () => {
@@ -103,8 +105,8 @@ export function TitleCard({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 rounded-lg border bg-card p-5",
-        owned ? RARITY_STYLES[rarity] : "border-border opacity-80",
+        "flex flex-col gap-3 rounded-lg border bg-card p-5 transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(0,0,0,0.2)]",
+        owned ? RARITY_STYLES[rarity] : "border-border opacity-80 hover:border-border-strong hover:opacity-100",
       )}
     >
       <div className="flex items-center justify-between">
@@ -129,12 +131,14 @@ export function TitleCard({
         )}
       </div>
 
-      {isPurchasable && (
+      {hasSupplyInfo && (
         <div className="flex items-center justify-between border-t border-border pt-3 text-xs">
-          <span className="text-text-muted">
-            {supply != null ? `${remainingSupply ?? 0} / ${supply} exemplaire${supply > 1 ? "s" : ""}` : "Illimité"}
+          <span className={cn("font-medium", isScarce ? "text-error" : "text-text-muted")}>
+            {supply != null
+              ? `${remainingSupply ?? 0} / ${supply} exemplaire${supply > 1 ? "s" : ""} restant${(remainingSupply ?? 0) > 1 ? "s" : ""}`
+              : "Illimité"}
           </span>
-          <span className="font-medium text-gold">{formatCurrency(priceCents!)}</span>
+          {isPurchasable && <span className="font-medium text-gold">{formatCurrency(priceCents!)}</span>}
         </div>
       )}
 

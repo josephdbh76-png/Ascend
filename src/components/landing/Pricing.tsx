@@ -46,8 +46,10 @@ export function Pricing() {
             <RevealItem
               key={plan.name}
               className={cn(
-                "flex flex-col rounded-lg border p-6",
-                plan.highlighted ? "border-gold/40 bg-card" : "border-border bg-card",
+                "flex flex-col rounded-lg border p-6 transition-all duration-200 ease-out hover:-translate-y-1",
+                plan.highlighted
+                  ? "border-gold/40 bg-card hover:shadow-[0_16px_40px_rgba(245,196,81,0.15)]"
+                  : "border-border bg-card hover:border-border-strong hover:shadow-[0_12px_30px_rgba(0,0,0,0.15)]",
               )}
             >
               <div className="flex items-center justify-between">
