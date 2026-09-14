@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Crown, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/motion/Reveal";
@@ -52,6 +53,7 @@ const RANK_COLORS: Record<number, string> = { 1: "text-rank-1", 2: "text-rank-2"
 export function LeaderboardPreview() {
   const [tab, setTab] = useState("global");
   const rows = DATASETS[tab];
+  const reduced = useReducedMotion();
 
   return (
     <section id="classement" className="border-b border-border">
@@ -86,13 +88,19 @@ export function LeaderboardPreview() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr
-                  key={row.rank}
+              <AnimatePresence mode="popLayout" initial={false}>
+                {rows.map((row, i) => (
+                <motion.tr
+                  key={`${tab}-${row.rank}`}
+                  layout={!reduced}
+                  initial={reduced ? undefined : { opacity: 0, y: 10 }}
+                  animate={reduced ? undefined : { opacity: 1, y: 0 }}
+                  exit={reduced ? undefined : { opacity: 0 }}
+                  transition={{ duration: 0.3, delay: reduced ? 0 : i * 0.04, ease: [0.16, 1, 0.3, 1] }}
                   className={
                     row.isYou
                       ? "border-b border-border bg-gold/5 shadow-[inset_0_0_0_1px_rgba(245,196,81,0.4)] last:border-0"
-                      : "border-b border-border last:border-0"
+                      : "border-b border-border transition-colors last:border-0 hover:bg-bg-secondary"
                   }
                 >
                   <td className="px-4 py-3.5">
@@ -120,8 +128,9 @@ export function LeaderboardPreview() {
                   <td className="px-4 py-3.5 text-right font-medium tabular-nums text-success">
                     {formatPercent(row.growth)}
                   </td>
-                </tr>
-              ))}
+                </motion.tr>
+                ))}
+              </AnimatePresence>
             </tbody>
           </table>
         </Reveal>

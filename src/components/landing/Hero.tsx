@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, CheckCircle2, TrendingUp, ArrowUp, Award } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { CountUp } from "@/components/motion/CountUp";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { staggerContainer, fadeUp, easeOut } from "@/lib/motion";
 
@@ -65,9 +66,20 @@ export function Hero() {
 }
 
 function FounderCard() {
+  const reduced = useReducedMotion();
+
   return (
-    <div className="relative">
-      <div className="rounded-lg border border-border bg-card p-7">
+    <motion.div
+      className="relative"
+      animate={reduced ? undefined : { y: [0, -8, 0] }}
+      transition={reduced ? undefined : { duration: 5, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-gold/10 blur-3xl motion-safe:animate-pulse"
+      />
+
+      <div className="rounded-lg border border-border bg-card p-7 transition-shadow duration-300 hover:shadow-[0_20px_50px_rgba(245,196,81,0.12)]">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-card-elevated text-sm font-semibold text-gold">
             AM
@@ -76,44 +88,69 @@ function FounderCard() {
             <p className="text-sm font-semibold text-text-primary">Alex Martin</p>
             <p className="text-xs text-text-muted">Fondateur · SaaS</p>
           </div>
-          <span className="ml-auto flex items-center gap-1.5 text-xs text-success">
+          <motion.span
+            className="ml-auto flex items-center gap-1.5 text-xs text-success"
+            initial={reduced ? undefined : { opacity: 0, scale: 0.9 }}
+            animate={reduced ? undefined : { opacity: 1, scale: 1 }}
+            transition={{ delay: 0.9, duration: 0.4, ease: easeOut }}
+          >
             <CheckCircle2 className="h-3.5 w-3.5" /> Revenus vérifiés
-          </span>
+          </motion.span>
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-6 border-t border-border pt-6">
           <div>
             <p className="text-[11px] uppercase tracking-wide text-text-muted">Revenus mensuels</p>
             <p className="mt-1 text-2xl font-semibold tabular-nums text-text-primary">
-              {formatCurrency(2482000)}
+              <CountUp value={2482000} format={formatCurrency} />
             </p>
           </div>
           <div>
             <p className="text-[11px] uppercase tracking-wide text-text-muted">Croissance</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-success">{formatPercent(34.2)}</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-success">
+              <CountUp value={34.2} format={formatPercent} decimals={1} />
+            </p>
           </div>
           <div>
             <p className="text-[11px] uppercase tracking-wide text-text-muted">Mondial</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-gold">#47</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-gold">
+              #<CountUp value={47} format={(n) => `${n}`} />
+            </p>
           </div>
           <div>
             <p className="text-[11px] uppercase tracking-wide text-text-muted">France</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-text-primary">#8</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-text-primary">
+              #<CountUp value={8} format={(n) => `${n}`} />
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs text-text-secondary">
+      <motion.div
+        className="mt-4 flex flex-wrap gap-2"
+        initial={reduced ? undefined : "hidden"}
+        animate={reduced ? undefined : "visible"}
+        variants={reduced ? undefined : staggerContainer(0.12, 1.05)}
+      >
+        <motion.span
+          variants={fadeUp}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs text-text-secondary transition-transform duration-200 hover:-translate-y-0.5"
+        >
           <ArrowUp className="h-3.5 w-3.5 text-success" /> +12 places
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs text-text-secondary">
+        </motion.span>
+        <motion.span
+          variants={fadeUp}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs text-text-secondary transition-transform duration-200 hover:-translate-y-0.5"
+        >
           <TrendingUp className="h-3.5 w-3.5 text-gold" /> 25K mensuels
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs text-text-secondary">
+        </motion.span>
+        <motion.span
+          variants={fadeUp}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs text-text-secondary transition-transform duration-200 hover:-translate-y-0.5"
+        >
           <Award className="h-3.5 w-3.5 text-gold" /> Top 50
-        </span>
-      </div>
-    </div>
+        </motion.span>
+      </motion.div>
+    </motion.div>
   );
 }
