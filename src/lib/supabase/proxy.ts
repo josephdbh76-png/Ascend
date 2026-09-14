@@ -35,19 +35,30 @@ export async function updateSession(request: NextRequest) {
   const isProtected = PROTECTED_PREFIXES.some((p) => path.startsWith(p));
   const isAuthPage = AUTH_PREFIXES.some((p) => path.startsWith(p));
 
-  if (!user && isProtected) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", path);
-    url.searchParams.set("reason", "auth");
-    return NextResponse.redirect(url);
-  }
+  // A Server Action invocation POSTs to whatever page is currently open in
+  // the browser (e.g. the signup wizard keeps calling actions on /signup
+  // for steps 2-4, even after step 1 has already signed the user in).
+  // Redirecting that request — as we do for a normal page navigation —
+  // returns a redirect where the client expects an action result, which
+  // the Server Actions runtime can't parse ("unexpected response from the
+  // server"). Page-level redirects must never intercept these.
+  const isServerAction = request.headers.has("next-action");
 
-  if (user && isAuthPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/app/dashboard";
-    url.search = "";
-    return NextResponse.redirect(url);
+  if (!isServerAction) {
+    if (!user && isProtected) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.searchParams.set("next", path);
+      url.searchParams.set("reason", "auth");
+      return NextResponse.redirect(url);
+    }
+
+    if (user && isAuthPage) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/app/dashboard";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;
