@@ -7,6 +7,7 @@ const PROTECTED_PREFIXES = [
   "/challenges",
   "/achievements",
   "/onboarding",
+  "/verification",
 ];
 
 const AUTH_PREFIXES = ["/login", "/signup"];

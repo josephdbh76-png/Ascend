@@ -13,11 +13,31 @@ a mockup. Features explicitly out of scope for V1 (Shopify/PayPal/Paddle,
 founder matching, messaging, a marketplace, paid billing, etc.) are marked
 **Coming Soon** in the UI rather than faked.
 
+The entire user-facing product is in **French** (this README and code
+comments stay in English for the dev team). Brand terms — ASCEND,
+"Build. Prove. Rise." — are the only exceptions.
+
+### V2 additions
+
+- **Motion**: Framer Motion throughout (`src/components/motion/`) — scroll
+  reveals, staggered hero text, count-up numbers, a rank-transition counter,
+  and a premium gold-glow achievement-unlock modal. Everything respects
+  `prefers-reduced-motion`.
+- **Notifications**: a `notifications` table (migration `...000006`) records
+  real events server-side (achievement unlocked, rank improved, challenge
+  completed, verification completed) and feeds a bell dropdown in the navbar.
+  Nothing is ever fabricated client-side.
+- **Verification "wow" moment**: after a first-time Stripe connection,
+  `/verification` plays a short animated reveal (rank, next milestone) before
+  landing on the dashboard — it re-fetches the data server-side rather than
+  trusting anything passed through the redirect URL.
+
 ## Stack
 
 | Layer | Choice |
 |---|---|
 | Framework | Next.js 16 (App Router, Turbopack), TypeScript, React 19 |
+| Motion | Framer Motion |
 | Styling | Tailwind CSS v4 (CSS-based theme in `src/app/globals.css`) |
 | Database | Supabase Postgres, with Row Level Security on every table |
 | Auth | Supabase Auth (email/password) |
@@ -123,8 +143,11 @@ manually verify:
 - Signup (all 4 steps, including skip), login, logout, password reset
 - Username uniqueness + reserved-word rejection
 - Onboarding resumes correctly if abandoned mid-way
-- Stripe connect → callback → revenue sync → verification badge flips to
-  "Verified" → achievements/challenges update
+- Stripe connect → callback → revenue sync → `/verification` reveal →
+  verification badge flips to "Vérifié" → achievements/challenges update →
+  achievement-unlock modal appears once on next dashboard visit, then not
+  again
+- Notification bell shows new events and clears the unread badge on open
 - Privacy setting changes (exact/range/private) reflect immediately on the
   public profile and leaderboard
 - Leaderboard scopes (global/country/category), current-user highlighting

@@ -17,7 +17,7 @@ export function TrophyCard({
       </div>
       <h3 className="text-sm font-semibold text-text-primary">{name}</h3>
       <p className="text-xs text-text-secondary">{description}</p>
-      <p className="text-[11px] text-text-muted">Earned {timeAgo(earnedAt)}</p>
+      <p className="text-[11px] text-text-muted">Débloqué {timeAgo(earnedAt)}</p>
     </div>
   );
 }

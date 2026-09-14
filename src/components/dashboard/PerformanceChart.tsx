@@ -6,7 +6,7 @@ import type { RevenuePoint } from "@/types";
 
 export function PerformanceChart({ data }: { data: RevenuePoint[] }) {
   const chartData = data.map((d) => ({
-    month: new Date(d.period).toLocaleDateString("en-US", { month: "short" }),
+    month: new Date(d.period).toLocaleDateString("fr-FR", { month: "short" }),
     revenue: d.amountCents,
     verified: d.isVerified,
   }));
@@ -38,7 +38,7 @@ export function PerformanceChart({ data }: { data: RevenuePoint[] }) {
               fontSize: 12,
             }}
             labelStyle={{ color: "#a8b1bf" }}
-            formatter={(value) => [formatCurrency(Number(value)), "Revenue"]}
+            formatter={(value) => [formatCurrency(Number(value)), "Revenus"]}
           />
           <Area
             type="monotone"

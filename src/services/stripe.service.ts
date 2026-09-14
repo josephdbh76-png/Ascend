@@ -1,9 +1,11 @@
 import "server-only";
 import { getStripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
-import { upsertMonthlyRevenue, getCurrentRevenue, calculateMonthlyGrowth } from "@/services/revenue.service";
-import { evaluateRevenueAchievements } from "@/services/achievement.service";
+import { upsertMonthlyRevenue, getCurrentRevenue, calculateMonthlyGrowth, nextRevenueMilestone } from "@/services/revenue.service";
+import { evaluateRevenueAchievements, evaluateRankAchievements } from "@/services/achievement.service";
 import { evaluateChallengeProgress } from "@/services/challenge.service";
+import { createNotification } from "@/services/notification.service";
+import { getUserRank } from "@/services/leaderboard.service";
 
 const STRIPE_OAUTH_AUTHORIZE_URL = "https://connect.stripe.com/oauth/authorize";
 const MONTHS_OF_HISTORY = 6;
@@ -74,9 +76,9 @@ export async function handleStripeOAuthCallback(code: string, userId: string) {
     { onConflict: "revenue_source_id" },
   );
 
-  await syncStripeRevenue(userId, source.id, stripeAccountId);
+  const syncResult = await syncStripeRevenue(userId, source.id, stripeAccountId);
 
-  return source;
+  return { source, syncResult };
 }
 
 /**
@@ -91,6 +93,13 @@ export async function syncStripeRevenue(
 ) {
   const stripe = getStripe();
   const supabase = await createClient();
+
+  const { data: verificationBefore } = await supabase
+    .from("verifications")
+    .select("status")
+    .eq("revenue_source_id", revenueSourceId)
+    .maybeSingle();
+  const wasAlreadyVerified = verificationBefore?.status === "verified";
 
   const sinceDate = new Date();
   sinceDate.setMonth(sinceDate.getMonth() - MONTHS_OF_HISTORY);
@@ -149,13 +158,39 @@ export async function syncStripeRevenue(
     await supabase.from("profiles").update({ revenue_verified: true }).eq("id", userId);
 
     const { current, previous } = await getCurrentRevenue(userId);
+    let rank: number | null = null;
+    let milestoneCents: number | null = null;
+
     if (current) {
       const growth = calculateMonthlyGrowth(current.amountCents, previous?.amountCents ?? null);
       await evaluateRevenueAchievements(userId, current.amountCents);
       await evaluateChallengeProgress(userId, current.amountCents, growth);
+
+      const rankResult = await getUserRank(userId, "global", "");
+      if (rankResult) {
+        rank = rankResult.rank;
+        await evaluateRankAchievements(userId, rankResult.rank);
+      }
+      milestoneCents = nextRevenueMilestone(current.amountCents).targetCents;
     }
 
-    return { success: true as const, monthsSynced: monthlyTotals.size };
+    if (!wasAlreadyVerified) {
+      await createNotification({
+        userId,
+        type: "verification_completed",
+        title: "Revenus vérifiés",
+        body: "Ton activité est désormais vérifiée sur ASCEND.",
+      });
+    }
+
+    return {
+      success: true as const,
+      monthsSynced: monthlyTotals.size,
+      isFirstVerification: !wasAlreadyVerified,
+      currentRevenueCents: current?.amountCents ?? null,
+      rank,
+      milestoneCents,
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown Stripe error.";
     await supabase

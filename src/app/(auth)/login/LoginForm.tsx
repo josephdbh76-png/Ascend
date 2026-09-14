@@ -29,8 +29,8 @@ export function LoginForm() {
   return (
     <form onSubmit={submit} className="animate-fade-up flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold text-text-primary">Welcome back</h1>
-        <p className="mt-1 text-sm text-text-secondary">Log in to check your ranking.</p>
+        <h1 className="text-xl font-semibold text-text-primary">Ravi de te revoir</h1>
+        <p className="mt-1 text-sm text-text-secondary">Connecte-toi pour voir où tu en es.</p>
       </div>
 
       {error && (
@@ -39,7 +39,7 @@ export function LoginForm() {
         </div>
       )}
 
-      <Field label="Email" htmlFor="email">
+      <Field label="E-mail" htmlFor="email">
         <Input
           id="email"
           type="email"
@@ -49,7 +49,7 @@ export function LoginForm() {
           required
         />
       </Field>
-      <Field label="Password" htmlFor="password">
+      <Field label="Mot de passe" htmlFor="password">
         <Input
           id="password"
           type="password"
@@ -61,16 +61,16 @@ export function LoginForm() {
       </Field>
       <div className="flex justify-end">
         <a href="/reset-password" className="text-xs text-text-muted hover:text-text-primary">
-          Forgot password?
+          Mot de passe oublié ?
         </a>
       </div>
       <Button type="submit" disabled={pending}>
-        Log in <ArrowRight className="h-4 w-4" />
+        Se connecter <ArrowRight className="h-4 w-4" />
       </Button>
       <p className="text-center text-sm text-text-muted">
-        New to ASCEND?{" "}
+        Nouveau sur ASCEND ?{" "}
         <a href="/signup" className="text-gold hover:text-gold-light">
-          Join the beta
+          Rejoindre la bêta
         </a>
       </p>
     </form>

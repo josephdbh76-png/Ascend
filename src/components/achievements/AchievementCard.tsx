@@ -9,6 +9,13 @@ const RARITY_STYLES: Record<AchievementRarity, string> = {
   legendary: "border-gold/50 text-gold",
 };
 
+const RARITY_LABELS: Record<AchievementRarity, string> = {
+  common: "commun",
+  rare: "rare",
+  epic: "épique",
+  legendary: "légendaire",
+};
+
 export function AchievementCard({
   name,
   description,
@@ -38,14 +45,14 @@ export function AchievementCard({
           {earned ? <Award className="h-5 w-5 text-gold" /> : <Lock className="h-4 w-4 text-text-muted" />}
         </div>
         <span className={cn("text-[10px] font-semibold uppercase tracking-wide", earned ? RARITY_STYLES[rarity].split(" ")[1] : "text-text-muted")}>
-          {rarity}
+          {RARITY_LABELS[rarity]}
         </span>
       </div>
       <div>
         <h3 className="text-sm font-semibold text-text-primary">{name}</h3>
         <p className="mt-1 text-xs text-text-secondary">{description}</p>
       </div>
-      {earned && earnedAt && <p className="text-[11px] text-text-muted">Earned {timeAgo(earnedAt)}</p>}
+      {earned && earnedAt && <p className="text-[11px] text-text-muted">Débloqué {timeAgo(earnedAt)}</p>}
     </div>
   );
 }

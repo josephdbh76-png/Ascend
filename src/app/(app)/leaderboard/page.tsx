@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import type { LeaderboardScope } from "@/types/database.types";
 
-export const metadata: Metadata = { title: "Leaderboard" };
+export const metadata: Metadata = { title: "Classement" };
 
 export default async function LeaderboardPage({
   searchParams,
@@ -30,9 +30,9 @@ export default async function LeaderboardPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Leaderboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Classement</h1>
         <p className="mt-1 text-sm text-text-secondary">
-          Only verified founders appear here. Ranked by monthly revenue.
+          Seuls les fondateurs vérifiés apparaissent ici, classés par revenus mensuels.
         </p>
       </div>
 
@@ -42,7 +42,7 @@ export default async function LeaderboardPage({
         <Card className="flex items-center justify-between p-4" elevated>
           <div className="flex items-center gap-3">
             <span className="text-lg font-semibold tabular-nums text-gold">#{yourRank.rank}</span>
-            <span className="text-sm text-text-secondary">Your rank · {yourRank.total} ranked founders</span>
+            <span className="text-sm text-text-secondary">Ton rang · {yourRank.total} fondateurs classés</span>
           </div>
           {yourRank.growth_percent != null && (
             <span className={yourRank.growth_percent >= 0 ? "text-success text-sm" : "text-error text-sm"}>
@@ -56,7 +56,10 @@ export default async function LeaderboardPage({
 
       {yourRank && (
         <p className="text-center text-xs text-text-muted">
-          Your revenue: {yourRank.revenue_display_cents != null ? formatCurrency(yourRank.revenue_display_cents) : "hidden by your privacy settings"}
+          Tes revenus :{" "}
+          {yourRank.revenue_display_cents != null
+            ? formatCurrency(yourRank.revenue_display_cents)
+            : "masqués par tes réglages de confidentialité"}
         </p>
       )}
     </div>

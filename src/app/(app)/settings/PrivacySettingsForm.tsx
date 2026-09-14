@@ -11,23 +11,23 @@ const OPTIONS: { value: RevenueVisibility; label: string; description: string; i
   {
     value: "exact",
     label: "Exact",
-    description: "Show your precise monthly revenue.",
+    description: "Affiche tes revenus mensuels précis.",
     icon: Eye,
-    preview: "€24,820 / month",
+    preview: "24 820 € / mois",
   },
   {
     value: "range",
-    label: "Range",
-    description: "Show a €1M-wide range instead of the exact figure.",
+    label: "Fourchette",
+    description: "Affiche une fourchette d'1 M€ plutôt que le montant exact.",
     icon: Minus,
     preview: formatCurrencyRange(2000000, 3000000),
   },
   {
     value: "private",
-    label: "Private",
-    description: "Never expose your revenue. Rank still shows.",
+    label: "Privé",
+    description: "Ne montre jamais tes revenus. Ton classement reste visible.",
     icon: EyeOff,
-    preview: "Hidden",
+    preview: "Masqué",
   },
 ];
 
@@ -45,7 +45,7 @@ export function PrivacySettingsForm({
     startTransition(async () => {
       const result = await updatePrivacyAction(next);
       if (!result.success) return toast.show(result.error, "error");
-      toast.show("Privacy settings updated.", "success");
+      toast.show("Confidentialité mise à jour.", "success");
     });
   }
 
@@ -90,7 +90,7 @@ export function PrivacySettingsForm({
           }}
           className="h-4 w-4 accent-[#f5c451]"
         />
-        Show my country on my public profile
+        Afficher mon pays sur mon profil public
       </label>
     </div>
   );

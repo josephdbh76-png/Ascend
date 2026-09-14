@@ -11,6 +11,12 @@ export type AchievementRarity = "common" | "rare" | "epic" | "legendary";
 export type ChallengeType = "revenue_threshold" | "growth_threshold" | "consistency" | "coming_soon";
 export type ChallengeStatus = "in_progress" | "completed";
 export type LeaderboardScope = "global" | "country" | "category";
+export type NotificationType =
+  | "achievement_unlocked"
+  | "rank_increased"
+  | "challenge_started"
+  | "milestone_reached"
+  | "verification_completed";
 
 export interface Database {
   public: {
@@ -257,6 +263,26 @@ export interface Database {
           snapshot_date: string;
         };
         Update: Partial<Database["public"]["Tables"]["leaderboard_snapshots"]["Row"]>;
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: NotificationType;
+          title: string;
+          body: string;
+          metadata: Record<string, unknown>;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["notifications"]["Row"], "id">> & {
+          user_id: string;
+          type: NotificationType;
+          title: string;
+          body: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["notifications"]["Row"]>;
         Relationships: [];
       };
     };

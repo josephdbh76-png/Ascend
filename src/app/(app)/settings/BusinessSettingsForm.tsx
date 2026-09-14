@@ -21,16 +21,16 @@ export function BusinessSettingsForm({
     startTransition(async () => {
       const result = await updateBusinessAction(form);
       if (!result.success) return toast.show(result.error, "error");
-      toast.show("Business updated.", "success");
+      toast.show("Activité mise à jour.", "success");
     });
   }
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
-      <Field label="Business name">
+      <Field label="Nom de l'activité">
         <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
       </Field>
-      <Field label="Category">
+      <Field label="Catégorie">
         <Select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
           {BUSINESS_CATEGORIES.map((c) => (
             <option key={c.value} value={c.value}>
@@ -39,7 +39,7 @@ export function BusinessSettingsForm({
           ))}
         </Select>
       </Field>
-      <Field label="Website" hint="Optional">
+      <Field label="Site web" hint="Optionnel">
         <Input
           value={form.website}
           onChange={(e) => setForm({ ...form, website: e.target.value })}
@@ -47,7 +47,7 @@ export function BusinessSettingsForm({
         />
       </Field>
       <Button type="submit" disabled={pending} className="self-start">
-        Save changes
+        Enregistrer
       </Button>
     </form>
   );

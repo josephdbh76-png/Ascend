@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { ACHIEVEMENT_DEFINITIONS } from "@/lib/constants";
+import { createNotification } from "@/services/notification.service";
 import type { EarnedAchievement } from "@/types";
 
 export async function getUserAchievements(userId: string): Promise<EarnedAchievement[]> {
@@ -46,11 +47,42 @@ export async function getAllAchievementCatalog() {
   return data ?? [];
 }
 
-async function grantAchievement(userId: string, achievementId: string) {
+/** Grants an achievement if not already earned. Returns true only when
+ * this call is the one that newly unlocked it, so callers can notify
+ * exactly once. */
+async function grantAchievement(userId: string, achievementId: string): Promise<boolean> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("user_achievements")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("achievement_id", achievementId)
+    .maybeSingle();
+
+  if (existing) return false;
+
   await supabase
     .from("user_achievements")
     .upsert({ user_id: userId, achievement_id: achievementId }, { onConflict: "user_id,achievement_id" });
+
+  const { data: def } = await supabase
+    .from("achievements")
+    .select("name, description")
+    .eq("id", achievementId)
+    .maybeSingle();
+
+  if (def) {
+    await createNotification({
+      userId,
+      type: "achievement_unlocked",
+      title: "Accomplissement débloqué",
+      body: `Tu viens de débloquer « ${def.name} ».`,
+      metadata: { achievement_id: achievementId },
+    });
+  }
+
+  return true;
 }
 
 /**
@@ -59,24 +91,14 @@ async function grantAchievement(userId: string, achievementId: string) {
  * idempotent via the (user_id, achievement_id) unique constraint.
  */
 export async function evaluateRevenueAchievements(userId: string, currentRevenueCents: number) {
-  const supabase = await createClient();
   const newlyEarned: string[] = [];
 
-  await grantAchievement(userId, "first-verified-revenue");
+  if (await grantAchievement(userId, "first-verified-revenue")) newlyEarned.push("first-verified-revenue");
 
   for (const def of ACHIEVEMENT_DEFINITIONS) {
     if (!("threshold" in def) || !def.threshold) continue;
     if (currentRevenueCents >= def.threshold) {
-      const { data: existing } = await supabase
-        .from("user_achievements")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("achievement_id", def.id)
-        .maybeSingle();
-      if (!existing) {
-        await grantAchievement(userId, def.id);
-        newlyEarned.push(def.id);
-      }
+      if (await grantAchievement(userId, def.id)) newlyEarned.push(def.id);
     }
   }
 
@@ -92,8 +114,7 @@ export async function evaluateRankAchievements(userId: string, globalRank: numbe
   const newlyEarned: string[] = [];
   for (const [rank, id] of thresholds) {
     if (globalRank <= rank) {
-      await grantAchievement(userId, id);
-      newlyEarned.push(id);
+      if (await grantAchievement(userId, id)) newlyEarned.push(id);
     }
   }
   return newlyEarned;

@@ -7,6 +7,7 @@ import {
   signupBioSchema,
   loginSchema,
 } from "@/lib/validations";
+import { toFriendlyAuthError } from "@/lib/errors";
 import { isUsernameAvailable } from "@/services/profile.service";
 
 export type ActionResult<T = undefined> =
@@ -20,14 +21,14 @@ export async function createAccountAction(input: {
 }): Promise<ActionResult<{ needsEmailConfirmation: boolean }>> {
   const parsed = signupAccountSchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
   }
 
   const { email, password, username } = parsed.data;
 
   const available = await isUsernameAvailable(username);
   if (!available) {
-    return { success: false, error: "That username is already taken." };
+    return { success: false, error: "Ce nom d'utilisateur est déjà pris." };
   }
 
   const supabase = await createClient();
@@ -41,7 +42,7 @@ export async function createAccountAction(input: {
   });
 
   if (signUpError || !signUpData.user) {
-    return { success: false, error: signUpError?.message ?? "Could not create your account." };
+    return { success: false, error: toFriendlyAuthError(signUpError?.message) };
   }
 
   const { error: profileError } = await supabase.from("profiles").insert({
@@ -51,7 +52,7 @@ export async function createAccountAction(input: {
   });
 
   if (profileError) {
-    return { success: false, error: profileError.message };
+    return { success: false, error: toFriendlyAuthError(profileError.message) };
   }
 
   return { success: true, data: { needsEmailConfirmation: !signUpData.session } };
@@ -66,12 +67,12 @@ export async function saveProfileStepAction(input: {
 }): Promise<ActionResult> {
   const parsed = signupProfileSchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
   }
 
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return { success: false, error: "Not authenticated." };
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
   const { firstName, lastName, country, category, businessName } = parsed.data;
 
@@ -85,14 +86,14 @@ export async function saveProfileStepAction(input: {
     })
     .eq("id", userData.user.id);
 
-  if (profileError) return { success: false, error: profileError.message };
+  if (profileError) return { success: false, error: toFriendlyAuthError(profileError.message) };
 
   const { error: businessError } = await supabase.from("businesses").upsert(
     { user_id: userData.user.id, name: businessName, category },
     { onConflict: "user_id" },
   );
 
-  if (businessError) return { success: false, error: businessError.message };
+  if (businessError) return { success: false, error: toFriendlyAuthError(businessError.message) };
 
   return { success: true, data: undefined };
 }
@@ -100,33 +101,33 @@ export async function saveProfileStepAction(input: {
 export async function saveBioStepAction(input: { bio?: string }): Promise<ActionResult> {
   const parsed = signupBioSchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
   }
 
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return { success: false, error: "Not authenticated." };
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
   const { error } = await supabase
     .from("profiles")
     .update({ bio: parsed.data.bio ?? null, onboarding_step: "revenue" })
     .eq("id", userData.user.id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toFriendlyAuthError(error.message) };
   return { success: true, data: undefined };
 }
 
 export async function completeOnboardingAction(): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return { success: false, error: "Not authenticated." };
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
   const { error } = await supabase
     .from("profiles")
     .update({ onboarding_step: "done" })
     .eq("id", userData.user.id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toFriendlyAuthError(error.message) };
   return { success: true, data: undefined };
 }
 
@@ -136,14 +137,14 @@ export async function loginAction(input: {
 }): Promise<ActionResult> {
   const parsed = loginSchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
   }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
 
   if (error) {
-    return { success: false, error: "Incorrect email or password." };
+    return { success: false, error: "E-mail ou mot de passe incorrect." };
   }
 
   return { success: true, data: undefined };
@@ -154,7 +155,7 @@ export async function requestPasswordResetAction(email: string): Promise<ActionR
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password/confirm`,
   });
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toFriendlyAuthError(error.message) };
   return { success: true, data: undefined };
 }
 

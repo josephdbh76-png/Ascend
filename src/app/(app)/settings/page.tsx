@@ -9,7 +9,7 @@ import { PrivacySettingsForm } from "./PrivacySettingsForm";
 import { ConnectedAccounts } from "./ConnectedAccounts";
 import { DangerZone } from "./DangerZone";
 
-export const metadata: Metadata = { title: "Settings" };
+export const metadata: Metadata = { title: "Réglages" };
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -31,24 +31,24 @@ export default async function SettingsPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Settings</h1>
-        <p className="mt-1 text-sm text-text-secondary">Manage your profile, privacy and connections.</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Réglages</h1>
+        <p className="mt-1 text-sm text-text-secondary">Gère ton profil, ta confidentialité et tes connexions.</p>
       </div>
 
       <Card className="p-6" elevated>
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Profile</h2>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Profil</h2>
         <ProfileSettingsForm
           initial={{
             firstName: profile.firstName ?? "",
             lastName: profile.lastName ?? "",
             bio: profile.bio ?? "",
-            country: profile.country ?? "US",
+            country: profile.country ?? "FR",
           }}
         />
       </Card>
 
       <Card className="p-6" elevated>
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Business</h2>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Activité</h2>
         <BusinessSettingsForm
           initial={{
             name: business?.name ?? "",
@@ -60,7 +60,7 @@ export default async function SettingsPage() {
 
       <Card className="p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
-          Revenue Privacy
+          Confidentialité des revenus
         </h2>
         <PrivacySettingsForm
           initial={{
@@ -72,14 +72,14 @@ export default async function SettingsPage() {
 
       <Card className="p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
-          Connected Accounts
+          Comptes connectés
         </h2>
         <ConnectedAccounts connected={source?.status === "connected"} status={verificationStatus} />
       </Card>
 
       <Card className="p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
-          Account
+          Compte
         </h2>
         <DangerZone />
       </Card>

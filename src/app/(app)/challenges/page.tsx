@@ -5,7 +5,7 @@ import { ChallengeCard } from "@/components/challenges/ChallengeCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Flag } from "lucide-react";
 
-export const metadata: Metadata = { title: "Challenges" };
+export const metadata: Metadata = { title: "Défis" };
 
 function daysRemaining(endsAt: string) {
   const ms = new Date(endsAt).getTime() - Date.now();
@@ -30,16 +30,16 @@ export default async function ChallengesPage() {
     <div className="flex flex-col gap-8">
       <div className="rounded-lg border border-gold/30 bg-gradient-to-br from-gold/10 via-card to-card p-6">
         <span className="text-xs font-semibold uppercase tracking-wide text-gold">
-          {season?.name ?? "ASCEND Season"}
+          {season?.name ?? "Saison ASCEND"}
         </span>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-text-primary">{season?.label}</h1>
         {daysLeft != null && (
-          <p className="mt-1 text-sm text-text-secondary">{daysLeft} days remaining in this season.</p>
+          <p className="mt-1 text-sm text-text-secondary">{daysLeft} jours restants dans cette saison.</p>
         )}
       </div>
 
       {challenges.length === 0 ? (
-        <EmptyState icon={Flag} title="New challenges arrive every season." description="Check back soon." />
+        <EmptyState icon={Flag} title="Le prochain défi arrive bientôt." description="Reviens vite." />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {challenges.map((c) => (

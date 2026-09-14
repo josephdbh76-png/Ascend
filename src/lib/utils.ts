@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(cents: number, currency = "EUR"): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
@@ -14,7 +14,7 @@ export function formatCurrency(cents: number, currency = "EUR"): string {
 
 export function formatCurrencyRange(minCents: number, maxCents: number, currency = "EUR"): string {
   const fmt = (v: number) =>
-    new Intl.NumberFormat("en-US", {
+    new Intl.NumberFormat("fr-FR", {
       style: "currency",
       currency,
       notation: "compact",
@@ -24,7 +24,7 @@ export function formatCurrencyRange(minCents: number, maxCents: number, currency
 }
 
 export function formatCompactNumber(value: number): string {
-  return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(
+  return new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 1 }).format(
     value,
   );
 }
@@ -49,25 +49,19 @@ export function initials(firstName?: string | null, lastName?: string | null): s
   return `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase() || "A";
 }
 
-export function ordinal(n: number): string {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
 export function timeAgo(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
   const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
-  const intervals: [number, string][] = [
-    [31536000, "y"],
-    [2592000, "mo"],
-    [86400, "d"],
-    [3600, "h"],
-    [60, "m"],
+  const intervals: [number, string, string][] = [
+    [31536000, "an", "ans"],
+    [2592000, "mois", "mois"],
+    [86400, "jour", "jours"],
+    [3600, "heure", "heures"],
+    [60, "minute", "minutes"],
   ];
-  for (const [secs, label] of intervals) {
+  for (const [secs, singular, plural] of intervals) {
     const count = Math.floor(seconds / secs);
-    if (count >= 1) return `${count}${label} ago`;
+    if (count >= 1) return `il y a ${count} ${count > 1 ? plural : singular}`;
   }
-  return "just now";
+  return "à l'instant";
 }

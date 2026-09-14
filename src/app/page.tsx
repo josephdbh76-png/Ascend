@@ -1,6 +1,7 @@
 import { PublicNav } from "@/components/layout/PublicNav";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/landing/Hero";
+import { TrustStrip } from "@/components/landing/TrustStrip";
 import { Problem } from "@/components/landing/Problem";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Features } from "@/components/landing/Features";
@@ -21,6 +22,7 @@ export default function LandingPage() {
       <PublicNav />
       <main>
         <Hero />
+        <TrustStrip />
         <Problem />
         <HowItWorks />
         <Features />

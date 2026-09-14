@@ -27,7 +27,21 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    await handleStripeOAuthCallback(code, user.id);
+    const { syncResult } = await handleStripeOAuthCallback(code, user.id);
+
+    if (!syncResult.success) {
+      dashboardUrl.searchParams.set("stripe_error", syncResult.error);
+      return NextResponse.redirect(dashboardUrl);
+    }
+
+    // First-time verification gets the premium reveal sequence; a re-sync
+    // just goes straight back to the dashboard. The reveal page looks up
+    // the rank/revenue/milestone itself server-side rather than trusting
+    // values carried in the redirect URL.
+    if (syncResult.isFirstVerification) {
+      return NextResponse.redirect(new URL("/verification", appUrl));
+    }
+
     dashboardUrl.searchParams.set("stripe_connected", "1");
   } catch (err) {
     dashboardUrl.searchParams.set("stripe_error", err instanceof Error ? err.message : "unknown");

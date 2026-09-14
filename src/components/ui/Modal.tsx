@@ -50,7 +50,7 @@ export function Modal({
           )}
           <button
             onClick={onClose}
-            aria-label="Close"
+            aria-label="Fermer"
             className="ml-auto rounded-sm p-1 text-text-muted hover:text-text-primary"
           >
             <X className="h-4 w-4" />

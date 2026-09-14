@@ -28,9 +28,9 @@ export default function ResetPasswordPage() {
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/10">
           <MailCheck className="h-6 w-6 text-gold" />
         </div>
-        <h1 className="text-lg font-semibold text-text-primary">Check your inbox</h1>
+        <h1 className="text-lg font-semibold text-text-primary">Vérifie ta boîte mail</h1>
         <p className="mt-2 text-sm text-text-secondary">
-          If an account exists for {email}, a reset link is on its way.
+          Si un compte existe pour {email}, un lien de réinitialisation vient de partir.
         </p>
       </div>
     );
@@ -39,19 +39,19 @@ export default function ResetPasswordPage() {
   return (
     <form onSubmit={submit} className="animate-fade-up flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold text-text-primary">Reset your password</h1>
-        <p className="mt-1 text-sm text-text-secondary">We&apos;ll email you a reset link.</p>
+        <h1 className="text-xl font-semibold text-text-primary">Réinitialise ton mot de passe</h1>
+        <p className="mt-1 text-sm text-text-secondary">Nous t&apos;enverrons un lien par e-mail.</p>
       </div>
       {error && (
         <div className="rounded-md border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
           {error}
         </div>
       )}
-      <Field label="Email" htmlFor="email">
+      <Field label="E-mail" htmlFor="email">
         <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       </Field>
       <Button type="submit" disabled={pending}>
-        Send reset link <ArrowRight className="h-4 w-4" />
+        Envoyer le lien <ArrowRight className="h-4 w-4" />
       </Button>
     </form>
   );

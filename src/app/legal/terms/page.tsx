@@ -1,24 +1,28 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal/LegalPage";
 
-export const metadata: Metadata = { title: "Terms of Service" };
+export const metadata: Metadata = { title: "Conditions d'utilisation" };
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms">
+    <LegalPage title="Conditions d'utilisation">
       <p>
-        This is a placeholder Terms of Service for the ASCEND private beta. It has not yet been
-        reviewed by legal counsel and should not be relied upon as a final or binding agreement.
+        Ceci est une version provisoire des conditions d&apos;utilisation pour la bêta privée d&apos;ASCEND.
+        Elle n&apos;a pas encore été validée par un conseil juridique et ne doit pas être considérée comme
+        définitive.
       </p>
       <p>
-        ASCEND is provided during the beta on an &quot;as is&quot; basis, free of charge, without
-        warranties of any kind. Features may change or be removed without notice.
+        ASCEND est fourni pendant la bêta &quot;en l&apos;état&quot;, gratuitement, sans garantie d&apos;aucune
+        sorte. Les fonctionnalités peuvent évoluer ou être retirées sans préavis.
       </p>
       <p>
-        You are responsible for the accuracy of the information you provide and for only
-        connecting revenue sources you are authorized to connect.
+        Tu es responsable de l&apos;exactitude des informations que tu fournis et tu t&apos;engages à ne
+        connecter que des sources de revenus que tu es autorisé à connecter.
       </p>
-      <p>A complete, legally reviewed Terms of Service will replace this page before general availability.</p>
+      <p>
+        Des conditions d&apos;utilisation complètes et validées juridiquement remplaceront cette page avant
+        la disponibilité générale.
+      </p>
     </LegalPage>
   );
 }

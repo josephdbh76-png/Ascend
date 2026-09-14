@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal/LegalPage";
 
-export const metadata: Metadata = { title: "Cookie Policy" };
+export const metadata: Metadata = { title: "Politique de cookies" };
 
 export default function CookiePolicyPage() {
   return (
-    <LegalPage title="Cookie Policy">
+    <LegalPage title="Politique de cookies">
       <p>
-        This is a placeholder Cookie Policy for the ASCEND private beta. It has not yet been
-        reviewed by legal counsel.
+        Ceci est une politique de cookies provisoire pour la bêta privée d&apos;ASCEND. Elle n&apos;a pas
+        encore été validée par un conseil juridique.
       </p>
       <p>
-        ASCEND uses strictly necessary cookies to keep you signed in (via Supabase Auth) and,
-        where configured, anonymous product analytics cookies to understand how the beta is used.
+        ASCEND utilise des cookies strictement nécessaires pour te garder connecté (via Supabase Auth) et,
+        lorsque configurés, des cookies d&apos;analyse anonymes pour comprendre l&apos;usage de la bêta.
       </p>
-      <p>A complete, legally reviewed Cookie Policy will replace this page before general availability.</p>
+      <p>
+        Une politique de cookies complète et validée juridiquement remplacera cette page avant la
+        disponibilité générale.
+      </p>
     </LegalPage>
   );
 }

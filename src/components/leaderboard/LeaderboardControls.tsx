@@ -6,9 +6,9 @@ import { Select } from "@/components/ui/Input";
 import { BUSINESS_CATEGORIES, COUNTRIES } from "@/lib/constants";
 
 const SCOPE_TABS = [
-  { value: "global", label: "Global" },
-  { value: "country", label: "Country" },
-  { value: "category", label: "Category" },
+  { value: "global", label: "Mondial" },
+  { value: "country", label: "Pays" },
+  { value: "category", label: "Catégorie" },
 ];
 
 export function LeaderboardControls({

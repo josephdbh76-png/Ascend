@@ -1,26 +1,29 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal/LegalPage";
 
-export const metadata: Metadata = { title: "Privacy Policy" };
+export const metadata: Metadata = { title: "Politique de confidentialité" };
 
 export default function PrivacyPolicyPage() {
   return (
-    <LegalPage title="Privacy Policy">
+    <LegalPage title="Politique de confidentialité">
       <p>
-        This is a placeholder Privacy Policy for the ASCEND private beta. It has not yet been
-        reviewed by legal counsel and should not be relied upon as a final or binding policy.
+        Ceci est une politique de confidentialité provisoire pour la bêta privée d&apos;ASCEND. Elle n&apos;a
+        pas encore été validée par un conseil juridique et ne doit pas être considérée comme définitive.
       </p>
       <p>
-        During the beta, ASCEND stores the account and business information you provide (name,
-        username, country, business category and bio), and, if you choose to connect a revenue
-        source, the monthly revenue figures retrieved from that source in Stripe test mode.
+        Pendant la bêta, ASCEND stocke les informations de compte et d&apos;activité que tu fournis (nom,
+        nom d&apos;utilisateur, pays, catégorie d&apos;activité et bio) et, si tu choisis de connecter une
+        source de revenus, les montants mensuels récupérés depuis cette source en mode test Stripe.
       </p>
       <p>
-        You control who can see your revenue through the visibility setting in Settings
-        (exact, range, or private). You can request deletion of your account and associated
-        data at any time from Settings → Account.
+        Tu contrôles qui peut voir tes revenus via le réglage de visibilité dans les Réglages (exact,
+        fourchette ou privé). Tu peux demander la suppression de ton compte et des données associées à
+        tout moment depuis Réglages → Compte.
       </p>
-      <p>A complete, legally reviewed Privacy Policy will replace this page before general availability.</p>
+      <p>
+        Une politique de confidentialité complète et validée juridiquement remplacera cette page avant
+        la disponibilité générale.
+      </p>
     </LegalPage>
   );
 }

@@ -25,19 +25,21 @@ export function DangerZone() {
       <div className="flex items-start gap-3">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-error" />
         <div>
-          <p className="text-sm font-medium text-text-primary">Delete account</p>
+          <p className="text-sm font-medium text-text-primary">Supprimer le compte</p>
           <p className="mt-1 text-xs text-text-secondary">
-            Permanently deletes your profile, business, revenue history and rankings. This cannot be undone.
+            Supprime définitivement ton profil, ton activité, ton historique de revenus et ton classement.
+            Cette action est irréversible.
           </p>
           <Button variant="danger" size="sm" className="mt-3" onClick={() => setOpen(true)}>
-            Delete my account
+            Supprimer mon compte
           </Button>
         </div>
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Delete your account?">
+      <Modal open={open} onClose={() => setOpen(false)} title="Supprimer ton compte ?">
         <p className="text-sm text-text-secondary">
-          Type <span className="font-mono text-text-primary">DELETE</span> to confirm. This action is permanent.
+          Tape <span className="font-mono text-text-primary">SUPPRIMER</span> pour confirmer. Cette action est
+          définitive.
         </p>
         <input
           value={confirmText}
@@ -46,15 +48,15 @@ export function DangerZone() {
         />
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>
-            Cancel
+            Annuler
           </Button>
           <Button
             variant="danger"
             size="sm"
-            disabled={confirmText !== "DELETE" || pending}
+            disabled={confirmText !== "SUPPRIMER" || pending}
             onClick={confirmDelete}
           >
-            Delete permanently
+            Supprimer définitivement
           </Button>
         </div>
       </Modal>

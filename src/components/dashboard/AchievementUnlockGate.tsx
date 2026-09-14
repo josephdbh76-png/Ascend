@@ -1,0 +1,33 @@
+"use client";
+
+import { useState } from "react";
+import { AchievementUnlockModal } from "@/components/achievements/AchievementUnlockModal";
+import { markNotificationReadAction } from "@/app/(app)/dashboard/actions";
+
+export function AchievementUnlockGate({
+  notificationId,
+  achievementName,
+  achievementDescription,
+  username,
+}: {
+  notificationId: string;
+  achievementName: string;
+  achievementDescription: string;
+  username: string;
+}) {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+
+  return (
+    <AchievementUnlockModal
+      notificationId={notificationId}
+      achievementName={achievementName}
+      achievementDescription={achievementDescription}
+      username={username}
+      onDismiss={(id) => {
+        setDismissed(true);
+        markNotificationReadAction(id);
+      }}
+    />
+  );
+}

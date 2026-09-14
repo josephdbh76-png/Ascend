@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { createNotification } from "@/services/notification.service";
 import type { ChallengeProgress } from "@/types";
 
 export async function getActiveChallengesWithProgress(userId: string): Promise<ChallengeProgress[]> {
@@ -77,6 +78,15 @@ export async function evaluateChallengeProgress(
       continue; // consistency / coming_soon tracked elsewhere or not yet implemented
     }
 
+    const { data: existingProgress } = await supabase
+      .from("user_challenges")
+      .select("status")
+      .eq("user_id", userId)
+      .eq("challenge_id", challenge.id)
+      .maybeSingle();
+
+    const wasAlreadyCompleted = existingProgress?.status === "completed";
+
     await supabase.from("user_challenges").upsert(
       {
         user_id: userId,
@@ -88,13 +98,22 @@ export async function evaluateChallengeProgress(
       { onConflict: "user_id,challenge_id" },
     );
 
-    if (completed && challenge.reward_achievement_id) {
-      await supabase
-        .from("user_achievements")
-        .upsert(
-          { user_id: userId, achievement_id: challenge.reward_achievement_id },
-          { onConflict: "user_id,achievement_id" },
-        );
+    if (completed && !wasAlreadyCompleted) {
+      if (challenge.reward_achievement_id) {
+        await supabase
+          .from("user_achievements")
+          .upsert(
+            { user_id: userId, achievement_id: challenge.reward_achievement_id },
+            { onConflict: "user_id,achievement_id" },
+          );
+      }
+      await createNotification({
+        userId,
+        type: "milestone_reached",
+        title: "Défi terminé",
+        body: `Tu as complété le défi « ${challenge.title} ».`,
+        metadata: { challenge_id: challenge.id },
+      });
     }
   }
 }

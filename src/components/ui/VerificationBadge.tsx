@@ -3,10 +3,10 @@ import { cn } from "@/lib/utils";
 import type { VerificationStatus } from "@/types/database.types";
 
 const CONFIG: Record<VerificationStatus, { label: string; icon: typeof CheckCircle2; className: string }> = {
-  verified: { label: "Revenue Verified", icon: CheckCircle2, className: "text-success" },
-  unverified: { label: "Revenue not verified", icon: Circle, className: "text-text-muted" },
-  error: { label: "Verification issue", icon: AlertTriangle, className: "text-error" },
-  disconnected: { label: "Source disconnected", icon: Unlink, className: "text-text-muted" },
+  verified: { label: "Revenus vérifiés", icon: CheckCircle2, className: "text-success" },
+  unverified: { label: "Revenus non vérifiés", icon: Circle, className: "text-text-muted" },
+  error: { label: "Problème de connexion", icon: AlertTriangle, className: "text-error" },
+  disconnected: { label: "Source déconnectée", icon: Unlink, className: "text-text-muted" },
 };
 
 export function VerificationBadge({

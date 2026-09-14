@@ -3,27 +3,28 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Reveal } from "@/components/motion/Reveal";
 
 const ITEMS = [
   {
-    q: "Is ASCEND free during the beta?",
-    a: "Yes. All core features — profile, verification, leaderboard, achievements and challenges — are free during the private beta. No credit card required.",
+    q: "ASCEND est-il gratuit pendant la bêta ?",
+    a: "Oui. Toutes les fonctionnalités principales — profil, vérification, classement, accomplissements et défis — sont gratuites pendant la bêta privée. Aucune carte bancaire requise.",
   },
   {
-    q: "How does revenue verification work?",
-    a: "You connect a revenue source (Stripe, in test mode for the beta) and ASCEND retrieves your actual transaction data server-side. Nothing is verified until real data is successfully pulled.",
+    q: "Comment fonctionne la vérification des revenus ?",
+    a: "Tu connectes une source de revenus (Stripe, en mode test pour la bêta) et ASCEND récupère tes vraies données de transaction côté serveur. Rien n'est vérifié tant que des données réelles n'ont pas été récupérées avec succès.",
   },
   {
-    q: "Can I hide my exact revenue?",
-    a: "Yes. In Settings, choose to show your exact revenue, a €1M-wide range, or keep it fully private. Your rank can still show without exposing the number.",
+    q: "Puis-je masquer mes revenus exacts ?",
+    a: "Oui. Dans les Réglages, choisis d'afficher ton revenu exact, une fourchette d'1 M€, ou de le garder entièrement privé. Ton classement peut rester visible sans exposer le montant.",
   },
   {
-    q: "Is my financial data safe?",
-    a: "Revenue data is protected by database-level row security — only you can access your connection details and raw figures. Public pages only ever show what your privacy settings allow.",
+    q: "Mes données financières sont-elles en sécurité ?",
+    a: "Tes données de revenus sont protégées par une sécurité au niveau de la base de données — toi seul peux accéder à tes connexions et chiffres bruts. Les pages publiques ne montrent que ce que tes réglages de confidentialité autorisent.",
   },
   {
-    q: "What happens after the beta?",
-    a: "Free features will remain free. Pro and Elite paid tiers are planned for the future, but beta members will never be charged retroactively.",
+    q: "Que se passe-t-il après la bêta ?",
+    a: "Les fonctionnalités gratuites resteront gratuites. Des offres Pro et Elite payantes sont prévues, mais les membres de la bêta ne seront jamais facturés rétroactivement.",
   },
 ];
 
@@ -33,15 +34,16 @@ export function FAQ() {
   return (
     <section id="faq" className="border-b border-border">
       <div className="mx-auto max-w-2xl px-4 py-20 sm:px-6 lg:px-8">
-        <h2 className="text-center text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
-          Frequently asked questions
-        </h2>
-        <div className="mt-10 divide-y divide-border rounded-lg border border-border">
+        <Reveal as="h2" className="text-center text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
+          Questions fréquentes
+        </Reveal>
+        <Reveal as="div" delay={0.1} className="mt-10 divide-y divide-border rounded-lg border border-border">
           {ITEMS.map((item, i) => (
             <div key={item.q}>
               <button
                 onClick={() => setOpen(open === i ? null : i)}
                 className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                aria-expanded={open === i}
               >
                 <span className="text-sm font-medium text-text-primary">{item.q}</span>
                 <ChevronDown
@@ -51,7 +53,7 @@ export function FAQ() {
               {open === i && <p className="px-5 pb-4 text-sm text-text-secondary">{item.a}</p>}
             </div>
           ))}
-        </div>
+        </Reveal>
       </div>
     </section>
   );

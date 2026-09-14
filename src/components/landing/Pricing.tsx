@@ -1,48 +1,49 @@
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { cn } from "@/lib/utils";
 
 const PLANS = [
   {
-    name: "FREE",
-    price: "€0",
-    note: "During beta",
-    features: ["Profile", "Verification", "Leaderboard", "Achievements", "Challenges", "Basic networking"],
-    cta: "Join the Beta",
+    name: "GRATUIT",
+    price: "0 €",
+    note: "Pendant la bêta",
+    features: ["Profil", "Vérification", "Classement", "Accomplissements", "Défis", "Réseau de base"],
+    cta: "Rejoindre la bêta",
     href: "/signup",
     highlighted: true,
   },
   {
     name: "PRO",
-    price: "€19",
-    note: "per month · Coming Soon",
-    features: ["Everything in Free", "Advanced analytics", "Priority verification", "Custom profile themes"],
-    cta: "Coming Soon",
+    price: "19 €",
+    note: "par mois · Bientôt disponible",
+    features: ["Tout Gratuit", "Analyses avancées", "Vérification prioritaire", "Thèmes de profil personnalisés"],
+    cta: "Bientôt disponible",
     disabled: true,
   },
   {
     name: "ELITE",
-    price: "€49",
-    note: "per month · Coming Soon",
-    features: ["Everything in Pro", "Founder network access", "Opportunities feed", "Concierge support"],
-    cta: "Coming Soon",
+    price: "49 €",
+    note: "par mois · Bientôt disponible",
+    features: ["Tout Pro", "Accès au réseau de fondateurs", "Fil d'opportunités", "Support dédié"],
+    cta: "Bientôt disponible",
     disabled: true,
   },
 ];
 
 export function Pricing() {
   return (
-    <section id="pricing" className="border-b border-border">
+    <section id="tarifs" className="border-b border-border">
       <div className="mx-auto max-w-[1440px] px-4 py-20 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal as="div" className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
-            Simple pricing, free during beta
+            Des tarifs simples, gratuit pendant la bêta
           </h2>
-        </div>
-        <div className="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-3">
+        </Reveal>
+        <RevealGroup className="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-3">
           {PLANS.map((plan) => (
-            <div
+            <RevealItem
               key={plan.name}
               className={cn(
                 "flex flex-col rounded-lg border p-6",
@@ -51,7 +52,7 @@ export function Pricing() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">{plan.name}</span>
-                {plan.highlighted && <Badge variant="gold">Beta</Badge>}
+                {plan.highlighted && <Badge variant="gold">Bêta</Badge>}
               </div>
               <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-3xl font-semibold text-text-primary">{plan.price}</span>
@@ -72,9 +73,9 @@ export function Pricing() {
               >
                 {plan.cta}
               </Button>
-            </div>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       </div>
     </section>
   );

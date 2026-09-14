@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowRight, TrendingUp, Globe2, Flag as FlagIcon, Award, Link2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -11,8 +12,9 @@ import {
   nextRevenueMilestone,
 } from "@/services/revenue.service";
 import { getUserRank, getRankMovement } from "@/services/leaderboard.service";
-import { getUserAchievements } from "@/services/achievement.service";
+import { getUserAchievements, getAllAchievementCatalog } from "@/services/achievement.service";
 import { getActiveChallengesWithProgress } from "@/services/challenge.service";
+import { getLatestUnreadOfType } from "@/services/notification.service";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -20,9 +22,13 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
+import { StripeStatusToast } from "@/components/dashboard/StripeStatusToast";
+import { AchievementUnlockGate } from "@/components/dashboard/AchievementUnlockGate";
+import { RankTransition } from "@/components/motion/RankTransition";
+import { BUSINESS_CATEGORIES } from "@/lib/constants";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export const metadata: Metadata = { title: "Tableau de bord" };
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -40,13 +46,15 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const [history, { current, previous }, verificationStatus, achievements, challenges] = await Promise.all([
-    getRevenueHistory(user.id, 12),
-    getCurrentRevenue(user.id),
-    getVerificationStatus(user.id),
-    getUserAchievements(user.id),
-    getActiveChallengesWithProgress(user.id),
-  ]);
+  const [history, { current, previous }, verificationStatus, achievements, challenges, unreadAchievement] =
+    await Promise.all([
+      getRevenueHistory(user.id, 12),
+      getCurrentRevenue(user.id),
+      getVerificationStatus(user.id),
+      getUserAchievements(user.id),
+      getActiveChallengesWithProgress(user.id),
+      getLatestUnreadOfType(user.id, "achievement_unlocked"),
+    ]);
 
   const growth = calculateMonthlyGrowth(current?.amountCents ?? null, previous?.amountCents ?? null);
   const isVerified = verificationStatus === "verified";
@@ -58,15 +66,41 @@ export default async function DashboardPage() {
     isVerified && globalRank ? await getRankMovement(user.id, "global", "", globalRank.rank) : null;
 
   const milestone = nextRevenueMilestone(current?.amountCents ?? null);
+  const remainingToMilestone = current ? milestone.targetCents - current.amountCents : milestone.targetCents;
+
+  let unlockedAchievement: { id: string; name: string; description: string } | null = null;
+  if (unreadAchievement) {
+    const achievementId = unreadAchievement.metadata.achievement_id as string | undefined;
+    if (achievementId) {
+      const catalog = await getAllAchievementCatalog();
+      const def = catalog.find((a) => a.id === achievementId);
+      if (def) unlockedAchievement = { id: def.id, name: def.name, description: def.description };
+    }
+  }
 
   return (
     <div className="flex flex-col gap-8">
+      <Suspense fallback={null}>
+        <StripeStatusToast />
+      </Suspense>
+
+      {unlockedAchievement && (
+        <AchievementUnlockGate
+          notificationId={unreadAchievement!.id}
+          achievementName={unlockedAchievement.name}
+          achievementDescription={unlockedAchievement.description}
+          username={profile.username}
+        />
+      )}
+
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
-          Good {timeOfDay()}, {profile.firstName ?? profile.username}.
+          {timeOfDayGreeting()}, {profile.firstName ?? profile.username} 👋
         </h1>
         <p className="mt-1 text-sm text-text-secondary">
-          {business ? `${business.name} · ${categoryLabel(business.category)}` : "Complete your business profile to get started."}
+          {business
+            ? `${business.name} · ${categoryLabel(business.category)}`
+            : "Voici l'évolution de ton activité."}
         </p>
       </div>
 
@@ -74,39 +108,45 @@ export default async function DashboardPage() {
         <Card className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-base font-semibold text-text-primary">
-              Your performance hasn&apos;t been verified yet.
+              Ton activité n&apos;est pas encore vérifiée.
             </h2>
             <p className="mt-1 text-sm text-text-secondary">
-              Connect Stripe in test mode to verify your revenue and appear on the leaderboard.
+              Connecte Stripe en mode test pour vérifier tes revenus et apparaître au classement.
             </p>
           </div>
           <Button href="/api/stripe/connect" className="shrink-0">
-            <Link2 className="h-4 w-4" /> Connect Stripe
+            <Link2 className="h-4 w-4" /> Connecter Stripe
           </Button>
         </Card>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Monthly Revenue"
+          label="Revenus mensuels"
           value={current ? formatCurrency(current.amountCents) : "—"}
           icon={TrendingUp}
           accent
         />
         <StatCard
-          label="Growth"
+          label="Croissance"
           value={growth != null ? formatPercent(growth) : "—"}
           trendPositive={growth != null ? growth >= 0 : undefined}
         />
         <StatCard
-          label="Global Rank"
-          value={globalRank ? `#${globalRank.rank}` : "—"}
+          label="Classement mondial"
+          value={
+            globalRank ? (
+              <RankTransition from={movement ? globalRank.rank + movement : null} to={globalRank.rank} />
+            ) : (
+              "—"
+            )
+          }
           icon={Globe2}
           trend={movement ? rankMovementLabel(movement) : undefined}
           trendPositive={movement != null ? movement > 0 : undefined}
         />
         <StatCard
-          label={profile.country ? `${profile.country} Rank` : "Country Rank"}
+          label={profile.country ? `Classement ${profile.country}` : "Classement pays"}
           value={countryRank ? `#${countryRank.rank}` : "—"}
           icon={FlagIcon}
         />
@@ -115,9 +155,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="p-6 lg:col-span-2" elevated>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
-              Performance
-            </h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Performance</h2>
             <VerificationBadge status={verificationStatus} />
           </div>
           <div className="mt-4">
@@ -125,17 +163,15 @@ export default async function DashboardPage() {
               <PerformanceChart data={history} />
             ) : (
               <EmptyState
-                title="No revenue history yet."
-                description="Once you connect a revenue source, your monthly performance will appear here."
+                title="Pas encore d'historique de revenus."
+                description="Une fois ta source de revenus connectée, ta performance mensuelle apparaîtra ici."
               />
             )}
           </div>
         </Card>
 
         <Card className="p-6" elevated>
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
-            Next Milestone
-          </h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Prochain palier</h2>
           <div className="mt-4">
             <div className="flex items-baseline justify-between">
               <span className="text-lg font-semibold text-text-primary">
@@ -144,15 +180,22 @@ export default async function DashboardPage() {
               <span className="text-sm text-text-muted">/ {formatCurrency(milestone.targetCents)}</span>
             </div>
             <ProgressBar percent={milestone.progressPercent} className="mt-3" />
-            <p className="mt-3 text-sm text-text-secondary">
-              {formatCurrency(milestone.targetCents)} Monthly Revenue
-            </p>
-            <p className="text-xs text-text-muted">{milestone.progressPercent.toFixed(0)}% complete</p>
+            {current && remainingToMilestone > 0 ? (
+              <p className="mt-3 text-sm text-text-secondary">
+                Encore <span className="font-medium text-gold">{formatCurrency(remainingToMilestone)}</span> pour
+                atteindre ton prochain palier.
+              </p>
+            ) : (
+              <p className="mt-3 text-sm text-text-secondary">
+                Palier des {formatCurrency(milestone.targetCents)} mensuels
+              </p>
+            )}
+            <p className="text-xs text-text-muted">{milestone.progressPercent.toFixed(0)} % atteint</p>
             <Link
               href="/challenges"
               className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-gold hover:text-gold-light"
             >
-              Keep climbing <ArrowRight className="h-3.5 w-3.5" />
+              Continue de grimper <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         </Card>
@@ -161,22 +204,20 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="p-6" elevated>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
-              Active Challenges
-            </h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Défis en cours</h2>
             <Link href="/challenges" className="text-xs font-medium text-gold hover:text-gold-light">
-              View all
+              Tout voir
             </Link>
           </div>
           <div className="mt-4 flex flex-col gap-3">
             {challenges.length === 0 ? (
-              <EmptyState title="New challenges arrive every season." />
+              <EmptyState title="Le prochain défi arrive bientôt." />
             ) : (
               challenges.slice(0, 3).map((c) => (
                 <div key={c.id} className="rounded-md border border-border bg-card p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-text-primary">{c.title}</span>
-                    <span className="text-xs text-text-muted">{c.progress.toFixed(0)}%</span>
+                    <span className="text-xs text-text-muted">{c.progress.toFixed(0)} %</span>
                   </div>
                   <ProgressBar percent={c.progress} className="mt-2" goldFill={c.status === "completed"} />
                 </div>
@@ -187,16 +228,14 @@ export default async function DashboardPage() {
 
         <Card className="p-6" elevated>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
-              Achievements
-            </h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Accomplissements</h2>
             <Link href="/achievements" className="text-xs font-medium text-gold hover:text-gold-light">
-              View all
+              Tout voir
             </Link>
           </div>
           <div className="mt-4">
             {achievements.length === 0 ? (
-              <EmptyState icon={Award} title="Your first achievement is waiting." />
+              <EmptyState icon={Award} title="Ton premier accomplissement t'attend." />
             ) : (
               <div className="flex flex-wrap gap-3">
                 {achievements.slice(0, 6).map((a) => (
@@ -218,18 +257,17 @@ export default async function DashboardPage() {
   );
 }
 
-function timeOfDay() {
+function timeOfDayGreeting() {
   const h = new Date().getHours();
-  if (h < 12) return "morning";
-  if (h < 18) return "afternoon";
-  return "evening";
+  if (h < 18) return "Bonjour";
+  return "Bonsoir";
 }
 
 function rankMovementLabel(movement: number) {
-  if (movement === 0) return "No change";
-  return movement > 0 ? `↑ ${movement} positions` : `↓ ${Math.abs(movement)} positions`;
+  if (movement === 0) return "Aucun changement";
+  return movement > 0 ? `↑ ${movement} places` : `↓ ${Math.abs(movement)} places`;
 }
 
 function categoryLabel(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
+  return BUSINESS_CATEGORIES.find((c) => c.value === value)?.label ?? value;
 }

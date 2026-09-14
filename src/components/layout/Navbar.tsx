@@ -6,22 +6,27 @@ import { useState } from "react";
 import { LayoutDashboard, Trophy, Flag, Award, User, Settings, Menu, X, LogOut } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { NotificationBell, type NotificationItem } from "./NotificationBell";
 
 const LINKS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { href: "/challenges", label: "Challenges", icon: Flag },
-  { href: "/achievements", label: "Achievements", icon: Award },
+  { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+  { href: "/leaderboard", label: "Classement", icon: Trophy },
+  { href: "/challenges", label: "Défis", icon: Flag },
+  { href: "/achievements", label: "Accomplissements", icon: Award },
 ];
 
 export function Navbar({
   username,
   avatarUrl,
   firstName,
+  notifications,
+  unreadCount,
 }: {
   username: string;
   avatarUrl: string | null;
   firstName: string | null;
+  notifications: NotificationItem[];
+  unreadCount: number;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -62,16 +67,17 @@ export function Navbar({
           </div>
         </div>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden items-center gap-1 lg:flex">
+          <NotificationBell initial={notifications} unreadCount={unreadCount} />
           <Link
             href="/settings"
+            aria-label="Réglages"
             className={cn(
               "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
               pathname.startsWith("/settings") ? "text-gold" : "text-text-secondary hover:text-text-primary",
             )}
           >
             <Settings className="h-4 w-4" />
-            Settings
           </Link>
           <Link href={`/profile/${username}`} className="flex items-center gap-2 rounded-md py-1.5 pl-1.5 pr-3 text-sm font-medium text-text-secondary hover:text-text-primary">
             <Avatar avatarUrl={avatarUrl} firstName={firstName} username={username} />
@@ -79,51 +85,57 @@ export function Navbar({
           </Link>
           <button
             onClick={handleLogout}
-            aria-label="Log out"
+            aria-label="Se déconnecter"
             className="rounded-md p-2 text-text-muted hover:text-error"
           >
             <LogOut className="h-4 w-4" />
           </button>
         </div>
 
-        <button
-          className="rounded-md p-2 text-text-secondary lg:hidden"
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="flex items-center gap-1 lg:hidden">
+          <NotificationBell initial={notifications} unreadCount={unreadCount} />
+          <button
+            className="rounded-md p-2 text-text-secondary"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label="Ouvrir le menu"
+            aria-expanded={mobileOpen}
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </nav>
 
       {mobileOpen && (
         <div className="border-t border-border bg-bg-primary px-4 pb-4 pt-2 lg:hidden">
           <div className="flex flex-col gap-1">
-            {[...LINKS, { href: "/profile/" + username, label: "Profile", icon: User }, { href: "/settings", label: "Settings", icon: Settings }].map(
-              (link) => {
-                const active = pathname.startsWith(link.href);
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium",
-                      active ? "bg-card text-gold" : "text-text-secondary",
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {link.label}
-                  </Link>
-                );
-              },
-            )}
+            {[
+              ...LINKS,
+              { href: "/profile/" + username, label: "Mon profil", icon: User },
+              { href: "/settings", label: "Réglages", icon: Settings },
+            ].map((link) => {
+              const active = pathname.startsWith(link.href);
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium",
+                    active ? "bg-card text-gold" : "text-text-secondary",
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {link.label}
+                </Link>
+              );
+            })}
             <button
               onClick={handleLogout}
               className="mt-2 flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-medium text-error"
             >
               <LogOut className="h-4 w-4" />
-              Log out
+              Se déconnecter
             </button>
           </div>
         </div>

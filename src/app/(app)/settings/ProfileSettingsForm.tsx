@@ -21,21 +21,21 @@ export function ProfileSettingsForm({
     startTransition(async () => {
       const result = await updateProfileAction(form);
       if (!result.success) return toast.show(result.error, "error");
-      toast.show("Profile updated.", "success");
+      toast.show("Profil mis à jour.", "success");
     });
   }
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-3">
-        <Field label="First name">
+        <Field label="Prénom">
           <Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
         </Field>
-        <Field label="Last name">
+        <Field label="Nom">
           <Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
         </Field>
       </div>
-      <Field label="Country">
+      <Field label="Pays">
         <Select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}>
           {COUNTRIES.map((c) => (
             <option key={c.value} value={c.value}>
@@ -53,7 +53,7 @@ export function ProfileSettingsForm({
         />
       </Field>
       <Button type="submit" disabled={pending} className="self-start">
-        Save changes
+        Enregistrer
       </Button>
     </form>
   );

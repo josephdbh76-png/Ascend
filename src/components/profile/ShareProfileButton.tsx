@@ -27,7 +27,7 @@ export function ShareProfileButton({ username }: { username: string }) {
   return (
     <Button variant="secondary" size="sm" onClick={share}>
       {copied ? <Check className="h-3.5 w-3.5" /> : <Share2 className="h-3.5 w-3.5" />}
-      {copied ? "Copied" : "Share Profile"}
+      {copied ? "Lien copié" : "Partager mon profil"}
     </Button>
   );
 }

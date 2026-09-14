@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 import { createClient } from "@/lib/supabase/client";
+import { toFriendlyAuthError } from "@/lib/errors";
 
 export default function ResetPasswordConfirmPage() {
   const router = useRouter();
@@ -17,13 +18,13 @@ export default function ResetPasswordConfirmPage() {
     e.preventDefault();
     setError(null);
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError("Le mot de passe doit contenir au moins 8 caractères.");
       return;
     }
     startTransition(async () => {
       const supabase = createClient();
       const { error } = await supabase.auth.updateUser({ password });
-      if (error) return setError(error.message);
+      if (error) return setError(toFriendlyAuthError(error.message));
       router.push("/dashboard");
       router.refresh();
     });
@@ -32,14 +33,14 @@ export default function ResetPasswordConfirmPage() {
   return (
     <form onSubmit={submit} className="animate-fade-up flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold text-text-primary">Set a new password</h1>
+        <h1 className="text-xl font-semibold text-text-primary">Définis un nouveau mot de passe</h1>
       </div>
       {error && (
         <div className="rounded-md border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
           {error}
         </div>
       )}
-      <Field label="New password" htmlFor="password" hint="At least 8 characters.">
+      <Field label="Nouveau mot de passe" htmlFor="password" hint="Au moins 8 caractères.">
         <Input
           id="password"
           type="password"
@@ -50,7 +51,7 @@ export default function ResetPasswordConfirmPage() {
         />
       </Field>
       <Button type="submit" disabled={pending}>
-        Update password <ArrowRight className="h-4 w-4" />
+        Mettre à jour <ArrowRight className="h-4 w-4" />
       </Button>
     </form>
   );

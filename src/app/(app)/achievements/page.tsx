@@ -6,7 +6,7 @@ import { TrophyCard } from "@/components/achievements/TrophyCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Trophy } from "lucide-react";
 
-export const metadata: Metadata = { title: "Achievements" };
+export const metadata: Metadata = { title: "Accomplissements" };
 
 export default async function AchievementsPage() {
   const supabase = await createClient();
@@ -31,16 +31,16 @@ export default async function AchievementsPage() {
   return (
     <div className="flex flex-col gap-10">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Achievements</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Accomplissements</h1>
         <p className="mt-1 text-sm text-text-secondary">
-          Collectible milestones that track your progress on ASCEND.
+          Les résultats méritent d&apos;être reconnus. Voici tes trophées et accomplissements sur ASCEND.
         </p>
       </div>
 
       <section>
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Trophies</h2>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Trophées</h2>
         {(trophyRows?.length ?? 0) === 0 ? (
-          <EmptyState icon={Trophy} title="No trophies yet." description="Trophies are rare — earned through rank, growth and season prestige." />
+          <EmptyState icon={Trophy} title="Pas encore de trophée." description="Les trophées sont rares — ils récompensent le classement, la croissance et le prestige de saison." />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {(trophyRows ?? [])
@@ -55,7 +55,7 @@ export default async function AchievementsPage() {
 
       <section>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
-          Achievements ({earned.length}/{catalog.length})
+          Accomplissements ({earned.length}/{catalog.length})
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {catalog.map((a) => (

@@ -29,20 +29,20 @@ export function ChallengeCard({ challenge }: { challenge: ChallengeProgress }) {
         </div>
         {isCompleted ? (
           <Badge variant="success">
-            <CheckCircle2 className="h-3 w-3" /> Done
+            <CheckCircle2 className="h-3 w-3" /> Terminé
           </Badge>
         ) : isComingSoon ? (
-          <Badge variant="neutral">Coming Soon</Badge>
+          <Badge variant="neutral">Bientôt disponible</Badge>
         ) : (
-          <Badge variant="gold">Active</Badge>
+          <Badge variant="gold">En cours</Badge>
         )}
       </div>
 
       {!isComingSoon && (
         <div>
           <div className="flex items-center justify-between text-xs text-text-muted">
-            <span>Progress</span>
-            <span className="tabular-nums">{Math.min(100, challenge.progress).toFixed(0)}%</span>
+            <span>Progression</span>
+            <span className="tabular-nums">{Math.min(100, challenge.progress).toFixed(0)} %</span>
           </div>
           <ProgressBar percent={challenge.progress} className="mt-1.5" />
         </div>
@@ -51,11 +51,11 @@ export function ChallengeCard({ challenge }: { challenge: ChallengeProgress }) {
       <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-text-muted">
         <span className="flex items-center gap-1.5">
           <Clock className="h-3.5 w-3.5" />
-          {isComingSoon ? "TBA" : remaining > 0 ? `${remaining} days left` : "Ended"}
+          {isComingSoon ? "À venir" : remaining > 0 ? `${remaining} jours restants` : "Terminé"}
         </span>
         {challenge.rewardAchievementId && (
           <span className="flex items-center gap-1.5">
-            <Gift className="h-3.5 w-3.5 text-gold" /> Achievement reward
+            <Gift className="h-3.5 w-3.5 text-gold" /> Accomplissement à la clé
           </span>
         )}
       </div>

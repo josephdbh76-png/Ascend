@@ -2,7 +2,7 @@ import { CheckCircle2, MapPin, Calendar, Globe2, Flag as FlagIcon } from "lucide
 import { Badge } from "@/components/ui/Badge";
 import { ShareProfileButton } from "./ShareProfileButton";
 import { formatCurrency, formatCurrencyRange, formatPercent, initials } from "@/lib/utils";
-import { COUNTRIES } from "@/lib/constants";
+import { COUNTRIES, BUSINESS_CATEGORIES } from "@/lib/constants";
 import type { PublicProfile } from "@/types";
 
 function countryLabel(code: string | null) {
@@ -10,14 +10,18 @@ function countryLabel(code: string | null) {
   return COUNTRIES.find((c) => c.value === code)?.label ?? code;
 }
 
+function categoryLabel(value: string) {
+  return BUSINESS_CATEGORIES.find((c) => c.value === value)?.label ?? value;
+}
+
 export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; isOwner: boolean }) {
   const revenueDisplay =
     profile.revenueVisibility === "exact" && profile.revenueDisplayCents != null
-      ? `${formatCurrency(profile.revenueDisplayCents)} / month`
+      ? `${formatCurrency(profile.revenueDisplayCents)} / mois`
       : profile.revenueVisibility === "range" &&
           profile.revenueRangeMinCents != null &&
           profile.revenueRangeMaxCents != null
-        ? `${formatCurrencyRange(profile.revenueRangeMinCents, profile.revenueRangeMaxCents)} / month`
+        ? `${formatCurrencyRange(profile.revenueRangeMinCents, profile.revenueRangeMaxCents)} / mois`
         : null;
 
   return (
@@ -38,9 +42,9 @@ export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; is
               {profile.firstName} {profile.lastName}
             </h1>
             {profile.foundingMemberNumber && (
-              <Badge variant="exclusive">Founding Member #{String(profile.foundingMemberNumber).padStart(3, "0")}</Badge>
+              <Badge variant="exclusive">Membre fondateur #{String(profile.foundingMemberNumber).padStart(3, "0")}</Badge>
             )}
-            {profile.isDemo && <Badge variant="demo">Demo</Badge>}
+            {profile.isDemo && <Badge variant="demo">Démo</Badge>}
           </div>
           <p className="text-sm text-text-muted">@{profile.username}</p>
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-secondary">
@@ -49,9 +53,9 @@ export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; is
                 <MapPin className="h-3.5 w-3.5" /> {countryLabel(profile.country)}
               </span>
             )}
-            <span>{profile.businessCategory.charAt(0).toUpperCase() + profile.businessCategory.slice(1)} Founder</span>
+            <span>Fondateur {categoryLabel(profile.businessCategory)}</span>
             <span className="flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5" /> Member since {new Date(profile.memberSince).getFullYear()}
+              <Calendar className="h-3.5 w-3.5" /> Membre depuis {new Date(profile.memberSince).getFullYear()}
             </span>
           </div>
         </div>
@@ -59,7 +63,7 @@ export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; is
         <div className="flex w-full shrink-0 gap-2 sm:w-auto">
           {isOwner && (
             <Badge variant="neutral" className="hidden sm:inline-flex">
-              Your profile
+              Ton profil
             </Badge>
           )}
           <ShareProfileButton username={profile.username} />
@@ -67,19 +71,19 @@ export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; is
       </div>
 
       <div className="grid grid-cols-2 gap-3 border-t border-border pt-6 sm:grid-cols-4">
-        <Stat label="Verification">
+        <Stat label="Vérification">
           {profile.revenueVerified ? (
             <span className="flex items-center gap-1.5 text-success">
-              <CheckCircle2 className="h-4 w-4" /> Verified
+              <CheckCircle2 className="h-4 w-4" /> Vérifié
             </span>
           ) : (
-            <span className="text-text-muted">Unverified</span>
+            <span className="text-text-muted">Non vérifié</span>
           )}
         </Stat>
-        <Stat label="Monthly Revenue">
-          <span className="tabular-nums text-text-primary">{revenueDisplay ?? "Private"}</span>
+        <Stat label="Revenus mensuels">
+          <span className="tabular-nums text-text-primary">{revenueDisplay ?? "Privé"}</span>
         </Stat>
-        <Stat label="Growth">
+        <Stat label="Croissance">
           {profile.growthPercent != null ? (
             <span className={profile.growthPercent >= 0 ? "text-success" : "text-error"}>
               {formatPercent(profile.growthPercent)}
@@ -88,7 +92,7 @@ export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; is
             <span className="text-text-muted">—</span>
           )}
         </Stat>
-        <Stat label="Rank">
+        <Stat label="Classement">
           <span className="flex items-center gap-3">
             {profile.globalRank && (
               <span className="flex items-center gap-1 text-gold">
@@ -100,7 +104,7 @@ export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; is
                 <FlagIcon className="h-3.5 w-3.5" /> #{profile.countryRank}
               </span>
             )}
-            {!profile.globalRank && !profile.countryRank && <span className="text-text-muted">Unranked</span>}
+            {!profile.globalRank && !profile.countryRank && <span className="text-text-muted">Non classé</span>}
           </span>
         </Stat>
       </div>

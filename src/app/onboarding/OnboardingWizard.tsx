@@ -86,36 +86,36 @@ export function OnboardingWizard({
       {step === 1 && (
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-text-primary">Tell us about your business</h1>
-            <p className="mt-1 text-sm text-text-secondary">This builds your public founder profile.</p>
+            <h1 className="text-xl font-semibold text-text-primary">Que construis-tu ?</h1>
+            <p className="mt-1 text-sm text-text-secondary">Cela façonne ton profil public de fondateur.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="First name" htmlFor="firstName">
+            <Field label="Prénom" htmlFor="firstName">
               <Input id="firstName" value={profile.firstName} onChange={(e) => setProfile({ ...profile, firstName: e.target.value })} />
             </Field>
-            <Field label="Last name" htmlFor="lastName">
+            <Field label="Nom" htmlFor="lastName">
               <Input id="lastName" value={profile.lastName} onChange={(e) => setProfile({ ...profile, lastName: e.target.value })} />
             </Field>
           </div>
-          <Field label="Country" htmlFor="country">
+          <Field label="Pays" htmlFor="country">
             <Select id="country" value={profile.country} onChange={(e) => setProfile({ ...profile, country: e.target.value })}>
               {COUNTRIES.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </Select>
           </Field>
-          <Field label="Business category" htmlFor="category">
+          <Field label="Catégorie d'activité" htmlFor="category">
             <Select id="category" value={profile.category} onChange={(e) => setProfile({ ...profile, category: e.target.value })}>
               {BUSINESS_CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </Select>
           </Field>
-          <Field label="Business name" htmlFor="businessName">
+          <Field label="Nom de l'activité" htmlFor="businessName">
             <Input id="businessName" value={profile.businessName} onChange={(e) => setProfile({ ...profile, businessName: e.target.value })} placeholder="Acme Inc." />
           </Field>
           <Button onClick={submitProfile} disabled={pending} className="mt-2">
-            Continue <ArrowRight className="h-4 w-4" />
+            Continuer <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
       )}
@@ -123,14 +123,14 @@ export function OnboardingWizard({
       {step === 2 && (
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-text-primary">Add a short bio</h1>
-            <p className="mt-1 text-sm text-text-secondary">Optional — you can always add this later.</p>
+            <h1 className="text-xl font-semibold text-text-primary">Ajoute une courte bio</h1>
+            <p className="mt-1 text-sm text-text-secondary">Optionnel — tu pourras toujours l&apos;ajouter plus tard.</p>
           </div>
           <Field label="Bio" htmlFor="bio" hint={`${bio.length}/280`}>
-            <Textarea id="bio" rows={4} maxLength={280} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Building the future of..." />
+            <Textarea id="bio" rows={4} maxLength={280} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Je construis..." />
           </Field>
           <Button onClick={submitBio} disabled={pending} className="mt-2">
-            Continue <ArrowRight className="h-4 w-4" />
+            Continuer <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
       )}
@@ -138,16 +138,16 @@ export function OnboardingWizard({
       {step === 3 && (
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-text-primary">Connect your business</h1>
+            <h1 className="text-xl font-semibold text-text-primary">Vérifie tes performances</h1>
             <p className="mt-1 text-sm text-text-secondary">
-              Connect Stripe (test mode) to verify your performance and appear on the leaderboard.
+              Connecte Stripe (mode test) pour vérifier ton activité et apparaître au classement.
             </p>
           </div>
           <Button onClick={() => skipOrConnect(true)} disabled={pending}>
-            Connect Stripe (test mode) <ArrowRight className="h-4 w-4" />
+            Connecter Stripe (mode test) <ArrowRight className="h-4 w-4" />
           </Button>
           <Button onClick={() => skipOrConnect(false)} disabled={pending} variant="secondary">
-            Skip for now
+            Passer cette étape
           </Button>
         </div>
       )}

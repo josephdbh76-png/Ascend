@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import { Crown } from "lucide-react";
 import { cn, formatCurrency, formatPercent, initials } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
+import { BUSINESS_CATEGORIES } from "@/lib/constants";
 import type { LeaderboardRow } from "@/types/database.types";
 
 const RANK_COLORS: Record<number, string> = {
@@ -10,11 +14,18 @@ const RANK_COLORS: Record<number, string> = {
   3: "text-rank-3",
 };
 
+function categoryLabel(value: string) {
+  return BUSINESS_CATEGORIES.find((c) => c.value === value)?.label ?? value;
+}
+
 export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
+  const reduced = useReducedMotion();
+
   if (rows.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border-strong px-6 py-14 text-center text-sm text-text-secondary">
-        No verified founders in this category yet. Be the first to connect and claim the top spot.
+        Aucun fondateur vérifié dans cette catégorie pour l&apos;instant. Sois le premier à te connecter et à
+        prendre la tête du classement.
       </div>
     );
   }
@@ -24,20 +35,25 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
       <table className="w-full min-w-[640px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-border bg-bg-secondary text-left text-xs uppercase tracking-wide text-text-muted">
-            <th className="w-16 px-4 py-3 font-medium">Rank</th>
-            <th className="px-4 py-3 font-medium">Founder</th>
-            <th className="px-4 py-3 font-medium">Business</th>
-            <th className="px-4 py-3 text-right font-medium">Monthly Revenue</th>
-            <th className="px-4 py-3 text-right font-medium">Growth</th>
+            <th className="w-16 px-4 py-3 font-medium">Rang</th>
+            <th className="px-4 py-3 font-medium">Entrepreneur</th>
+            <th className="px-4 py-3 font-medium">Activité</th>
+            <th className="px-4 py-3 text-right font-medium">Revenus mensuels</th>
+            <th className="px-4 py-3 text-right font-medium">Croissance</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr
+          {rows.map((row, i) => (
+            <motion.tr
               key={row.user_id}
+              initial={reduced ? undefined : { opacity: 0, y: 8 }}
+              animate={reduced ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: Math.min(i, 12) * 0.035, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
                 "border-b border-border last:border-0 transition-colors",
-                row.is_current_user ? "bg-gold/5" : "hover:bg-card",
+                row.is_current_user
+                  ? "bg-gold/5 shadow-[inset_0_0_0_1px_rgba(245,196,81,0.35)]"
+                  : "hover:bg-card",
               )}
             >
               <td className="px-4 py-3.5">
@@ -60,8 +76,8 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
                   <span className="flex flex-col">
                     <span className="flex items-center gap-1.5 font-medium text-text-primary">
                       {row.first_name} {row.last_name}
-                      {row.is_current_user && <Badge variant="gold">You</Badge>}
-                      {row.is_demo && <Badge variant="demo">Demo</Badge>}
+                      {row.is_current_user && <Badge variant="gold">Toi</Badge>}
+                      {row.is_demo && <Badge variant="demo">Démo</Badge>}
                     </span>
                     <span className="text-xs text-text-muted">@{row.username}</span>
                   </span>
@@ -69,16 +85,14 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
               </td>
               <td className="px-4 py-3.5 text-text-secondary">
                 {row.business_name}
-                <span className="ml-1.5 text-xs text-text-muted">
-                  · {row.business_category.charAt(0).toUpperCase() + row.business_category.slice(1)}
-                </span>
+                <span className="ml-1.5 text-xs text-text-muted">· {categoryLabel(row.business_category)}</span>
               </td>
               <td className="px-4 py-3.5 text-right font-medium tabular-nums text-text-primary">
                 {row.revenue_visibility === "exact" && row.revenue_display_cents != null
                   ? formatCurrency(row.revenue_display_cents)
                   : row.revenue_visibility === "range"
-                    ? "Verified"
-                    : "Private"}
+                    ? "Vérifié"
+                    : "Privé"}
               </td>
               <td
                 className={cn(
@@ -92,7 +106,7 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
               >
                 {row.growth_percent != null ? formatPercent(row.growth_percent) : "—"}
               </td>
-            </tr>
+            </motion.tr>
           ))}
         </tbody>
       </table>
