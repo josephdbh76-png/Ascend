@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe, tierForPriceId } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { grantPurchasedTitle } from "@/services/title.service";
 
 export async function POST(request: NextRequest) {
   const signature = request.headers.get("stripe-signature");
@@ -29,6 +30,9 @@ export async function POST(request: NextRequest) {
         if (session.mode === "subscription" && typeof session.subscription === "string") {
           const subscription = await stripe.subscriptions.retrieve(session.subscription);
           await syncSubscriptionFromStripe(subscription);
+        } else if (session.mode === "payment" && session.metadata?.kind === "title_purchase") {
+          const { user_id: userId, title_id: titleId } = session.metadata;
+          if (userId && titleId) await grantPurchasedTitle(userId, titleId);
         }
         break;
       }

@@ -1,6 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotification } from "@/services/notification.service";
+import { getStripe } from "@/lib/stripe";
 import type { TitleRow, EarnedTitle } from "@/types";
 
 export async function getTitleCatalog(): Promise<TitleRow[]> {
@@ -137,9 +139,82 @@ export async function evaluateEarnedTitles(
   return newlyEarned;
 }
 
-export async function purchaseExclusiveTitle(titleId: string): Promise<boolean> {
+export interface PurchasableTitle {
+  id: string;
+  name: string;
+  priceCents: number;
+  stripePriceId: string | null;
+  remainingSupply: number | null;
+}
+
+export async function getPurchasableTitle(titleId: string): Promise<PurchasableTitle | null> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("purchase_exclusive_title", { p_title_id: titleId });
+  const { data } = await supabase
+    .from("titles")
+    .select("id, name, type, price_cents, stripe_price_id, remaining_supply")
+    .eq("id", titleId)
+    .eq("type", "purchasable")
+    .maybeSingle();
+  if (!data || data.price_cents == null) return null;
+
+  return {
+    id: data.id,
+    name: data.name,
+    priceCents: data.price_cents,
+    stripePriceId: data.stripe_price_id,
+    remainingSupply: data.remaining_supply,
+  };
+}
+
+/** Called only from the Stripe webhook after a title purchase is paid. */
+export async function grantPurchasedTitle(userId: string, titleId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc("grant_purchased_title", { p_user_id: userId, p_title_id: titleId });
   if (error) throw new Error(error.message);
+
+  if (data) {
+    const { data: def } = await admin.from("titles").select("name").eq("id", titleId).maybeSingle();
+    await createNotification({
+      userId,
+      type: "achievement_unlocked",
+      title: "Titre débloqué",
+      body: `Ton paiement a été confirmé — « ${def?.name ?? titleId} » est maintenant sur ton profil.`,
+      metadata: { title_id: titleId },
+    });
+  }
+
   return data ?? false;
+}
+
+/**
+ * One-time (idempotent) setup: creates a real Stripe Product + Price for
+ * every purchasable title that doesn't have one yet. Safe to re-run — it
+ * skips titles that already have a stripe_price_id, so it also picks up
+ * any new purchasable title added to the catalog later.
+ */
+export async function syncPurchasableTitleStripeProducts(): Promise<{ created: string[] }> {
+  const admin = createAdminClient();
+  const { data: titles, error } = await admin
+    .from("titles")
+    .select("id, name, description, price_cents, stripe_price_id")
+    .eq("type", "purchasable")
+    .is("stripe_price_id", null);
+  if (error) throw new Error(error.message);
+
+  const stripe = getStripe();
+  const created: string[] = [];
+
+  for (const title of titles ?? []) {
+    if (title.price_cents == null) continue;
+    const product = await stripe.products.create({ name: `ASCEND — ${title.name}`, description: title.description });
+    const price = await stripe.prices.create({
+      product: product.id,
+      unit_amount: title.price_cents,
+      currency: "eur",
+    });
+    await admin.from("titles").update({ stripe_price_id: price.id }).eq("id", title.id);
+    created.push(title.id);
+  }
+
+  return { created };
 }

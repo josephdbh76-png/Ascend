@@ -161,8 +161,8 @@ export function TitleCard({
               )}
             </Button>
           ) : isPurchasable ? (
-            <Button size="sm" className="w-full" disabled>
-              {soldOut ? "Épuisé" : "Bientôt disponible"}
+            <Button href={soldOut ? undefined : `/api/stripe/titles/checkout?title=${id}`} size="sm" className="w-full" disabled={soldOut}>
+              {soldOut ? "Épuisé" : `Acheter — ${formatCurrency(priceCents!)}`}
             </Button>
           ) : (
             <Button variant="secondary" size="sm" className="w-full" disabled>

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { isCurrentUserAdmin, adminSetTier, adminSetIsAdmin } from "@/services/admin.service";
+import { syncPurchasableTitleStripeProducts } from "@/services/title.service";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { SubscriptionTier } from "@/types/database.types";
 
@@ -30,4 +31,15 @@ export async function adminSetIsAdminAction(targetUserId: string, isAdmin: boole
   }
   revalidatePath("/app/admin");
   return { success: true, data: undefined };
+}
+
+export async function adminSyncTitleStripeProductsAction(): Promise<ActionResult<{ created: string[] }>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+
+  try {
+    const result = await syncPurchasableTitleStripeProducts();
+    return { success: true, data: result };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
 }

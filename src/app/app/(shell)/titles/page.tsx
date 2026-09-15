@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getTitleCatalog, getUserTitles } from "@/services/title.service";
 import { TitlesTabs } from "./TitlesTabs";
+import { PurchaseStatusToast } from "./PurchaseStatusToast";
 
 export const metadata: Metadata = { title: "Titres" };
 
@@ -16,6 +18,9 @@ export default async function TitlesPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      <Suspense fallback={null}>
+        <PurchaseStatusToast />
+      </Suspense>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Titres</h1>
         <p className="mt-1 text-sm text-text-secondary">

@@ -307,6 +307,7 @@ export interface Database {
           price_cents: number | null;
           supply: number | null;
           remaining_supply: number | null;
+          stripe_price_id: string | null;
           requirement: Record<string, unknown>;
           created_at: string;
         };
@@ -416,6 +417,10 @@ export interface Database {
       };
       purchase_exclusive_title: {
         Args: { p_title_id: string };
+        Returns: boolean;
+      };
+      grant_purchased_title: {
+        Args: { p_user_id: string; p_title_id: string };
         Returns: boolean;
       };
     };
