@@ -32,6 +32,7 @@ export function MessageThread({
 
   const awaitingReply = status === "pending" && thread.isRequester && messages.some((m) => m.senderId === currentUserId);
   const canReplyToAccept = status === "pending" && !thread.isRequester;
+  const firstContact = status === "pending" && thread.isRequester && messages.length === 0;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -88,6 +89,17 @@ export function MessageThread({
       </div>
 
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto py-4">
+        {firstContact && (
+          <div className="mx-auto mb-2 flex max-w-sm flex-col items-center gap-1.5 rounded-md border border-gold/30 bg-gold/5 px-4 py-3 text-center">
+            <Lock className="h-4 w-4 text-gold" />
+            <p className="text-xs text-text-secondary">
+              Première prise de contact avec {thread.otherUser.firstName} : tu ne peux envoyer{" "}
+              <span className="font-medium text-text-primary">qu&apos;un seul message</span> tant
+              qu&apos;iel n&apos;a pas répondu ou accepté ta demande — sauf si vous vous suivez
+              mutuellement.
+            </p>
+          </div>
+        )}
         {messages.map((m) => {
           const isMine = m.senderId === currentUserId;
           return (
@@ -124,17 +136,24 @@ export function MessageThread({
           {thread.otherUser.firstName} n&apos;a pas répondu ou accepté.
         </div>
       ) : (
-        <form onSubmit={submit} className="flex items-center gap-2">
-          <input
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder="Écris un message..."
-            className="w-full rounded-md border border-border-strong bg-card-elevated px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40"
-          />
-          <Button type="submit" size="md" disabled={pending || !body.trim()} className="shrink-0">
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
+        <div className="flex flex-col gap-1.5">
+          {firstContact && (
+            <p className="flex items-center gap-1.5 px-1 text-[11px] text-text-muted">
+              <Lock className="h-3 w-3" /> 1 seul message autorisé avant réponse ou acceptation.
+            </p>
+          )}
+          <form onSubmit={submit} className="flex items-center gap-2">
+            <input
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Écris un message..."
+              className="w-full rounded-md border border-border-strong bg-card-elevated px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40"
+            />
+            <Button type="submit" size="md" disabled={pending || !body.trim()} className="shrink-0">
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+        </div>
       )}
     </div>
   );

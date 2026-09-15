@@ -1,4 +1,4 @@
-import { CheckCircle2, MapPin, Calendar, Globe2, Flag as FlagIcon } from "lucide-react";
+import { CheckCircle2, MapPin, Calendar, Globe2, Flag as FlagIcon, Crown } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { ShareProfileButton } from "./ShareProfileButton";
 import { FollowButton } from "@/components/network/FollowButton";
@@ -23,6 +23,7 @@ export function ProfileHeader({
   isFollowing,
   followerCount,
   followingCount,
+  isCreator,
 }: {
   profile: PublicProfile;
   isOwner: boolean;
@@ -30,6 +31,7 @@ export function ProfileHeader({
   isFollowing?: boolean;
   followerCount?: number;
   followingCount?: number;
+  isCreator?: boolean;
 }) {
   const accent = ACCENT_THEMES.find((t) => t.id === profile.accentTheme) ?? ACCENT_THEMES[0];
   const revenueDisplay =
@@ -43,6 +45,11 @@ export function ProfileHeader({
 
   return (
     <div className="flex flex-col gap-6 rounded-lg border border-border bg-card p-6 sm:p-8">
+      {isCreator && (
+        <div className="-mx-6 -mt-6 flex items-center gap-2 rounded-t-lg bg-gradient-to-r from-gold/20 via-gold/10 to-transparent px-6 py-2.5 text-xs font-semibold uppercase tracking-wide text-gold sm:-mx-8 sm:-mt-8 sm:px-8">
+          <Crown className="h-3.5 w-3.5" /> A cofondé ASCEND
+        </div>
+      )}
       <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
         <div
           className={cn(
@@ -106,7 +113,7 @@ export function ProfileHeader({
               <FollowButton targetUserId={profile.userId} initialFollowing={isFollowing ?? false} />
             </>
           )}
-          <ShareProfileButton username={profile.username} />
+          <ShareProfileButton username={profile.username} isOwner={isOwner} />
         </div>
       </div>
 

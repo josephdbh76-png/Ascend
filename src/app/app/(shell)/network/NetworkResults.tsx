@@ -26,27 +26,25 @@ export function NetworkResults({ results }: { results: NetworkProfileRow[] }) {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {results.map((r) => (
         <Card key={r.userId} className="flex flex-col gap-3 p-5" hover>
-          <div className="flex items-start justify-between gap-2">
-            <Link href={`/profile/${r.username}`} className="flex min-w-0 items-center gap-2.5">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-card-elevated text-sm font-semibold text-gold">
-                {r.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={r.avatarUrl} alt={r.username} className="h-full w-full object-cover" />
-                ) : (
-                  initials(r.firstName, r.lastName)
-                )}
+          <Link href={`/profile/${r.username}`} className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-card-elevated text-sm font-semibold text-gold">
+              {r.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={r.avatarUrl} alt={r.username} className="h-full w-full object-cover" />
+              ) : (
+                initials(r.firstName, r.lastName)
+              )}
+            </span>
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate font-medium text-text-primary">
+                {r.firstName} {r.lastName}
               </span>
-              <span className="flex min-w-0 flex-col">
-                <span className="truncate font-medium text-text-primary">
-                  {r.firstName} {r.lastName}
-                </span>
-                <span className="truncate text-xs text-text-muted">@{r.username}</span>
-              </span>
-            </Link>
-            <div className="flex shrink-0 gap-1.5">
-              <MessageButton targetUserId={r.userId} />
-              <FollowButton targetUserId={r.userId} initialFollowing={r.isFollowing} />
-            </div>
+              <span className="truncate text-xs text-text-muted">@{r.username}</span>
+            </span>
+          </Link>
+          <div className="flex gap-1.5 [&>*]:flex-1">
+            <MessageButton targetUserId={r.userId} />
+            <FollowButton targetUserId={r.userId} initialFollowing={r.isFollowing} />
           </div>
 
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-secondary">

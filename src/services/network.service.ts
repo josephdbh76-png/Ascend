@@ -16,42 +16,40 @@ export interface NetworkProfileRow {
   isFollowing: boolean;
 }
 
-export async function searchNetwork(
-  params: { query?: string; city?: string; category?: string },
+type ProfileForNetwork = {
+  id: string;
+  username: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  city: string | null;
+  country: string | null;
+  revenue_verified: boolean;
+};
+
+const PROFILE_COLUMNS = "id, username, first_name, last_name, avatar_url, city, country, revenue_verified";
+
+async function buildRows(
+  profiles: ProfileForNetwork[],
+  categoryFilter: string | undefined,
   viewerId: string | null,
 ): Promise<NetworkProfileRow[]> {
   const supabase = await createClient();
-
-  let profileQuery = supabase
-    .from("profiles")
-    .select("id, username, first_name, last_name, avatar_url, city, country, revenue_verified")
-    .limit(60);
-
-  const query = params.query?.trim();
-  if (query) {
-    const escaped = query.replace(/[%,]/g, "");
-    profileQuery = profileQuery.or(
-      `username.ilike.%${escaped}%,first_name.ilike.%${escaped}%,last_name.ilike.%${escaped}%`,
-    );
-  }
-  const city = params.city?.trim();
-  if (city) profileQuery = profileQuery.ilike("city", `%${city.replace(/[%,]/g, "")}%`);
-
-  const { data: profiles, error } = await profileQuery;
-  if (error) throw new Error(error.message);
-  if (!profiles || profiles.length === 0) return [];
-
+  if (profiles.length === 0) return [];
   const ids = profiles.map((p) => p.id);
 
   let businessQuery = supabase.from("businesses").select("user_id, name, category").in("user_id", ids);
-  if (params.category) businessQuery = businessQuery.eq("category", params.category);
+  if (categoryFilter) businessQuery = businessQuery.eq("category", categoryFilter);
   const { data: businesses } = await businessQuery;
   const businessByUser = new Map((businesses ?? []).map((b) => [b.user_id, b]));
 
-  const matchedIds = params.category ? ids.filter((id) => businessByUser.has(id)) : ids;
+  const matchedIds = categoryFilter ? ids.filter((id) => businessByUser.has(id)) : ids;
   if (matchedIds.length === 0) return [];
 
-  const { data: allFollows } = await supabase.from("follows").select("follower_id, followee_id").in("followee_id", matchedIds);
+  const { data: allFollows } = await supabase
+    .from("follows")
+    .select("follower_id, followee_id")
+    .in("followee_id", matchedIds);
   const followerCountMap = new Map<string, number>();
   const followingSet = new Set<string>();
   for (const f of allFollows ?? []) {
@@ -79,6 +77,61 @@ export async function searchNetwork(
         isFollowing: followingSet.has(id),
       };
     });
+}
+
+export async function searchNetwork(
+  params: { query?: string; city?: string; category?: string },
+  viewerId: string | null,
+): Promise<NetworkProfileRow[]> {
+  const supabase = await createClient();
+
+  let profileQuery = supabase.from("profiles").select(PROFILE_COLUMNS).limit(60);
+
+  const query = params.query?.trim();
+  if (query) {
+    const escaped = query.replace(/[%,]/g, "");
+    profileQuery = profileQuery.or(
+      `username.ilike.%${escaped}%,first_name.ilike.%${escaped}%,last_name.ilike.%${escaped}%`,
+    );
+  }
+  const city = params.city?.trim();
+  if (city) profileQuery = profileQuery.ilike("city", `%${city.replace(/[%,]/g, "")}%`);
+
+  const { data: profiles, error } = await profileQuery;
+  if (error) throw new Error(error.message);
+  return buildRows(profiles ?? [], params.category, viewerId);
+}
+
+/** Top founders by follower count — a lightweight "trending" proxy. */
+export async function getTrendingFounders(viewerId: string | null, limit = 6): Promise<NetworkProfileRow[]> {
+  const supabase = await createClient();
+  const { data: follows } = await supabase.from("follows").select("followee_id");
+  if (!follows || follows.length === 0) return [];
+
+  const counts = new Map<string, number>();
+  for (const f of follows) counts.set(f.followee_id, (counts.get(f.followee_id) ?? 0) + 1);
+  const topIds = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .filter(([id]) => id !== viewerId)
+    .slice(0, limit)
+    .map(([id]) => id);
+  if (topIds.length === 0) return [];
+
+  const { data: profiles } = await supabase.from("profiles").select(PROFILE_COLUMNS).in("id", topIds);
+  const rows = await buildRows(profiles ?? [], undefined, viewerId);
+  return rows.sort((a, b) => b.followerCount - a.followerCount);
+}
+
+/** Founders who joined most recently. */
+export async function getNewestFounders(viewerId: string | null, limit = 6): Promise<NetworkProfileRow[]> {
+  const supabase = await createClient();
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select(`${PROFILE_COLUMNS}, created_at`)
+    .eq("is_demo", false)
+    .order("created_at", { ascending: false })
+    .limit(limit + 1);
+  return buildRows(profiles ?? [], undefined, viewerId);
 }
 
 export async function getFollowCounts(userId: string): Promise<{ followers: number; following: number }> {

@@ -5,7 +5,7 @@ import { Share2, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { track } from "@/lib/analytics";
 
-export function ShareProfileButton({ username }: { username: string }) {
+export function ShareProfileButton({ username, isOwner = true }: { username: string; isOwner?: boolean }) {
   const [copied, setCopied] = useState(false);
 
   async function share() {
@@ -27,7 +27,7 @@ export function ShareProfileButton({ username }: { username: string }) {
   return (
     <Button variant="secondary" size="sm" onClick={share}>
       {copied ? <Check className="h-3.5 w-3.5" /> : <Share2 className="h-3.5 w-3.5" />}
-      {copied ? "Lien copié" : "Partager mon profil"}
+      {copied ? "Lien copié" : isOwner ? "Partager mon profil" : "Partager ce profil"}
     </Button>
   );
 }

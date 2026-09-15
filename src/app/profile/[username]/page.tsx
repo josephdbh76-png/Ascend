@@ -67,6 +67,7 @@ export default async function PublicProfilePage({
     ? await Promise.all([getNotifications(user!.id, 8), getUnreadCount(user!.id), isCurrentUserAdmin()])
     : [[], 0, false];
   const titles = await getUserTitles(profile.userId);
+  const isCreator = titles.some((t) => t.id === "the-fondator");
   const followCounts = await getFollowCounts(profile.userId);
   const following = user && !isOwner ? await checkIsFollowing(user.id, profile.userId) : false;
 
@@ -79,6 +80,7 @@ export default async function PublicProfilePage({
         isFollowing={following}
         followerCount={followCounts.followers}
         followingCount={followCounts.following}
+        isCreator={isCreator}
       />
 
       <section>

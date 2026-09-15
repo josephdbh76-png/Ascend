@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Lock } from "lucide-react";
+import { Lock, Flame, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getSubscription, hasEliteAccess } from "@/services/subscription.service";
-import { searchNetwork } from "@/services/network.service";
+import { searchNetwork, getTrendingFounders, getNewestFounders } from "@/services/network.service";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { NetworkSearchForm } from "./NetworkSearchForm";
@@ -23,9 +23,15 @@ export default async function NetworkPage({
   const subscription = user ? await getSubscription(user.id) : null;
   const isElite = subscription ? hasEliteAccess(subscription.tier) : false;
 
+  const hasFilters = !!(params.q || params.city || params.category);
+
   const results = isElite && user
     ? await searchNetwork({ query: params.q, city: params.city, category: params.category }, user.id)
     : [];
+
+  const [trending, newest] = isElite && user && !hasFilters
+    ? await Promise.all([getTrendingFounders(user.id), getNewestFounders(user.id)])
+    : [[], []];
 
   return (
     <div className="flex flex-col gap-6">
@@ -43,7 +49,26 @@ export default async function NetworkPage({
             initialCity={params.city ?? ""}
             initialCategory={params.category ?? ""}
           />
-          <NetworkResults results={results} />
+
+          {!hasFilters && trending.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-text-muted">
+                <Flame className="h-4 w-4 text-gold" /> Tendances
+              </h2>
+              <NetworkResults results={trending} />
+            </section>
+          )}
+
+          {!hasFilters && newest.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-text-muted">
+                <Sparkles className="h-4 w-4 text-gold" /> Nouveaux membres
+              </h2>
+              <NetworkResults results={newest} />
+            </section>
+          )}
+
+          {hasFilters && <NetworkResults results={results} />}
         </>
       ) : (
         <EmptyState
