@@ -20,6 +20,8 @@ export type NotificationType =
 export type TitleRarity = "common" | "rare" | "epic" | "legendary" | "exclusive";
 export type TitleType = "earned" | "purchasable";
 export type SubscriptionTier = "free" | "pro" | "elite";
+export type SubscriptionStatus = "active" | "past_due" | "canceled";
+export type AccentTheme = "gold" | "emerald" | "violet" | "crimson" | "sky";
 
 export interface Database {
   public: {
@@ -37,6 +39,7 @@ export interface Database {
           revenue_verified: boolean;
           is_demo: boolean;
           founding_member_number: number | null;
+          accent_theme: AccentTheme;
           created_at: string;
           updated_at: string;
         };
@@ -327,7 +330,10 @@ export interface Database {
         Row: {
           user_id: string;
           tier: SubscriptionTier;
-          status: "active" | "canceled";
+          status: SubscriptionStatus;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
+          current_period_end: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -413,4 +419,5 @@ export interface PublicProfileRow {
   growth_percent: number | null;
   global_rank: number | null;
   country_rank: number | null;
+  accent_theme: AccentTheme;
 }

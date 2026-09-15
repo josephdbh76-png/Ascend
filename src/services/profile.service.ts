@@ -24,6 +24,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     revenueVerified: data.revenue_verified,
     isDemo: data.is_demo,
     foundingMemberNumber: data.founding_member_number,
+    accentTheme: data.accent_theme,
     createdAt: data.created_at,
   };
 }
@@ -76,6 +77,7 @@ function mapPublicProfileRow(
     achievements,
     trophies,
     activeTitle,
+    accentTheme: row.accent_theme,
   };
 }
 

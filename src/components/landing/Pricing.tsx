@@ -2,43 +2,56 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
+import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
 const PLANS = [
   {
+    tier: "free" as const,
     name: "GRATUIT",
     price: "0 €",
-    note: "Pendant la bêta",
-    features: ["Profil", "Vérification", "Classement", "Accomplissements", "Défis", "Réseau de base"],
+    note: "Pour toujours",
+    features: ["Profil", "Vérification", "Classement", "Accomplissements", "Défis"],
     cta: "Rejoindre ASCEND",
-    href: "/signup",
+    highlighted: false,
+  },
+  {
+    tier: "pro" as const,
+    name: "PRO",
+    price: "19 €",
+    note: "par mois",
+    features: ["Tout Gratuit", "Analyses avancées", "Profil personnalisable (thèmes)"],
+    cta: "Passer Pro",
     highlighted: true,
   },
   {
-    name: "PRO",
-    price: "19 €",
-    note: "par mois · Bientôt disponible",
-    features: ["Tout Gratuit", "Analyses avancées", "Vérification prioritaire", "Thèmes de profil personnalisés"],
-    cta: "Bientôt disponible",
-    disabled: true,
-  },
-  {
+    tier: "elite" as const,
     name: "ELITE",
     price: "49 €",
-    note: "par mois · Bientôt disponible",
+    note: "par mois",
     features: ["Tout Pro", "Accès au réseau de fondateurs", "Fil d'opportunités", "Support dédié"],
-    cta: "Bientôt disponible",
-    disabled: true,
+    cta: "Passer Elite",
+    highlighted: false,
   },
 ];
 
-export function Pricing() {
+export async function Pricing() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  function ctaHref(tier: "free" | "pro" | "elite") {
+    if (tier === "free") return "/signup";
+    return user ? `/api/stripe/checkout?tier=${tier}` : `/signup?plan=${tier}`;
+  }
+
   return (
     <section id="tarifs" className="border-b border-border">
       <div className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 lg:px-8">
         <Reveal as="div" className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
-            Des tarifs simples, gratuit pendant la bêta
+            Des tarifs simples, qui grandissent avec toi.
           </h2>
         </Reveal>
         <RevealGroup className="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-3">
@@ -54,7 +67,7 @@ export function Pricing() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">{plan.name}</span>
-                {plan.highlighted && <Badge variant="gold">Bêta</Badge>}
+                {plan.highlighted && <Badge variant="gold">Populaire</Badge>}
               </div>
               <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-3xl font-semibold text-text-primary">{plan.price}</span>
@@ -68,10 +81,9 @@ export function Pricing() {
                 ))}
               </ul>
               <Button
-                href={plan.href}
+                href={ctaHref(plan.tier)}
                 variant={plan.highlighted ? "primary" : "secondary"}
                 className="mt-6"
-                disabled={plan.disabled}
               >
                 {plan.cta}
               </Button>

@@ -1,5 +1,5 @@
 import "server-only";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, isStripeTestKey } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { upsertMonthlyRevenue, getCurrentRevenue, calculateMonthlyGrowth, nextRevenueMilestone } from "@/services/revenue.service";
 import { evaluateRevenueAchievements, evaluateRankAchievements } from "@/services/achievement.service";
@@ -13,7 +13,9 @@ const STRIPE_OAUTH_AUTHORIZE_URL = "https://connect.stripe.com/oauth/authorize";
 const MONTHS_OF_HISTORY = 6;
 
 /**
- * Builds the Stripe Connect (Standard, test mode) OAuth authorize URL.
+ * Builds the Stripe Connect (Standard) OAuth authorize URL. Whether this
+ * connects real or test-mode accounts follows STRIPE_SECRET_KEY/
+ * STRIPE_CLIENT_ID's own mode — there is no separate toggle here.
  * `state` is the signed user id so the callback can't be forged into
  * attaching a Stripe account to the wrong user.
  */
@@ -57,7 +59,7 @@ export async function handleStripeOAuthCallback(code: string, userId: string) {
         provider: "stripe",
         status: "connected",
         external_account_id: stripeAccountId,
-        is_test_mode: true,
+        is_test_mode: isStripeTestKey(process.env.STRIPE_SECRET_KEY),
         connected_at: new Date().toISOString(),
       },
       { onConflict: "user_id,provider" },
@@ -84,9 +86,9 @@ export async function handleStripeOAuthCallback(code: string, userId: string) {
 }
 
 /**
- * Pulls succeeded charges for the connected test-mode account, aggregates
- * them into normalized monthly revenue snapshots, and marks the source
- * verified only once real data was actually retrieved successfully.
+ * Pulls succeeded charges for the connected account, aggregates them into
+ * normalized monthly revenue snapshots, and marks the source verified
+ * only once real data was actually retrieved successfully.
  */
 export async function syncStripeRevenue(
   userId: string,

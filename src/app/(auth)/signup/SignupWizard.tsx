@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -19,6 +19,8 @@ const STEPS = ["Compte", "Activité", "Bio", "Connexion"] as const;
 
 export function SignupWizard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const plan = searchParams.get("plan");
   const [step, setStep] = useState(0);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +86,9 @@ export function SignupWizard() {
       const result = await completeOnboardingAction();
       if (!result.success) return setError(result.error);
       track("signup_completed");
-      if (connect) {
+      if (plan === "pro" || plan === "elite") {
+        router.push(`/api/stripe/checkout?tier=${plan}`);
+      } else if (connect) {
         track("stripe_connection_started");
         router.push("/api/stripe/connect");
       } else {

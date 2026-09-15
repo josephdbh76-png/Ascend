@@ -1,14 +1,18 @@
 import type {
+  AccentTheme,
   AchievementRarity,
   ChallengeStatus,
   ChallengeType,
   OnboardingStep,
   RevenueVisibility,
+  SubscriptionStatus,
   SubscriptionTier,
   TitleRarity,
   TitleType,
   VerificationStatus,
 } from "./database.types";
+
+export type { AccentTheme };
 
 export interface Profile {
   id: string;
@@ -22,6 +26,7 @@ export interface Profile {
   revenueVerified: boolean;
   isDemo: boolean;
   foundingMemberNumber: number | null;
+  accentTheme: AccentTheme;
   createdAt: string;
 }
 
@@ -116,6 +121,7 @@ export interface PublicProfile {
   achievements: EarnedAchievement[];
   trophies: EarnedTrophy[];
   activeTitle: EarnedTitle | null;
+  accentTheme: AccentTheme;
 }
 
 export interface TitleRow {
@@ -144,5 +150,7 @@ export interface EarnedTitle {
 
 export interface SubscriptionInfo {
   tier: SubscriptionTier;
-  status: "active" | "canceled";
+  status: SubscriptionStatus;
+  currentPeriodEnd: string | null;
+  hasStripeCustomer: boolean;
 }

@@ -125,6 +125,14 @@ export const CHALLENGE_DEFINITIONS = [
 
 export const FOUNDING_MEMBER_LIMIT = 500;
 
+export const ACCENT_THEMES = [
+  { id: "gold", label: "Or", textClass: "text-gold", bgClass: "bg-gold/10", swatchClass: "bg-gold" },
+  { id: "emerald", label: "Émeraude", textClass: "text-emerald-400", bgClass: "bg-emerald-400/10", swatchClass: "bg-emerald-400" },
+  { id: "violet", label: "Violet", textClass: "text-violet-400", bgClass: "bg-violet-400/10", swatchClass: "bg-violet-400" },
+  { id: "crimson", label: "Cramoisi", textClass: "text-red-400", bgClass: "bg-red-400/10", swatchClass: "bg-red-400" },
+  { id: "sky", label: "Ciel", textClass: "text-sky-400", bgClass: "bg-sky-400/10", swatchClass: "bg-sky-400" },
+] as const;
+
 export const CURRENT_SEASON = {
   number: 1,
   name: "ASCEND SAISON 01",

@@ -1,8 +1,8 @@
 import { CheckCircle2, MapPin, Calendar, Globe2, Flag as FlagIcon } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { ShareProfileButton } from "./ShareProfileButton";
-import { formatCurrency, formatCurrencyRange, formatPercent, initials } from "@/lib/utils";
-import { COUNTRIES, BUSINESS_CATEGORIES } from "@/lib/constants";
+import { cn, formatCurrency, formatCurrencyRange, formatPercent, initials } from "@/lib/utils";
+import { COUNTRIES, BUSINESS_CATEGORIES, ACCENT_THEMES } from "@/lib/constants";
 import type { PublicProfile } from "@/types";
 
 function countryLabel(code: string | null) {
@@ -15,6 +15,7 @@ function categoryLabel(value: string) {
 }
 
 export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; isOwner: boolean }) {
+  const accent = ACCENT_THEMES.find((t) => t.id === profile.accentTheme) ?? ACCENT_THEMES[0];
   const revenueDisplay =
     profile.revenueVisibility === "exact" && profile.revenueDisplayCents != null
       ? `${formatCurrency(profile.revenueDisplayCents)} / mois`
@@ -27,7 +28,13 @@ export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; is
   return (
     <div className="flex flex-col gap-6 rounded-lg border border-border bg-card p-6 sm:p-8">
       <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border border-border-strong bg-card-elevated text-2xl font-semibold text-gold">
+        <div
+          className={cn(
+            "flex h-20 w-20 shrink-0 items-center justify-center rounded-full border border-border-strong text-2xl font-semibold",
+            profile.avatarUrl ? "bg-card-elevated" : accent.bgClass,
+            accent.textClass,
+          )}
+        >
           {profile.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={profile.avatarUrl} alt={profile.username} className="h-full w-full rounded-full object-cover" />
@@ -96,7 +103,7 @@ export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; is
         <Stat label="Classement">
           <span className="flex items-center gap-3">
             {profile.globalRank && (
-              <span className="flex items-center gap-1 text-gold">
+              <span className={cn("flex items-center gap-1", accent.textClass)}>
                 <Globe2 className="h-3.5 w-3.5" /> #{profile.globalRank}
               </span>
             )}
