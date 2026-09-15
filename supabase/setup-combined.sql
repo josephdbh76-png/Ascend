@@ -1578,3 +1578,18 @@ create policy "participants can mark messages as read" on messages
 create trigger conversations_set_updated_at before update on conversations
   for each row execute function set_updated_at();
 
+-- ============================================================
+-- 20260101000018_notification_types.sql
+-- ============================================================
+-- Adds notification types for two events that previously produced no
+-- notification at all: gaining a follower, and receiving a message.
+
+alter table notifications drop constraint notifications_type_check;
+alter table notifications add constraint notifications_type_check
+  check (
+    type in (
+      'achievement_unlocked', 'rank_increased', 'challenge_started',
+      'milestone_reached', 'verification_completed', 'new_follower', 'new_message'
+    )
+  );
+

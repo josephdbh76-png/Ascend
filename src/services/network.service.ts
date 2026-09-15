@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { createNotificationForUser } from "@/services/notification.service";
 
 export interface NetworkProfileRow {
   userId: string;
@@ -171,5 +172,19 @@ export async function toggleFollow(followerId: string, followeeId: string): Prom
 
   const { error } = await supabase.from("follows").insert({ follower_id: followerId, followee_id: followeeId });
   if (error) throw new Error(error.message);
+
+  const { data: follower } = await supabase
+    .from("profiles")
+    .select("username, first_name")
+    .eq("id", followerId)
+    .maybeSingle();
+  await createNotificationForUser({
+    userId: followeeId,
+    type: "new_follower",
+    title: "Nouvel abonné",
+    body: `${follower?.first_name ?? follower?.username ?? "Quelqu'un"} a commencé à te suivre.`,
+    metadata: { follower_id: followerId, username: follower?.username },
+  });
+
   return { following: true };
 }

@@ -26,10 +26,12 @@ export function AppMobileHeader({
   notifications,
   unreadCount,
   isAdmin,
+  unreadMessageCount = 0,
 }: {
   notifications: NotificationItem[];
   unreadCount: number;
   isAdmin?: boolean;
+  unreadMessageCount?: number;
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -56,9 +58,12 @@ export function AppMobileHeader({
             onClick={() => setOpen(true)}
             aria-label="Ouvrir le menu"
             aria-expanded={open}
-            className="rounded-md p-2 text-text-secondary"
+            className="relative rounded-md p-2 text-text-secondary"
           >
             <Menu className="h-5 w-5" />
+            {unreadMessageCount > 0 && (
+              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-gold" />
+            )}
           </button>
         </div>
       </header>
@@ -81,6 +86,11 @@ export function AppMobileHeader({
               >
                 <item.icon className="h-4 w-4" />
                 {item.label}
+                {item.href === "/app/messages" && unreadMessageCount > 0 && (
+                  <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1.5 text-[10px] font-bold text-[#0a0a0a]">
+                    {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
+                  </span>
+                )}
               </Link>
             ))}
             <button

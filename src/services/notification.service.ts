@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { NotificationType } from "@/types/database.types";
 
 export interface Notification {
@@ -21,6 +22,30 @@ export async function createNotification(input: {
 }) {
   const supabase = await createClient();
   await supabase.from("notifications").insert({
+    user_id: input.userId,
+    type: input.type,
+    title: input.title,
+    body: input.body,
+    metadata: input.metadata ?? {},
+  });
+}
+
+/**
+ * Notifies a DIFFERENT user than the one currently authenticated (a new
+ * follower, a new message) — RLS only lets a user insert a notification
+ * for themselves, so this goes through the service-role client. Safe to
+ * call only after the triggering action (the follow, the message) has
+ * already been validated through the normal RLS-scoped client.
+ */
+export async function createNotificationForUser(input: {
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  metadata?: Record<string, unknown>;
+}) {
+  const admin = createAdminClient();
+  await admin.from("notifications").insert({
     user_id: input.userId,
     type: input.type,
     title: input.title,

@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { isFollowing } from "@/services/network.service";
+import { createNotificationForUser } from "@/services/notification.service";
 import type { ConversationStatus } from "@/types/database.types";
 
 export interface ConversationParticipant {
@@ -111,6 +112,12 @@ export async function sendMessage(conversationId: string, senderId: string, body
   if (!allowed) throw new Error(reason ?? "Envoi impossible.");
 
   const supabase = await createClient();
+  const { data: conversation } = await supabase
+    .from("conversations")
+    .select("user_a, user_b, requested_by, status")
+    .eq("id", conversationId)
+    .single();
+
   const { data: message, error } = await supabase
     .from("messages")
     .insert({ conversation_id: conversationId, sender_id: senderId, body: trimmed })
@@ -122,6 +129,19 @@ export async function sendMessage(conversationId: string, senderId: string, body
     await supabase.from("conversations").update({ status: "accepted" }).eq("id", conversationId);
   } else {
     await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+  }
+
+  if (conversation) {
+    const recipientId = conversation.user_a === senderId ? conversation.user_b : conversation.user_a;
+    const { data: sender } = await supabase.from("profiles").select("username, first_name").eq("id", senderId).maybeSingle();
+    const isNewRequest = conversation.status === "pending" && conversation.requested_by === senderId;
+    await createNotificationForUser({
+      userId: recipientId,
+      type: "new_message",
+      title: isNewRequest ? "Nouvelle demande de message" : "Nouveau message",
+      body: `${sender?.first_name ?? sender?.username ?? "Quelqu'un"} : « ${trimmed.slice(0, 80)}${trimmed.length > 80 ? "…" : ""} »`,
+      metadata: { conversation_id: conversationId, sender_id: senderId },
+    });
   }
 
   return { id: message.id, senderId: message.sender_id, body: message.body, createdAt: message.created_at };
@@ -250,4 +270,22 @@ export async function getConversationThread(
     isRequester: conversation.requested_by === userId,
     messages: (messages ?? []).map((m) => ({ id: m.id, senderId: m.sender_id, body: m.body, createdAt: m.created_at })),
   };
+}
+
+export async function getUnreadMessageCount(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const { data: conversations } = await supabase
+    .from("conversations")
+    .select("id")
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`);
+  const ids = (conversations ?? []).map((c) => c.id);
+  if (ids.length === 0) return 0;
+
+  const { count } = await supabase
+    .from("messages")
+    .select("*", { count: "exact", head: true })
+    .in("conversation_id", ids)
+    .is("read_at", null)
+    .neq("sender_id", userId);
+  return count ?? 0;
 }

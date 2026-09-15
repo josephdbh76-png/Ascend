@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profile.service";
 import { getNotifications, getUnreadCount } from "@/services/notification.service";
+import { getUnreadMessageCount } from "@/services/message.service";
 import { isCurrentUserAdmin } from "@/services/admin.service";
 import { AppShell } from "@/components/layout/AppShell";
 
@@ -15,10 +16,11 @@ export default async function ShellLayout({ children }: { children: React.ReactN
   const profile = await getProfile(user.id);
   if (!profile) redirect("/login");
 
-  const [notifications, unreadCount, isAdmin] = await Promise.all([
+  const [notifications, unreadCount, isAdmin, unreadMessageCount] = await Promise.all([
     getNotifications(user.id, 8),
     getUnreadCount(user.id),
     isCurrentUserAdmin(),
+    getUnreadMessageCount(user.id),
   ]);
 
   return (
@@ -33,9 +35,11 @@ export default async function ShellLayout({ children }: { children: React.ReactN
         body: n.body,
         createdAt: n.createdAt,
         readAt: n.readAt,
+        metadata: n.metadata,
       }))}
       unreadCount={unreadCount}
       isAdmin={isAdmin}
+      unreadMessageCount={unreadMessageCount}
     >
       {children}
     </AppShell>

@@ -16,7 +16,9 @@ export type NotificationType =
   | "rank_increased"
   | "challenge_started"
   | "milestone_reached"
-  | "verification_completed";
+  | "verification_completed"
+  | "new_follower"
+  | "new_message";
 export type TitleRarity = "common" | "rare" | "epic" | "legendary" | "exclusive";
 export type TitleType = "earned" | "purchasable";
 export type SubscriptionTier = "free" | "pro" | "elite";

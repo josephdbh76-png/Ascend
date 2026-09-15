@@ -24,6 +24,7 @@ export function AppSidebar({
   notifications,
   unreadCount,
   isAdmin,
+  unreadMessageCount = 0,
 }: {
   username: string;
   avatarUrl: string | null;
@@ -31,6 +32,7 @@ export function AppSidebar({
   notifications: NotificationItem[];
   unreadCount: number;
   isAdmin?: boolean;
+  unreadMessageCount?: number;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -67,6 +69,11 @@ export function AppSidebar({
             >
               <Icon className="h-4 w-4" />
               {item.label}
+              {item.href === "/app/messages" && unreadMessageCount > 0 && (
+                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1.5 text-[10px] font-bold text-[#0a0a0a]">
+                  {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
+                </span>
+              )}
             </Link>
           );
         })}

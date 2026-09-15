@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles, UserPlus, MessageCircle } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
 import { markAllNotificationsReadAction } from "@/app/app/(shell)/actions";
 import type { NotificationType } from "@/types/database.types";
@@ -13,6 +14,7 @@ export interface NotificationItem {
   body: string;
   createdAt: string;
   readAt: string | null;
+  metadata?: Record<string, unknown>;
 }
 
 const ICONS: Record<NotificationType, typeof Bell> = {
@@ -21,7 +23,19 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   challenge_started: Flag,
   milestone_reached: Sparkles,
   verification_completed: CheckCircle2,
+  new_follower: UserPlus,
+  new_message: MessageCircle,
 };
+
+function notificationHref(n: NotificationItem): string | null {
+  if (n.type === "new_message" && typeof n.metadata?.conversation_id === "string") {
+    return `/app/messages/${n.metadata.conversation_id}`;
+  }
+  if (n.type === "new_follower" && typeof n.metadata?.username === "string") {
+    return `/profile/${n.metadata.username}`;
+  }
+  return null;
+}
 
 export function NotificationBell({
   initial,
@@ -88,14 +102,9 @@ export function NotificationBell({
               ) : (
                 items.map((n) => {
                   const Icon = ICONS[n.type];
-                  return (
-                    <div
-                      key={n.id}
-                      className={cn(
-                        "flex gap-3 border-b border-border px-4 py-3 last:border-0",
-                        !n.readAt && "bg-gold/5",
-                      )}
-                    >
+                  const href = notificationHref(n);
+                  const content = (
+                    <>
                       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card">
                         <Icon className="h-4 w-4 text-gold" />
                       </div>
@@ -106,6 +115,20 @@ export function NotificationBell({
                         </p>
                         <p className="mt-1 text-[11px] text-text-muted">{timeAgo(n.createdAt)}</p>
                       </div>
+                    </>
+                  );
+                  const className = cn(
+                    "flex gap-3 border-b border-border px-4 py-3 last:border-0",
+                    !n.readAt && "bg-gold/5",
+                    href && "transition-colors hover:bg-card",
+                  );
+                  return href ? (
+                    <Link key={n.id} href={href} onClick={() => setOpen(false)} className={className}>
+                      {content}
+                    </Link>
+                  ) : (
+                    <div key={n.id} className={className}>
+                      {content}
                     </div>
                   );
                 })

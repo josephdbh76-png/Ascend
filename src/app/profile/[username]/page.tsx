@@ -13,6 +13,7 @@ import { getProfile } from "@/services/profile.service";
 import { getNotifications, getUnreadCount } from "@/services/notification.service";
 import { getUserTitles } from "@/services/title.service";
 import { getFollowCounts, isFollowing as checkIsFollowing } from "@/services/network.service";
+import { getUnreadMessageCount } from "@/services/message.service";
 import { isCurrentUserAdmin } from "@/services/admin.service";
 import { formatCurrency, formatCurrencyRange } from "@/lib/utils";
 import { Award, Trophy, Gem } from "lucide-react";
@@ -63,9 +64,14 @@ export default async function PublicProfilePage({
   } = await supabase.auth.getUser();
   const isOwner = user?.id === profile.userId;
   const viewerProfile = user ? await getProfile(user.id) : null;
-  const [notifications, unreadCount, viewerIsAdmin] = viewerProfile
-    ? await Promise.all([getNotifications(user!.id, 8), getUnreadCount(user!.id), isCurrentUserAdmin()])
-    : [[], 0, false];
+  const [notifications, unreadCount, viewerIsAdmin, viewerUnreadMessages] = viewerProfile
+    ? await Promise.all([
+        getNotifications(user!.id, 8),
+        getUnreadCount(user!.id),
+        isCurrentUserAdmin(),
+        getUnreadMessageCount(user!.id),
+      ])
+    : [[], 0, false, 0];
   const titles = await getUserTitles(profile.userId);
   const isCreator = titles.some((t) => t.id === "the-fondator");
   const followCounts = await getFollowCounts(profile.userId);
@@ -153,9 +159,11 @@ export default async function PublicProfilePage({
           body: n.body,
           createdAt: n.createdAt,
           readAt: n.readAt,
+          metadata: n.metadata,
         }))}
         unreadCount={unreadCount}
         isAdmin={viewerIsAdmin}
+        unreadMessageCount={viewerUnreadMessages}
       >
         {body}
       </AppShell>

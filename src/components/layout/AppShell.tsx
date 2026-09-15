@@ -9,6 +9,7 @@ export function AppShell({
   notifications,
   unreadCount,
   isAdmin,
+  unreadMessageCount,
   children,
 }: {
   username: string;
@@ -17,6 +18,7 @@ export function AppShell({
   notifications: NotificationItem[];
   unreadCount: number;
   isAdmin?: boolean;
+  unreadMessageCount?: number;
   children: React.ReactNode;
 }) {
   return (
@@ -28,8 +30,14 @@ export function AppShell({
         notifications={notifications}
         unreadCount={unreadCount}
         isAdmin={isAdmin}
+        unreadMessageCount={unreadMessageCount}
       />
-      <AppMobileHeader notifications={notifications} unreadCount={unreadCount} isAdmin={isAdmin} />
+      <AppMobileHeader
+        notifications={notifications}
+        unreadCount={unreadCount}
+        isAdmin={isAdmin}
+        unreadMessageCount={unreadMessageCount}
+      />
 
       <main className="pb-20 lg:ml-60 lg:pb-0">
         <div className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8 lg:py-10">{children}</div>
