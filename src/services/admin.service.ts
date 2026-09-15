@@ -33,6 +33,7 @@ export interface AdminUserRow {
   city: string | null;
   country: string | null;
   isAdmin: boolean;
+  isFondator: boolean;
   isDemo: boolean;
   revenueVerified: boolean;
   createdAt: string;
@@ -51,6 +52,9 @@ export async function listUsersForAdmin(): Promise<AdminUserRow[]> {
   const { data: subs } = await admin.from("subscriptions").select("user_id, tier, status");
   const subsById = new Map((subs ?? []).map((s) => [s.user_id, s]));
 
+  const { data: fondators } = await admin.from("user_titles").select("user_id").eq("title_id", "the-fondator");
+  const fondatorIds = new Set((fondators ?? []).map((f) => f.user_id));
+
   return (profiles ?? []).map((p) => ({
     id: p.id,
     username: p.username,
@@ -59,6 +63,7 @@ export async function listUsersForAdmin(): Promise<AdminUserRow[]> {
     city: p.city,
     country: p.country,
     isAdmin: p.is_admin,
+    isFondator: fondatorIds.has(p.id),
     isDemo: p.is_demo,
     revenueVerified: p.revenue_verified,
     createdAt: p.created_at,

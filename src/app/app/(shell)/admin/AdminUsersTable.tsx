@@ -112,19 +112,28 @@ export function AdminUsersTable({ users, currentUserId }: { users: AdminUserRow[
                   </select>
                 </td>
                 <td className="px-4 py-3">
-                  <button
-                    type="button"
-                    disabled={pending || u.id === currentUserId}
-                    onClick={() => toggleAdmin(u.id, !u.isAdmin)}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-                      u.isAdmin
-                        ? "border-gold/30 bg-gold/10 text-gold"
-                        : "border-border-strong text-text-muted hover:text-text-secondary",
-                    )}
-                  >
-                    <ShieldCheck className="h-3 w-3" /> {u.isAdmin ? "Admin" : "Standard"}
-                  </button>
+                  {u.isFondator ? (
+                    <span
+                      title="Accès admin via le titre The Fondator — pour le retirer, il faut retirer le titre."
+                      className="flex w-fit items-center gap-1.5 rounded-full border border-gold/30 bg-gold/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-gold"
+                    >
+                      <ShieldCheck className="h-3 w-3" /> Fondator
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={pending || u.id === currentUserId}
+                      onClick={() => toggleAdmin(u.id, !u.isAdmin)}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                        u.isAdmin
+                          ? "border-gold/30 bg-gold/10 text-gold"
+                          : "border-border-strong text-text-muted hover:text-text-secondary",
+                      )}
+                    >
+                      <ShieldCheck className="h-3 w-3" /> {u.isAdmin ? "Admin" : "Standard"}
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
