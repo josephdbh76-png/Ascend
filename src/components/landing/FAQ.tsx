@@ -7,16 +7,16 @@ import { Reveal } from "@/components/motion/Reveal";
 
 const ITEMS = [
   {
-    q: "ASCEND est-il gratuit pendant la bêta ?",
-    a: "Oui. Toutes les fonctionnalités principales — profil, vérification, classement, accomplissements et défis — sont gratuites pendant la bêta privée. Aucune carte bancaire requise.",
+    q: "ASCEND est-il gratuit ?",
+    a: "Oui. Le compte Gratuit donne accès au profil, à la vérification, au classement, aux accomplissements et aux défis, sans carte bancaire. Pro et Elite débloquent des avantages supplémentaires.",
   },
   {
     q: "Comment fonctionne la vérification des revenus ?",
-    a: "Tu connectes une source de revenus (Stripe, en mode test pour la bêta) et ASCEND récupère tes vraies données de transaction côté serveur. Rien n'est vérifié tant que des données réelles n'ont pas été récupérées avec succès.",
+    a: "Tu connectes ta source de revenus (Stripe) et ASCEND récupère tes vraies données de transaction côté serveur. Rien n'est vérifié tant que des données réelles n'ont pas été récupérées avec succès.",
   },
   {
     q: "Puis-je masquer mes revenus exacts ?",
-    a: "Oui. Dans les Réglages, choisis d'afficher ton revenu exact, une fourchette d'1 M€, ou de le garder entièrement privé. Ton classement peut rester visible sans exposer le montant.",
+    a: "Oui. Dans les Réglages, choisis d'afficher ton revenu exact, une fourchette de 10 000 €, ou de le garder entièrement privé. Ton classement peut rester visible sans exposer le montant.",
   },
   {
     q: "Mes données financières sont-elles en sécurité ?",

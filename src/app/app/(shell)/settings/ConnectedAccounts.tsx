@@ -42,7 +42,7 @@ export function ConnectedAccounts({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between rounded-md border border-border-strong bg-card-elevated p-4">
         <div>
-          <p className="text-sm font-medium text-text-primary">Stripe (mode test)</p>
+          <p className="text-sm font-medium text-text-primary">Stripe</p>
           <div className="mt-1">
             <VerificationBadge status={status} />
           </div>

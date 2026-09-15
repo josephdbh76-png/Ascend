@@ -280,12 +280,12 @@ export function SignupWizard() {
               <div>
                 <h1 className="text-xl font-semibold text-text-primary">Vérifie tes performances</h1>
                 <p className="mt-1 text-sm text-text-secondary">
-                  Connecte Stripe (mode test) pour vérifier ton activité et apparaître au classement. Tu peux
+                  Connecte Stripe pour vérifier ton activité et apparaître au classement. Tu peux
                   passer cette étape et te connecter plus tard depuis ton tableau de bord.
                 </p>
               </div>
               <Button onClick={() => skipOrConnect(true)} disabled={pending}>
-                Connecter Stripe (mode test) <ArrowRight className="h-4 w-4" />
+                Connecter Stripe <ArrowRight className="h-4 w-4" />
               </Button>
               <Button onClick={() => skipOrConnect(false)} disabled={pending} variant="secondary">
                 Passer cette étape

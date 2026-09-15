@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
       <p>
         Pendant la bêta, ASCEND stocke les informations de compte et d&apos;activité que tu fournis (nom,
         nom d&apos;utilisateur, pays, catégorie d&apos;activité et bio) et, si tu choisis de connecter une
-        source de revenus, les montants mensuels récupérés depuis cette source en mode test Stripe.
+        source de revenus, les montants mensuels récupérés depuis cette source via Stripe.
       </p>
       <p>
         Tu contrôles qui peut voir tes revenus via le réglage de visibilité dans les Réglages (exact,
