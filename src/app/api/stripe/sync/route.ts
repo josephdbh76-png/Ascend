@@ -34,5 +34,9 @@ export async function POST() {
     return NextResponse.json({ error: result.error }, { status: 502 });
   }
 
-  return NextResponse.json({ success: true, monthsSynced: result.monthsSynced });
+  return NextResponse.json({
+    success: true,
+    monthsSynced: result.monthsSynced,
+    isFirstVerification: result.isFirstVerification,
+  });
 }

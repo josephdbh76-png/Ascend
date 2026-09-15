@@ -26,6 +26,7 @@ export function ConnectedAccounts({
       const res = await fetch("/api/stripe/sync", { method: "POST" });
       const body = await res.json();
       if (!res.ok) return toast.show(body.error ?? "La synchronisation a échoué.", "error");
+      if (body.isFirstVerification) return router.push("/app/verification");
       toast.show(`${body.monthsSynced} mois de revenus synchronisés.`, "success");
       router.refresh();
     });
@@ -36,6 +37,7 @@ export function ConnectedAccounts({
       const res = await fetch("/api/stripe/connect-platform", { method: "POST" });
       const body = await res.json();
       if (!res.ok) return toast.show(body.error ?? "La synchronisation a échoué.", "error");
+      if (body.isFirstVerification) return router.push("/app/verification");
       toast.show(`${body.monthsSynced} mois de revenus synchronisés.`, "success");
       router.refresh();
     });

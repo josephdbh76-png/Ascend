@@ -27,7 +27,11 @@ export async function POST() {
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 502 });
     }
-    return NextResponse.json({ success: true, monthsSynced: result.monthsSynced });
+    return NextResponse.json({
+      success: true,
+      monthsSynced: result.monthsSynced,
+      isFirstVerification: result.isFirstVerification,
+    });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "unknown" }, { status: 500 });
   }
