@@ -13,6 +13,7 @@ import { getProfile } from "@/services/profile.service";
 import { getNotifications, getUnreadCount } from "@/services/notification.service";
 import { getUserTitles } from "@/services/title.service";
 import { getFollowCounts, isFollowing as checkIsFollowing } from "@/services/network.service";
+import { isCurrentUserAdmin } from "@/services/admin.service";
 import { formatCurrency, formatCurrencyRange } from "@/lib/utils";
 import { Award, Trophy, Gem } from "lucide-react";
 
@@ -62,9 +63,9 @@ export default async function PublicProfilePage({
   } = await supabase.auth.getUser();
   const isOwner = user?.id === profile.userId;
   const viewerProfile = user ? await getProfile(user.id) : null;
-  const [notifications, unreadCount] = viewerProfile
-    ? await Promise.all([getNotifications(user!.id, 8), getUnreadCount(user!.id)])
-    : [[], 0];
+  const [notifications, unreadCount, viewerIsAdmin] = viewerProfile
+    ? await Promise.all([getNotifications(user!.id, 8), getUnreadCount(user!.id), isCurrentUserAdmin()])
+    : [[], 0, false];
   const titles = await getUserTitles(profile.userId);
   const followCounts = await getFollowCounts(profile.userId);
   const following = user && !isOwner ? await checkIsFollowing(user.id, profile.userId) : false;
@@ -152,7 +153,7 @@ export default async function PublicProfilePage({
           readAt: n.readAt,
         }))}
         unreadCount={unreadCount}
-        isAdmin={viewerProfile.isAdmin}
+        isAdmin={viewerIsAdmin}
       >
         {body}
       </AppShell>

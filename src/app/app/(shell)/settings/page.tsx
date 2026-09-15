@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { ShieldCheck, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profile.service";
 import { getVerificationStatus } from "@/services/revenue.service";
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
+import { isCurrentUserAdmin } from "@/services/admin.service";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { ProfileSettingsForm } from "./ProfileSettingsForm";
 import { BusinessSettingsForm } from "./BusinessSettingsForm";
 import { PrivacySettingsForm } from "./PrivacySettingsForm";
@@ -26,13 +29,14 @@ export default async function SettingsPage() {
   const profile = await getProfile(user.id);
   if (!profile) return null;
 
-  const [{ data: business }, { data: privacy }, { data: source }, verificationStatus, subscription] =
+  const [{ data: business }, { data: privacy }, { data: source }, verificationStatus, subscription, isAdmin] =
     await Promise.all([
       supabase.from("businesses").select("name, category, website").eq("user_id", user.id).maybeSingle(),
       supabase.from("privacy_settings").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("revenue_sources").select("status").eq("user_id", user.id).eq("provider", "stripe").maybeSingle(),
       getVerificationStatus(user.id),
       getSubscription(user.id),
+      isCurrentUserAdmin(),
     ]);
 
   return (
@@ -45,6 +49,23 @@ export default async function SettingsPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Réglages</h1>
         <p className="mt-1 text-sm text-text-secondary">Gère ton profil, ta confidentialité et tes connexions.</p>
       </div>
+
+      {isAdmin && (
+        <Card className="flex flex-col items-start gap-3 border-gold/30 bg-gold/5 p-6 sm:flex-row sm:items-center sm:justify-between" hover>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10">
+              <ShieldCheck className="h-5 w-5 text-gold" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-text-primary">Administration</h2>
+              <p className="text-xs text-text-secondary">Gère les membres et leurs abonnements.</p>
+            </div>
+          </div>
+          <Button href="/app/admin" variant="secondary" size="sm" className="shrink-0">
+            Ouvrir <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </Card>
+      )}
 
       <Card id="abonnement" className="scroll-mt-6 p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Abonnement</h2>

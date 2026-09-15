@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profile.service";
 import { getNotifications, getUnreadCount } from "@/services/notification.service";
+import { isCurrentUserAdmin } from "@/services/admin.service";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default async function ShellLayout({ children }: { children: React.ReactNode }) {
@@ -14,9 +15,10 @@ export default async function ShellLayout({ children }: { children: React.ReactN
   const profile = await getProfile(user.id);
   if (!profile) redirect("/login");
 
-  const [notifications, unreadCount] = await Promise.all([
+  const [notifications, unreadCount, isAdmin] = await Promise.all([
     getNotifications(user.id, 8),
     getUnreadCount(user.id),
+    isCurrentUserAdmin(),
   ]);
 
   return (
@@ -33,7 +35,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
         readAt: n.readAt,
       }))}
       unreadCount={unreadCount}
-      isAdmin={profile.isAdmin}
+      isAdmin={isAdmin}
     >
       {children}
     </AppShell>
