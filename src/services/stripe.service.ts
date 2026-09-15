@@ -29,7 +29,11 @@ export function buildStripeConnectUrl(userId: string, appUrl: string): string {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: clientId,
-    scope: "read_only",
+    // Stripe now requires manual support approval for "read_only" OAuth
+    // connections. ASCEND only ever reads charge history (never writes to
+    // a connected account) but must request "read_write" for self-serve
+    // access — the extra permission is simply never exercised in code.
+    scope: "read_write",
     redirect_uri: `${appUrl}/api/stripe/callback`,
     state: userId,
   });
