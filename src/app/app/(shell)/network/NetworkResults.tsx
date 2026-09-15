@@ -3,6 +3,7 @@ import { CheckCircle2, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { FollowButton } from "@/components/network/FollowButton";
+import { MessageButton } from "@/components/network/MessageButton";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
 import { initials } from "@/lib/utils";
 import type { NetworkProfileRow } from "@/services/network.service";
@@ -42,7 +43,10 @@ export function NetworkResults({ results }: { results: NetworkProfileRow[] }) {
                 <span className="truncate text-xs text-text-muted">@{r.username}</span>
               </span>
             </Link>
-            <FollowButton targetUserId={r.userId} initialFollowing={r.isFollowing} />
+            <div className="flex shrink-0 gap-1.5">
+              <MessageButton targetUserId={r.userId} />
+              <FollowButton targetUserId={r.userId} initialFollowing={r.isFollowing} />
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-secondary">

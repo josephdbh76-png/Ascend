@@ -22,6 +22,7 @@ export type TitleType = "earned" | "purchasable";
 export type SubscriptionTier = "free" | "pro" | "elite";
 export type SubscriptionStatus = "active" | "past_due" | "canceled";
 export type AccentTheme = "gold" | "emerald" | "violet" | "crimson" | "sky";
+export type ConversationStatus = "pending" | "accepted";
 
 export interface Database {
   public: {
@@ -354,6 +355,41 @@ export interface Database {
           followee_id: string;
         };
         Update: Partial<Database["public"]["Tables"]["follows"]["Row"]>;
+        Relationships: [];
+      };
+      conversations: {
+        Row: {
+          id: string;
+          user_a: string;
+          user_b: string;
+          requested_by: string;
+          status: ConversationStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["conversations"]["Row"]> & {
+          user_a: string;
+          user_b: string;
+          requested_by: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["conversations"]["Row"]>;
+        Relationships: [];
+      };
+      messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          sender_id: string;
+          body: string;
+          created_at: string;
+          read_at: string | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["messages"]["Row"]> & {
+          conversation_id: string;
+          sender_id: string;
+          body: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["messages"]["Row"]>;
         Relationships: [];
       };
     };

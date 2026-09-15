@@ -2,6 +2,7 @@ import { CheckCircle2, MapPin, Calendar, Globe2, Flag as FlagIcon } from "lucide
 import { Badge } from "@/components/ui/Badge";
 import { ShareProfileButton } from "./ShareProfileButton";
 import { FollowButton } from "@/components/network/FollowButton";
+import { MessageButton } from "@/components/network/MessageButton";
 import { cn, formatCurrency, formatCurrencyRange, formatPercent, initials } from "@/lib/utils";
 import { COUNTRIES, BUSINESS_CATEGORIES, ACCENT_THEMES } from "@/lib/constants";
 import type { PublicProfile } from "@/types";
@@ -100,7 +101,10 @@ export function ProfileHeader({
             </Badge>
           )}
           {!isOwner && viewerId && (
-            <FollowButton targetUserId={profile.userId} initialFollowing={isFollowing ?? false} />
+            <>
+              <MessageButton targetUserId={profile.userId} />
+              <FollowButton targetUserId={profile.userId} initialFollowing={isFollowing ?? false} />
+            </>
           )}
           <ShareProfileButton username={profile.username} />
         </div>
