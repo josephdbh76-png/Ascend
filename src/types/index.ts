@@ -29,6 +29,7 @@ export interface Profile {
   accentTheme: AccentTheme;
   city: string | null;
   isAdmin: boolean;
+  isCofounder: boolean;
   createdAt: string;
 }
 
@@ -124,6 +125,7 @@ export interface PublicProfile {
   trophies: EarnedTrophy[];
   activeTitle: EarnedTitle | null;
   accentTheme: AccentTheme;
+  isCofounder: boolean;
 }
 
 export interface TitleRow {

@@ -73,7 +73,7 @@ export default async function PublicProfilePage({
       ])
     : [[], 0, false, 0];
   const titles = await getUserTitles(profile.userId);
-  const isCreator = titles.some((t) => t.id === "the-fondator");
+  const isCreator = profile.isCofounder;
   const followCounts = await getFollowCounts(profile.userId);
   const following = user && !isOwner ? await checkIsFollowing(user.id, profile.userId) : false;
 

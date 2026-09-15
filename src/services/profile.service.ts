@@ -27,6 +27,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     accentTheme: data.accent_theme,
     city: data.city,
     isAdmin: data.is_admin,
+    isCofounder: data.is_cofounder,
     createdAt: data.created_at,
   };
 }
@@ -80,6 +81,7 @@ function mapPublicProfileRow(
     trophies,
     activeTitle,
     accentTheme: row.accent_theme,
+    isCofounder: row.is_cofounder,
   };
 }
 

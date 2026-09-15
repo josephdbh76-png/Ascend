@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
       client_reference_id: user.id,
       subscription_data: { metadata: { user_id: user.id, tier } },
       metadata: { user_id: user.id, tier },
+      locale: "fr",
     });
 
     if (!session.url) throw new Error("Stripe did not return a checkout URL.");

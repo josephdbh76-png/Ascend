@@ -3,13 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SubscriptionTier, SubscriptionStatus } from "@/types/database.types";
 
-/**
- * Admin access is granted to anyone holding the "The Fondator" title
- * (the platform's own creators) OR anyone an existing admin has manually
- * promoted via profiles.is_admin — so the founder's circle gets access
- * automatically, without needing a manual grant for every one of them,
- * while still allowing other trusted people to be added later.
- */
 export async function isCurrentUserAdmin(): Promise<boolean> {
   const supabase = await createClient();
   const {
@@ -17,12 +10,8 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
   } = await supabase.auth.getUser();
   if (!user) return false;
 
-  const [{ data: profile }, { data: fondatorTitle }] = await Promise.all([
-    supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle(),
-    supabase.from("user_titles").select("user_id").eq("user_id", user.id).eq("title_id", "the-fondator").maybeSingle(),
-  ]);
-
-  return (profile?.is_admin ?? false) || !!fondatorTitle;
+  const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle();
+  return profile?.is_admin ?? false;
 }
 
 export interface AdminUserRow {
@@ -33,7 +22,7 @@ export interface AdminUserRow {
   city: string | null;
   country: string | null;
   isAdmin: boolean;
-  isFondator: boolean;
+  isCofounder: boolean;
   isDemo: boolean;
   revenueVerified: boolean;
   createdAt: string;
@@ -45,15 +34,12 @@ export async function listUsersForAdmin(): Promise<AdminUserRow[]> {
   const admin = createAdminClient();
   const { data: profiles, error } = await admin
     .from("profiles")
-    .select("id, username, first_name, last_name, city, country, is_admin, is_demo, revenue_verified, created_at")
+    .select("id, username, first_name, last_name, city, country, is_admin, is_cofounder, is_demo, revenue_verified, created_at")
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
 
   const { data: subs } = await admin.from("subscriptions").select("user_id, tier, status");
   const subsById = new Map((subs ?? []).map((s) => [s.user_id, s]));
-
-  const { data: fondators } = await admin.from("user_titles").select("user_id").eq("title_id", "the-fondator");
-  const fondatorIds = new Set((fondators ?? []).map((f) => f.user_id));
 
   return (profiles ?? []).map((p) => ({
     id: p.id,
@@ -63,7 +49,7 @@ export async function listUsersForAdmin(): Promise<AdminUserRow[]> {
     city: p.city,
     country: p.country,
     isAdmin: p.is_admin,
-    isFondator: fondatorIds.has(p.id),
+    isCofounder: p.is_cofounder,
     isDemo: p.is_demo,
     revenueVerified: p.revenue_verified,
     createdAt: p.created_at,

@@ -34,6 +34,7 @@ export async function GET() {
     const session = await stripe.billingPortal.sessions.create({
       customer: data.stripe_customer_id,
       return_url: settingsUrl.toString(),
+      locale: "fr",
     });
     return NextResponse.redirect(session.url);
   } catch (err) {

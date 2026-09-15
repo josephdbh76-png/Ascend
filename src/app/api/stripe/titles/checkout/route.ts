@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
       cancel_url: `${appUrl}/app/titles?purchase=cancelled`,
       client_reference_id: user.id,
       metadata: { kind: "title_purchase", user_id: user.id, title_id: title.id },
+      locale: "fr",
     });
 
     if (!session.url) throw new Error("Stripe did not return a checkout URL.");

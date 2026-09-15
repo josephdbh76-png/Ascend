@@ -45,6 +45,7 @@ export interface Database {
           accent_theme: AccentTheme;
           city: string | null;
           is_admin: boolean;
+          is_cofounder: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -478,4 +479,5 @@ export interface PublicProfileRow {
   global_rank: number | null;
   country_rank: number | null;
   accent_theme: AccentTheme;
+  is_cofounder: boolean;
 }
