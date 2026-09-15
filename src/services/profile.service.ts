@@ -25,6 +25,8 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     isDemo: data.is_demo,
     foundingMemberNumber: data.founding_member_number,
     accentTheme: data.accent_theme,
+    city: data.city,
+    isAdmin: data.is_admin,
     createdAt: data.created_at,
   };
 }

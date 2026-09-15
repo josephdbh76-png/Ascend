@@ -15,6 +15,7 @@ export async function updateProfileAction(input: {
   lastName: string;
   bio?: string;
   country: string;
+  city?: string;
 }): Promise<ActionResult> {
   const parsed = profileUpdateSchema.safeParse(input);
   if (!parsed.success) {
@@ -32,6 +33,7 @@ export async function updateProfileAction(input: {
       last_name: parsed.data.lastName,
       bio: parsed.data.bio ?? null,
       country: parsed.data.country,
+      city: parsed.data.city || null,
     })
     .eq("id", userData.user.id);
 

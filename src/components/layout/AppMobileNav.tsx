@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, Trophy, Flag, User, Menu, X, Gem, Users, Compass, Settings, LogOut } from "lucide-react";
+import { LayoutGrid, Trophy, Flag, User, Menu, X, Gem, Users, Compass, Settings, LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell, type NotificationItem } from "./NotificationBell";
@@ -24,12 +24,17 @@ const MENU_LINKS = [
 export function AppMobileHeader({
   notifications,
   unreadCount,
+  isAdmin,
 }: {
   notifications: NotificationItem[];
   unreadCount: number;
+  isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const menuLinks = isAdmin
+    ? [...MENU_LINKS, { href: "/app/admin", label: "Administration", icon: ShieldCheck }]
+    : MENU_LINKS;
 
   async function handleLogout() {
     const supabase = createClient();
@@ -66,7 +71,7 @@ export function AppMobileHeader({
             </button>
           </div>
           <nav className="flex flex-col gap-1 p-4">
-            {MENU_LINKS.map((item) => (
+            {menuLinks.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

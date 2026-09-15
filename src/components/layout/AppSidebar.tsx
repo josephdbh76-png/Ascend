@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, Trophy, Flag, Gem, Users, Compass, Settings, LogOut } from "lucide-react";
+import { LayoutGrid, Trophy, Flag, Gem, Users, Compass, Settings, LogOut, ShieldCheck } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell, type NotificationItem } from "./NotificationBell";
@@ -22,15 +22,18 @@ export function AppSidebar({
   firstName,
   notifications,
   unreadCount,
+  isAdmin,
 }: {
   username: string;
   avatarUrl: string | null;
   firstName: string | null;
   notifications: NotificationItem[];
   unreadCount: number;
+  isAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const nav = isAdmin ? [...NAV, { href: "/app/admin", label: "Administration", icon: ShieldCheck }] : NAV;
 
   async function handleLogout() {
     const supabase = createClient();
@@ -49,7 +52,7 @@ export function AppSidebar({
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-3 py-2">
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const active = pathname.startsWith(item.href);
           const Icon = item.icon;
           return (

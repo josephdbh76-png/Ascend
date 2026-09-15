@@ -59,6 +59,7 @@ export default async function SettingsPage() {
             lastName: profile.lastName ?? "",
             bio: profile.bio ?? "",
             country: profile.country ?? "FR",
+            city: profile.city ?? "",
           }}
         />
       </Card>

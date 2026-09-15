@@ -27,6 +27,8 @@ export interface Profile {
   isDemo: boolean;
   foundingMemberNumber: number | null;
   accentTheme: AccentTheme;
+  city: string | null;
+  isAdmin: boolean;
   createdAt: string;
 }
 

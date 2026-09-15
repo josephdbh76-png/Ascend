@@ -1,6 +1,7 @@
 import { CheckCircle2, MapPin, Calendar, Globe2, Flag as FlagIcon } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { ShareProfileButton } from "./ShareProfileButton";
+import { FollowButton } from "@/components/network/FollowButton";
 import { cn, formatCurrency, formatCurrencyRange, formatPercent, initials } from "@/lib/utils";
 import { COUNTRIES, BUSINESS_CATEGORIES, ACCENT_THEMES } from "@/lib/constants";
 import type { PublicProfile } from "@/types";
@@ -14,7 +15,21 @@ function categoryLabel(value: string) {
   return BUSINESS_CATEGORIES.find((c) => c.value === value)?.label ?? value;
 }
 
-export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; isOwner: boolean }) {
+export function ProfileHeader({
+  profile,
+  isOwner,
+  viewerId,
+  isFollowing,
+  followerCount,
+  followingCount,
+}: {
+  profile: PublicProfile;
+  isOwner: boolean;
+  viewerId?: string | null;
+  isFollowing?: boolean;
+  followerCount?: number;
+  followingCount?: number;
+}) {
   const accent = ACCENT_THEMES.find((t) => t.id === profile.accentTheme) ?? ACCENT_THEMES[0];
   const revenueDisplay =
     profile.revenueVisibility === "exact" && profile.revenueDisplayCents != null
@@ -55,6 +70,16 @@ export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; is
             {profile.isDemo && <Badge variant="demo">Démo</Badge>}
           </div>
           <p className="text-sm text-text-muted">@{profile.username}</p>
+          {(followerCount != null || followingCount != null) && (
+            <div className="mt-1.5 flex items-center gap-3 text-xs text-text-secondary">
+              <span>
+                <span className="font-medium text-text-primary">{followerCount ?? 0}</span> abonnés
+              </span>
+              <span>
+                <span className="font-medium text-text-primary">{followingCount ?? 0}</span> abonnements
+              </span>
+            </div>
+          )}
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-secondary">
             {profile.country && (
               <span className="flex items-center gap-1.5">
@@ -73,6 +98,9 @@ export function ProfileHeader({ profile, isOwner }: { profile: PublicProfile; is
             <Badge variant="neutral" className="hidden sm:inline-flex">
               Ton profil
             </Badge>
+          )}
+          {!isOwner && viewerId && (
+            <FollowButton targetUserId={profile.userId} initialFollowing={isFollowing ?? false} />
           )}
           <ShareProfileButton username={profile.username} />
         </div>

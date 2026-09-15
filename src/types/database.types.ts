@@ -40,6 +40,8 @@ export interface Database {
           is_demo: boolean;
           founding_member_number: number | null;
           accent_theme: AccentTheme;
+          city: string | null;
+          is_admin: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -339,6 +341,19 @@ export interface Database {
         };
         Insert: Partial<Database["public"]["Tables"]["subscriptions"]["Row"]> & { user_id: string };
         Update: Partial<Database["public"]["Tables"]["subscriptions"]["Row"]>;
+        Relationships: [];
+      };
+      follows: {
+        Row: {
+          follower_id: string;
+          followee_id: string;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["follows"]["Row"]> & {
+          follower_id: string;
+          followee_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["follows"]["Row"]>;
         Relationships: [];
       };
     };

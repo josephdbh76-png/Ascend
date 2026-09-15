@@ -33,6 +33,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
         readAt: n.readAt,
       }))}
       unreadCount={unreadCount}
+      isAdmin={profile.isAdmin}
     >
       {children}
     </AppShell>

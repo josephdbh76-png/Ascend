@@ -43,4 +43,5 @@ export const profileUpdateSchema = z.object({
   lastName: z.string().trim().min(1).max(50),
   bio: z.string().trim().max(280).optional(),
   country: z.string().trim().min(2),
+  city: z.string().trim().max(80).optional(),
 });

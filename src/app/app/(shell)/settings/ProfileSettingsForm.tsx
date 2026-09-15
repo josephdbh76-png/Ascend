@@ -10,7 +10,7 @@ import { updateProfileAction } from "./actions";
 export function ProfileSettingsForm({
   initial,
 }: {
-  initial: { firstName: string; lastName: string; bio: string; country: string };
+  initial: { firstName: string; lastName: string; bio: string; country: string; city: string };
 }) {
   const [form, setForm] = useState(initial);
   const [pending, startTransition] = useTransition();
@@ -35,15 +35,20 @@ export function ProfileSettingsForm({
           <Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
         </Field>
       </div>
-      <Field label="Pays">
-        <Select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}>
-          {COUNTRIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </Select>
-      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Pays">
+          <Select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}>
+            {COUNTRIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Ville" hint="Utilisée pour te trouver dans le Réseau.">
+          <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+        </Field>
+      </div>
       <Field label="Bio" hint={`${form.bio.length}/280`}>
         <Textarea
           rows={3}

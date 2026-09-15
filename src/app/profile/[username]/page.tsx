@@ -12,6 +12,7 @@ import { PublicNav } from "@/components/layout/PublicNav";
 import { getProfile } from "@/services/profile.service";
 import { getNotifications, getUnreadCount } from "@/services/notification.service";
 import { getUserTitles } from "@/services/title.service";
+import { getFollowCounts, isFollowing as checkIsFollowing } from "@/services/network.service";
 import { formatCurrency, formatCurrencyRange } from "@/lib/utils";
 import { Award, Trophy, Gem } from "lucide-react";
 
@@ -65,10 +66,19 @@ export default async function PublicProfilePage({
     ? await Promise.all([getNotifications(user!.id, 8), getUnreadCount(user!.id)])
     : [[], 0];
   const titles = await getUserTitles(profile.userId);
+  const followCounts = await getFollowCounts(profile.userId);
+  const following = user && !isOwner ? await checkIsFollowing(user.id, profile.userId) : false;
 
   const body = (
     <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
-      <ProfileHeader profile={profile} isOwner={isOwner} />
+      <ProfileHeader
+        profile={profile}
+        isOwner={isOwner}
+        viewerId={user?.id ?? null}
+        isFollowing={following}
+        followerCount={followCounts.followers}
+        followingCount={followCounts.following}
+      />
 
       <section>
         <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
@@ -142,6 +152,7 @@ export default async function PublicProfilePage({
           readAt: n.readAt,
         }))}
         unreadCount={unreadCount}
+        isAdmin={viewerProfile.isAdmin}
       >
         {body}
       </AppShell>
