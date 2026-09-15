@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { syncStripeRevenue } from "@/services/stripe.service";
+import { syncStripeRevenue, PLATFORM_ACCOUNT_SENTINEL } from "@/services/stripe.service";
 
 export async function POST() {
   const supabase = await createClient();
@@ -23,7 +23,12 @@ export async function POST() {
     return NextResponse.json({ error: "No connected Stripe source." }, { status: 404 });
   }
 
-  const result = await syncStripeRevenue(user.id, source.id, source.external_account_id);
+  const isPlatformAccount = source.external_account_id === PLATFORM_ACCOUNT_SENTINEL;
+  const result = await syncStripeRevenue(
+    user.id,
+    source.id,
+    isPlatformAccount ? null : source.external_account_id,
+  );
 
   if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 502 });

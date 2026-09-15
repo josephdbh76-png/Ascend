@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { RefreshCw, Unlink, Link2 } from "lucide-react";
+import { RefreshCw, Unlink, Link2, Crown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { useToast } from "@/components/ui/Toast";
@@ -11,9 +11,11 @@ import type { VerificationStatus } from "@/types/database.types";
 export function ConnectedAccounts({
   connected,
   status,
+  isCofounder,
 }: {
   connected: boolean;
   status: VerificationStatus;
+  isCofounder?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const toast = useToast();
@@ -22,6 +24,16 @@ export function ConnectedAccounts({
   function sync() {
     startTransition(async () => {
       const res = await fetch("/api/stripe/sync", { method: "POST" });
+      const body = await res.json();
+      if (!res.ok) return toast.show(body.error ?? "La synchronisation a échoué.", "error");
+      toast.show(`${body.monthsSynced} mois de revenus synchronisés.`, "success");
+      router.refresh();
+    });
+  }
+
+  function connectPlatform() {
+    startTransition(async () => {
+      const res = await fetch("/api/stripe/connect-platform", { method: "POST" });
       const body = await res.json();
       if (!res.ok) return toast.show(body.error ?? "La synchronisation a échoué.", "error");
       toast.show(`${body.monthsSynced} mois de revenus synchronisés.`, "success");
@@ -57,6 +69,10 @@ export function ConnectedAccounts({
                 <Unlink className="h-3.5 w-3.5" /> Déconnecter
               </Button>
             </>
+          ) : isCofounder ? (
+            <Button size="sm" onClick={connectPlatform} disabled={pending}>
+              <Crown className="h-3.5 w-3.5" /> Synchroniser mes revenus ASCEND
+            </Button>
           ) : (
             <Button href="/api/stripe/connect" size="sm">
               <Link2 className="h-3.5 w-3.5" /> Connecter

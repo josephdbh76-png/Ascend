@@ -11,6 +11,7 @@ import { getProfile } from "@/services/profile.service";
 
 const STRIPE_OAUTH_AUTHORIZE_URL = "https://connect.stripe.com/oauth/authorize";
 const MONTHS_OF_HISTORY = 6;
+export const PLATFORM_ACCOUNT_SENTINEL = "platform";
 
 /**
  * Builds the Stripe Connect (Standard) OAuth authorize URL. Whether this
@@ -38,6 +39,52 @@ export function buildStripeConnectUrl(userId: string, appUrl: string): string {
     state: userId,
   });
   return `${STRIPE_OAUTH_AUTHORIZE_URL}?${params.toString()}`;
+}
+
+/**
+ * Reads the platform's OWN Stripe account revenue directly, for the
+ * platform's co-founders — who legitimately can't use the normal OAuth
+ * Connect flow because their "business" revenue IS the platform's
+ * revenue, and Stripe refuses to let a platform authorize itself as one
+ * of its own connected accounts. Restricted to profiles.is_cofounder;
+ * callers must still check that themselves (this doesn't re-check it),
+ * since it acts on the platform's real financial data.
+ */
+export async function connectPlatformRevenueForCofounder(userId: string) {
+  const supabase = await createClient();
+  const { data: source, error } = await supabase
+    .from("revenue_sources")
+    .upsert(
+      {
+        user_id: userId,
+        provider: "stripe",
+        status: "connected",
+        // Sentinel, not a real Stripe account id — it tells the resync
+        // route to omit the `stripeAccount` header entirely rather than
+        // treat the platform as a connected account of itself.
+        external_account_id: PLATFORM_ACCOUNT_SENTINEL,
+        is_test_mode: isStripeTestKey(process.env.STRIPE_SECRET_KEY),
+        connected_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,provider" },
+    )
+    .select()
+    .single();
+
+  if (error || !source) {
+    throw new Error(error?.message ?? "Could not save the Stripe connection.");
+  }
+
+  await supabase.from("verifications").upsert(
+    {
+      revenue_source_id: source.id,
+      status: "unverified",
+      last_checked_at: new Date().toISOString(),
+    },
+    { onConflict: "revenue_source_id" },
+  );
+
+  return syncStripeRevenue(userId, source.id, null);
 }
 
 export async function handleStripeOAuthCallback(code: string, userId: string) {
@@ -97,7 +144,8 @@ export async function handleStripeOAuthCallback(code: string, userId: string) {
 export async function syncStripeRevenue(
   userId: string,
   revenueSourceId: string,
-  stripeAccountId: string,
+  /** null means "the platform's own Stripe account" (cofounder direct sync) rather than a connected account. */
+  stripeAccountId: string | null,
 ) {
   const stripe = getStripe();
   const supabase = await createClient();
@@ -124,7 +172,7 @@ export async function syncStripeRevenue(
           created: { gte: Math.floor(sinceDate.getTime() / 1000) },
           starting_after: startingAfter,
         },
-        { stripeAccount: stripeAccountId },
+        stripeAccountId ? { stripeAccount: stripeAccountId } : undefined,
       );
 
       for (const charge of charges.data) {

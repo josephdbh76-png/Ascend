@@ -119,7 +119,11 @@ export default async function SettingsPage() {
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
           Comptes connectés
         </h2>
-        <ConnectedAccounts connected={source?.status === "connected"} status={verificationStatus} />
+        <ConnectedAccounts
+          connected={source?.status === "connected"}
+          status={verificationStatus}
+          isCofounder={profile.isCofounder}
+        />
       </Card>
 
       <Card className="p-6" elevated>
