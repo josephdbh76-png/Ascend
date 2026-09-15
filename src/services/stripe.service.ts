@@ -148,13 +148,21 @@ export async function syncStripeRevenue(
       });
     }
 
+    // A successful API call with zero charges isn't a verified account —
+    // it just means there's nothing to verify yet. Keep it "unverified"
+    // (not "error": nothing went wrong, Stripe just has no data) so the
+    // account can pick up a real verification the next time it's synced.
+    const hasVerifiableRevenue = monthlyTotals.size > 0;
+
     await supabase
       .from("verifications")
       .update({
-        status: "verified",
-        verified_at: new Date().toISOString(),
+        status: hasVerifiableRevenue ? "verified" : "unverified",
+        verified_at: hasVerifiableRevenue ? new Date().toISOString() : null,
         last_checked_at: new Date().toISOString(),
-        error_message: null,
+        error_message: hasVerifiableRevenue
+          ? null
+          : "Aucune transaction trouvée sur les 6 derniers mois.",
       })
       .eq("revenue_source_id", revenueSourceId);
 
@@ -163,7 +171,18 @@ export async function syncStripeRevenue(
       .update({ last_synced_at: new Date().toISOString(), status: "connected" })
       .eq("id", revenueSourceId);
 
-    await supabase.from("profiles").update({ revenue_verified: true }).eq("id", userId);
+    await supabase.from("profiles").update({ revenue_verified: hasVerifiableRevenue }).eq("id", userId);
+
+    if (!hasVerifiableRevenue) {
+      return {
+        success: true as const,
+        monthsSynced: 0,
+        isFirstVerification: false,
+        currentRevenueCents: null,
+        rank: null,
+        milestoneCents: null,
+      };
+    }
 
     const { current, previous } = await getCurrentRevenue(userId);
     let rank: number | null = null;
