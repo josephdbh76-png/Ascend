@@ -445,6 +445,7 @@ export interface LeaderboardRow {
   revenue_visibility: RevenueVisibility;
   growth_percent: number | null;
   is_current_user: boolean;
+  active_title: { name: string; icon: string; rarity: TitleRarity } | null;
 }
 
 export interface UserRankRow {

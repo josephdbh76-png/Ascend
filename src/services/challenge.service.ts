@@ -117,3 +117,20 @@ export async function evaluateChallengeProgress(
     }
   }
 }
+
+/** % of (non-demo) members who have completed each challenge — a social-proof signal shown alongside progress. */
+export async function getChallengeCompletionRates(): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const [{ count: total }, { data: rows }] = await Promise.all([
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("is_demo", false),
+    supabase.from("user_challenges").select("challenge_id").eq("status", "completed"),
+  ]);
+  if (!total) return {};
+
+  const tally = new Map<string, number>();
+  for (const row of rows ?? []) tally.set(row.challenge_id, (tally.get(row.challenge_id) ?? 0) + 1);
+
+  const rates: Record<string, number> = {};
+  for (const [id, n] of tally) rates[id] = (n / total) * 100;
+  return rates;
+}

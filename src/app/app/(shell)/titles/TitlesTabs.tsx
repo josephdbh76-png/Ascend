@@ -13,7 +13,15 @@ const TABS = [
   { value: "exclusive", label: "Exclusifs" },
 ];
 
-export function TitlesTabs({ catalog, owned }: { catalog: TitleRow[]; owned: EarnedTitle[] }) {
+export function TitlesTabs({
+  catalog,
+  owned,
+  completionRates,
+}: {
+  catalog: TitleRow[];
+  owned: EarnedTitle[];
+  completionRates?: Record<string, number>;
+}) {
   const [tab, setTab] = useState("owned");
   const ownedIds = new Set(owned.map((o) => o.id));
   const ownedByid = new Map(owned.map((o) => [o.id, o]));
@@ -56,6 +64,7 @@ export function TitlesTabs({ catalog, owned }: { catalog: TitleRow[]; owned: Ear
               remainingSupply={t.remaining_supply}
               owned={ownedIds.has(t.id)}
               isActive={ownedByid.get(t.id)?.isActive}
+              completionRate={completionRates?.[t.id]}
             />
           ))}
         </div>

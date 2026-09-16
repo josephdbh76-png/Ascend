@@ -3,7 +3,17 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Badge } from "@/components/ui/Badge";
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 
-const DEMO_PROGRESS = [72, 45, 90, 0, 0];
+// A curated spread — from a founder's very first sale to established
+// growth — rather than the full catalog, keyed by id so it stays correct
+// as challenges are added or reordered.
+const DEMO_PROGRESS: Record<string, number> = {
+  "first-sale": 100,
+  "first-10k-month": 72,
+  "growth-30": 45,
+  "consistency-30": 90,
+};
+const FEATURED_IDS = Object.keys(DEMO_PROGRESS);
+const FEATURED_CHALLENGES = CHALLENGE_DEFINITIONS.filter((c) => FEATURED_IDS.includes(c.id));
 
 export function ChallengesPreview() {
   return (
@@ -20,7 +30,7 @@ export function ChallengesPreview() {
         </Reveal>
 
         <RevealGroup className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {CHALLENGE_DEFINITIONS.map((c, i) => {
+          {FEATURED_CHALLENGES.map((c) => {
             const isComingSoon = c.type === "coming_soon";
             return (
               <RevealItem
@@ -34,7 +44,7 @@ export function ChallengesPreview() {
                   </Badge>
                 </div>
                 <p className="mt-2 text-xs text-text-secondary">{c.description}</p>
-                {!isComingSoon && <ProgressBar percent={DEMO_PROGRESS[i]} className="mt-4" />}
+                {!isComingSoon && <ProgressBar percent={DEMO_PROGRESS[c.id]} className="mt-4" />}
               </RevealItem>
             );
           })}

@@ -9,7 +9,14 @@ function daysRemaining(endsAt: string) {
   return Math.max(0, Math.ceil(ms / 86400000));
 }
 
-export function ChallengeCard({ challenge }: { challenge: ChallengeProgress }) {
+export function ChallengeCard({
+  challenge,
+  completionRate,
+}: {
+  challenge: ChallengeProgress;
+  /** % of (non-demo) members who have completed this challenge — social proof. */
+  completionRate?: number;
+}) {
   const isComingSoon = challenge.type === "coming_soon";
   const isCompleted = challenge.status === "completed";
   const remaining = daysRemaining(challenge.endsAt);
@@ -59,6 +66,13 @@ export function ChallengeCard({ challenge }: { challenge: ChallengeProgress }) {
           </span>
         )}
       </div>
+      {completionRate != null && (
+        <p className="text-[11px] text-text-muted">
+          {completionRate < 0.1 && completionRate > 0
+            ? "< 0,1 % des entrepreneurs ont réussi ce défi"
+            : `${completionRate.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} % des entrepreneurs ont réussi ce défi`}
+        </p>
+      )}
     </div>
   );
 }

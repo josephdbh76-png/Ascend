@@ -5,6 +5,23 @@ import { createNotification } from "@/services/notification.service";
 import { getStripe } from "@/lib/stripe";
 import type { TitleRow, EarnedTitle } from "@/types";
 
+/** % of (non-demo) members who own each title — shown as social proof next to rarity. */
+export async function getTitleCompletionRates(): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const [{ count: total }, { data: rows }] = await Promise.all([
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("is_demo", false),
+    supabase.from("user_titles").select("title_id"),
+  ]);
+  if (!total) return {};
+
+  const tally = new Map<string, number>();
+  for (const row of rows ?? []) tally.set(row.title_id, (tally.get(row.title_id) ?? 0) + 1);
+
+  const rates: Record<string, number> = {};
+  for (const [id, n] of tally) rates[id] = (n / total) * 100;
+  return rates;
+}
+
 export async function getTitleCatalog(): Promise<TitleRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("titles").select("*").order("rarity");

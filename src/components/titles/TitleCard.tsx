@@ -1,48 +1,13 @@
 "use client";
 
 import { useTransition } from "react";
-import {
-  Gem,
-  Medal,
-  Flame,
-  Trophy,
-  Hammer,
-  Settings,
-  Crown,
-  Lock,
-  Check,
-} from "lucide-react";
+import { Gem, Lock, Check } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { setActiveTitleAction } from "@/app/app/(shell)/titles/actions";
+import { TITLE_ICONS as ICONS, TITLE_RARITY_STYLES as RARITY_STYLES, TITLE_RARITY_LABELS as RARITY_LABELS } from "@/lib/titleDisplay";
 import type { TitleRarity } from "@/types/database.types";
-
-const ICONS: Record<string, typeof Gem> = {
-  gem: Gem,
-  medal: Medal,
-  flame: Flame,
-  trophy: Trophy,
-  hammer: Hammer,
-  settings: Settings,
-  crown: Crown,
-};
-
-const RARITY_STYLES: Record<TitleRarity, string> = {
-  common: "border-border-strong text-text-secondary",
-  rare: "border-info/40 text-info",
-  epic: "border-exclusive/40 text-exclusive",
-  legendary: "border-gold/50 text-gold",
-  exclusive: "border-gold/60 text-gold",
-};
-
-const RARITY_LABELS: Record<TitleRarity, string> = {
-  common: "commun",
-  rare: "rare",
-  epic: "épique",
-  legendary: "légendaire",
-  exclusive: "exclusif",
-};
 
 function requirementLabel(requirement: Record<string, unknown>): string | null {
   const type = requirement.type as string | undefined;
@@ -68,6 +33,7 @@ export function TitleCard({
   owned,
   isActive,
   interactive = true,
+  completionRate,
 }: {
   id: string;
   name: string;
@@ -82,6 +48,8 @@ export function TitleCard({
   isActive?: boolean;
   /** Set to false on someone else's profile — display only, no CTA. */
   interactive?: boolean;
+  /** % of (non-demo) members who own this title — social proof. */
+  completionRate?: number;
 }) {
   const Icon = ICONS[icon] ?? Gem;
   const [pending, startTransition] = useTransition();
@@ -128,6 +96,13 @@ export function TitleCard({
         <p className="mt-1 text-xs text-text-secondary">{description}</p>
         {requirement && requirementLabel(requirement) && (
           <p className="mt-2 text-[11px] text-text-muted">{requirementLabel(requirement)}</p>
+        )}
+        {completionRate != null && (
+          <p className="mt-2 text-[11px] text-text-muted">
+            {completionRate < 0.1 && completionRate > 0
+              ? "< 0,1 % des entrepreneurs l'ont obtenu"
+              : `${completionRate.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} % des entrepreneurs l'ont obtenu`}
+          </p>
         )}
       </div>
 

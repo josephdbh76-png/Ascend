@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveChallengesWithProgress } from "@/services/challenge.service";
+import { getActiveChallengesWithProgress, getChallengeCompletionRates } from "@/services/challenge.service";
 import { ChallengeCard } from "@/components/challenges/ChallengeCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Flag } from "lucide-react";
@@ -19,9 +19,10 @@ export default async function ChallengesPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [challenges, { data: season }] = await Promise.all([
+  const [challenges, { data: season }, completionRates] = await Promise.all([
     getActiveChallengesWithProgress(user.id),
     supabase.from("seasons").select("*").eq("is_active", true).maybeSingle(),
+    getChallengeCompletionRates(),
   ]);
 
   const daysLeft = season ? daysRemaining(season.ends_at) : null;
@@ -43,7 +44,7 @@ export default async function ChallengesPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {challenges.map((c) => (
-            <ChallengeCard key={c.id} challenge={c} />
+            <ChallengeCard key={c.id} challenge={c} completionRate={completionRates[c.id]} />
           ))}
         </div>
       )}

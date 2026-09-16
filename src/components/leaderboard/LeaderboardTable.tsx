@@ -6,6 +6,7 @@ import { Crown } from "lucide-react";
 import { cn, formatCurrency, formatCurrencyRange, formatPercent, initials } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
+import { TITLE_ICONS, TITLE_RARITY_STYLES } from "@/lib/titleDisplay";
 import type { LeaderboardRow } from "@/types/database.types";
 
 const RANK_COLORS: Record<number, string> = {
@@ -76,6 +77,21 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
                   <span className="flex flex-col">
                     <span className="flex items-center gap-1.5 font-medium text-text-primary">
                       {row.first_name} {row.last_name}
+                      {row.active_title && (
+                        <span
+                          title={row.active_title.name}
+                          className={cn(
+                            "flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                            TITLE_RARITY_STYLES[row.active_title.rarity],
+                          )}
+                        >
+                          {(() => {
+                            const Icon = TITLE_ICONS[row.active_title.icon] ?? TITLE_ICONS.gem;
+                            return <Icon className="h-2.5 w-2.5" />;
+                          })()}
+                          {row.active_title.name}
+                        </span>
+                      )}
                       {row.is_current_user && <Badge variant="gold">Toi</Badge>}
                       {row.is_demo && <Badge variant="demo">Démo</Badge>}
                     </span>

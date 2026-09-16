@@ -116,6 +116,10 @@ export const TROPHY_DEFINITIONS = [
 ] as const;
 
 export const CHALLENGE_DEFINITIONS = [
+  { id: "first-sale", title: "Première vente", description: "Réalise ta toute première vente vérifiée sur ASCEND.", type: "revenue_threshold", target: 1 },
+  { id: "first-100", title: "Premiers 100 €", description: "Atteins 100 € de revenus mensuels vérifiés.", type: "revenue_threshold", target: 10000 },
+  { id: "first-500", title: "Premiers 500 €", description: "Atteins 500 € de revenus mensuels vérifiés.", type: "revenue_threshold", target: 50000 },
+  { id: "first-1000", title: "Premiers 1 000 €", description: "Atteins 1 000 € de revenus mensuels vérifiés.", type: "revenue_threshold", target: 100000 },
   { id: "first-10k-month", title: "Premier 10K", description: "Atteins 10 000 € de revenus mensuels pour la première fois.", type: "revenue_threshold", target: 1000000 },
   { id: "growth-30", title: "+30 % de croissance", description: "Fais croître tes revenus mensuels d'au moins 30 %.", type: "growth_threshold", target: 30 },
   { id: "consistency-30", title: "30 jours de régularité", description: "Garde ta source de revenus connectée et vérifiée pendant 30 jours d'affilée.", type: "consistency", target: 30 },
