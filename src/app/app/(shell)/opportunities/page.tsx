@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Compass, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getSubscription, hasEliteAccess } from "@/services/subscription.service";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { Button } from "@/components/ui/Button";
+import { listDiscoverableOpportunities, listMyOpportunities, listMyApplications } from "@/services/opportunity.service";
+import { NewOpportunityModal } from "./NewOpportunityModal";
+import { OpportunitiesTabs } from "./OpportunitiesTabs";
 
 export const metadata: Metadata = { title: "Opportunités" };
 
@@ -12,35 +12,35 @@ export default async function OpportunitiesPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const subscription = user ? await getSubscription(user.id) : null;
-  const isElite = subscription ? hasEliteAccess(subscription.tier) : false;
+  if (!user) return null;
+
+  const subscription = await getSubscription(user.id);
+  const isElite = hasEliteAccess(subscription.tier);
+
+  const [discoverable, myOpportunities, applications] = await Promise.all([
+    isElite ? listDiscoverableOpportunities(user.id) : Promise.resolve([]),
+    listMyOpportunities(user.id),
+    listMyApplications(user.id),
+  ]);
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Opportunités</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Associé, développeur, partenaire, growth, cofondateur.
-        </p>
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Opportunités</h1>
+          <p className="mt-1 text-sm text-text-secondary">
+            Associé, développeur, partenaire, growth, cofondateur.
+          </p>
+        </div>
+        <NewOpportunityModal />
       </div>
-      {isElite ? (
-        <EmptyState
-          icon={Compass}
-          title="Les opportunités arrivent très bientôt."
-          description="En tant que membre Elite, tu y auras un accès prioritaire dès leur lancement."
-        />
-      ) : (
-        <EmptyState
-          icon={Lock}
-          title="Réservé aux membres Elite."
-          description="Découvre les opportunités partagées par les fondateurs du réseau ASCEND — une fonctionnalité Elite, bientôt disponible."
-          action={
-            <Button href="/api/stripe/checkout?tier=elite" size="sm">
-              Passer Elite
-            </Button>
-          }
-        />
-      )}
+
+      <OpportunitiesTabs
+        isElite={isElite}
+        discoverable={discoverable}
+        applications={applications}
+        myOpportunities={myOpportunities}
+      />
     </div>
   );
 }

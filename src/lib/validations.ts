@@ -45,3 +45,20 @@ export const profileUpdateSchema = z.object({
   country: z.string().trim().min(2),
   city: z.string().trim().max(80).optional(),
 });
+
+export const opportunitySchema = z.object({
+  type: z.enum(["cofounder", "developer", "partner", "growth", "freelance", "investor", "other"]),
+  title: z.string().trim().min(3, "Le titre doit contenir au moins 3 caractères.").max(120),
+  description: z.string().trim().min(20, "Décris l'opportunité en au moins 20 caractères.").max(3000),
+  category: z.string().trim().max(40).optional(),
+  compensationType: z.enum(["equity", "paid", "both", "unpaid"]),
+  locationType: z.enum(["remote", "onsite", "hybrid"]),
+  city: z.string().trim().max(80).optional(),
+  country: z.string().trim().max(2).optional(),
+  skills: z.array(z.string().trim().min(1).max(30)).max(10).default([]),
+  targetStage: z.enum(["any", "pre_revenue", "early", "growth", "scale"]).default("any"),
+});
+
+export const opportunityApplicationSchema = z.object({
+  message: z.string().trim().min(10, "Ton message doit contenir au moins 10 caractères.").max(2000),
+});

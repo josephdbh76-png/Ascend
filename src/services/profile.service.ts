@@ -28,6 +28,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     city: data.city,
     isAdmin: data.is_admin,
     isCofounder: data.is_cofounder,
+    skills: data.skills,
     createdAt: data.created_at,
   };
 }

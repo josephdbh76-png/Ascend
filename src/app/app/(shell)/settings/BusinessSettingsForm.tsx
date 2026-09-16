@@ -10,7 +10,7 @@ import { updateBusinessAction } from "./actions";
 export function BusinessSettingsForm({
   initial,
 }: {
-  initial: { name: string; category: string; website: string };
+  initial: { name: string; category: string; website: string; skills: string };
 }) {
   const [form, setForm] = useState(initial);
   const [pending, startTransition] = useTransition();
@@ -44,6 +44,16 @@ export function BusinessSettingsForm({
           value={form.website}
           onChange={(e) => setForm({ ...form, website: e.target.value })}
           placeholder="https://"
+        />
+      </Field>
+      <Field
+        label="Compétences"
+        hint="Séparées par des virgules — utilisées pour te suggérer les opportunités les plus pertinentes."
+      >
+        <Input
+          value={form.skills}
+          onChange={(e) => setForm({ ...form, skills: e.target.value })}
+          placeholder="Growth marketing, React, Vente B2B..."
         />
       </Field>
       <Button type="submit" disabled={pending} className="self-start">

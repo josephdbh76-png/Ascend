@@ -99,6 +99,7 @@ export default async function SettingsPage() {
             name: business?.name ?? "",
             category: business?.category ?? "saas",
             website: business?.website ?? "",
+            skills: profile.skills.join(", "),
           }}
         />
       </Card>

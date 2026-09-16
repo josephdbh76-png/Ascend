@@ -18,13 +18,21 @@ export type NotificationType =
   | "milestone_reached"
   | "verification_completed"
   | "new_follower"
-  | "new_message";
+  | "new_message"
+  | "new_application"
+  | "application_status_changed";
 export type TitleRarity = "common" | "rare" | "epic" | "legendary" | "exclusive";
 export type TitleType = "earned" | "purchasable";
 export type SubscriptionTier = "free" | "pro" | "elite";
 export type SubscriptionStatus = "active" | "past_due" | "canceled";
 export type AccentTheme = "gold" | "emerald" | "violet" | "crimson" | "sky";
 export type ConversationStatus = "pending" | "accepted";
+export type OpportunityType = "cofounder" | "developer" | "partner" | "growth" | "freelance" | "investor" | "other";
+export type CompensationType = "equity" | "paid" | "both" | "unpaid";
+export type OpportunityLocationType = "remote" | "onsite" | "hybrid";
+export type OpportunityStage = "any" | "pre_revenue" | "early" | "growth" | "scale";
+export type OpportunityStatus = "open" | "closed";
+export type ApplicationStatus = "pending" | "viewed" | "accepted" | "declined";
 
 export interface Database {
   public: {
@@ -46,6 +54,7 @@ export interface Database {
           city: string | null;
           is_admin: boolean;
           is_cofounder: boolean;
+          skills: string[];
           created_at: string;
           updated_at: string;
         };
@@ -394,6 +403,53 @@ export interface Database {
           body: string;
         };
         Update: Partial<Database["public"]["Tables"]["messages"]["Row"]>;
+        Relationships: [];
+      };
+      opportunities: {
+        Row: {
+          id: string;
+          author_id: string;
+          type: OpportunityType;
+          title: string;
+          description: string;
+          category: string | null;
+          compensation_type: CompensationType;
+          location_type: OpportunityLocationType;
+          city: string | null;
+          country: string | null;
+          skills: string[];
+          target_stage: OpportunityStage;
+          status: OpportunityStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["opportunities"]["Row"], "id">> & {
+          author_id: string;
+          type: OpportunityType;
+          title: string;
+          description: string;
+          compensation_type: CompensationType;
+          location_type: OpportunityLocationType;
+        };
+        Update: Partial<Database["public"]["Tables"]["opportunities"]["Row"]>;
+        Relationships: [];
+      };
+      opportunity_applications: {
+        Row: {
+          id: string;
+          opportunity_id: string;
+          applicant_id: string;
+          message: string;
+          status: ApplicationStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["opportunity_applications"]["Row"], "id">> & {
+          opportunity_id: string;
+          applicant_id: string;
+          message: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["opportunity_applications"]["Row"]>;
         Relationships: [];
       };
     };

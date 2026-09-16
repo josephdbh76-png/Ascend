@@ -45,6 +45,7 @@ export async function updateBusinessAction(input: {
   name: string;
   category: string;
   website?: string;
+  skills?: string;
 }): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
@@ -61,6 +62,16 @@ export async function updateBusinessAction(input: {
   );
 
   if (error) return { success: false, error: toFriendlyAuthError(error.message) };
+
+  const skills = (input.skills ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 10);
+
+  const { error: skillsError } = await supabase.from("profiles").update({ skills }).eq("id", userData.user.id);
+  if (skillsError) return { success: false, error: toFriendlyAuthError(skillsError.message) };
+
   return { success: true, data: undefined };
 }
 

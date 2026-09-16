@@ -1,9 +1,15 @@
 import type {
   AccentTheme,
   AchievementRarity,
+  ApplicationStatus,
   ChallengeStatus,
   ChallengeType,
+  CompensationType,
   OnboardingStep,
+  OpportunityLocationType,
+  OpportunityStage,
+  OpportunityStatus,
+  OpportunityType,
   RevenueVisibility,
   SubscriptionStatus,
   SubscriptionTier,
@@ -30,6 +36,7 @@ export interface Profile {
   city: string | null;
   isAdmin: boolean;
   isCofounder: boolean;
+  skills: string[];
   createdAt: string;
 }
 
@@ -157,4 +164,48 @@ export interface SubscriptionInfo {
   status: SubscriptionStatus;
   currentPeriodEnd: string | null;
   hasStripeCustomer: boolean;
+}
+
+export interface Opportunity {
+  id: string;
+  authorId: string;
+  authorUsername: string;
+  authorFirstName: string | null;
+  authorLastName: string | null;
+  type: OpportunityType;
+  title: string;
+  description: string;
+  category: string | null;
+  compensationType: CompensationType;
+  locationType: OpportunityLocationType;
+  city: string | null;
+  country: string | null;
+  skills: string[];
+  targetStage: OpportunityStage;
+  status: OpportunityStatus;
+  createdAt: string;
+}
+
+/** An opportunity with a 0-100 relevance score for the current viewer, plus
+ * why it scored that way — surfaced so the "matching intelligent" doesn't
+ * feel like a black box. */
+export interface OpportunityMatch extends Opportunity {
+  matchScore: number;
+  matchReasons: string[];
+}
+
+export interface OpportunityApplication {
+  id: string;
+  opportunityId: string;
+  applicantId: string;
+  applicantUsername: string;
+  applicantFirstName: string | null;
+  applicantLastName: string | null;
+  message: string;
+  status: ApplicationStatus;
+  createdAt: string;
+}
+
+export interface MyOpportunity extends Opportunity {
+  applications: OpportunityApplication[];
 }
