@@ -114,9 +114,20 @@ async function grantEarnedTitle(userId: string, titleId: string): Promise<boolea
   const { data: def } = await supabase.from("titles").select("name").eq("id", titleId).maybeSingle();
   if (!def) return false;
 
+  // A title a member earns but never manually activates never shows up
+  // anywhere (profile, leaderboard, network) — most people never think to
+  // go flip that switch. Auto-activating someone's very first title fixes
+  // that without ever overriding a choice they've already made.
+  const { data: alreadyHasActive } = await supabase
+    .from("user_titles")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("user_titles")
-    .insert({ user_id: userId, title_id: titleId, acquisition_type: "earned" });
+    .insert({ user_id: userId, title_id: titleId, acquisition_type: "earned", is_active: !alreadyHasActive });
   if (error) return false;
 
   await createNotification({
