@@ -1,9 +1,15 @@
 "use client";
 
+import posthog from "posthog-js";
+
 /**
- * Thin analytics facade. Wired for PostHog but never blocks the app if
+ * Thin analytics facade around PostHog. Never blocks the app if
  * NEXT_PUBLIC_POSTHOG_KEY is unset — events just become no-ops. Never
  * pass revenue amounts, emails, or other sensitive fields as properties.
+ *
+ * Initialization is gated behind cookie consent (see CookieBanner /
+ * lib/consent.ts) — no analytics cookie or request fires before the
+ * visitor explicitly accepts.
  */
 export type AnalyticsEvent =
   | "landing_view"
@@ -20,17 +26,32 @@ export type AnalyticsEvent =
   | "challenge_started"
   | "challenge_completed";
 
-type PostHogGlobal = {
-  capture: (event: string, properties?: Record<string, unknown>) => void;
-};
+let initialized = false;
 
-declare global {
-  interface Window {
-    posthog?: PostHogGlobal;
-  }
+export function initAnalytics() {
+  if (initialized || typeof window === "undefined") return;
+  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  if (!key) return;
+
+  posthog.init(key, {
+    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
+    person_profiles: "identified_only",
+    capture_pageview: false, // handled manually so client-side route changes are tracked too
+  });
+  initialized = true;
+}
+
+export function trackPageview(url: string) {
+  if (!initialized) return;
+  posthog.capture("$pageview", { $current_url: url });
 }
 
 export function track(event: AnalyticsEvent, properties?: Record<string, unknown>) {
-  if (typeof window === "undefined") return;
-  window.posthog?.capture(event, properties);
+  if (!initialized) return;
+  posthog.capture(event, properties);
+}
+
+export function resetAnalytics() {
+  if (!initialized) return;
+  posthog.reset();
 }

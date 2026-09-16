@@ -19,7 +19,16 @@ export async function createAccountAction(input: {
   email: string;
   password: string;
   username: string;
+  /** Honeypot — a real visitor never sees or fills this field (hidden via
+   * CSS, not type="hidden" which some bots already skip). Any value here
+   * means the submission is automated, so we reject without touching
+   * Supabase Auth at all. */
+  website?: string;
 }): Promise<ActionResult<{ needsEmailConfirmation: boolean }>> {
+  if (input.website) {
+    return { success: false, error: "Une erreur est survenue. Réessaie." };
+  }
+
   const parsed = signupAccountSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };

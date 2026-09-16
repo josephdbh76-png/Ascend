@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
@@ -26,7 +27,7 @@ export function SignupWizard() {
   const [error, setError] = useState<string | null>(null);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
-  const [account, setAccount] = useState({ email: "", password: "", username: "" });
+  const [account, setAccount] = useState({ email: "", password: "", username: "", website: "" });
   const [profile, setProfile] = useState<{
     firstName: string;
     lastName: string;
@@ -47,7 +48,8 @@ export function SignupWizard() {
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
 
-  function submitAccount() {
+  function submitAccount(e: React.FormEvent) {
+    e.preventDefault();
     setError(null);
     track("signup_started");
     startTransition(async () => {
@@ -61,7 +63,8 @@ export function SignupWizard() {
     });
   }
 
-  function submitProfile() {
+  function submitProfile(e: React.FormEvent) {
+    e.preventDefault();
     setError(null);
     startTransition(async () => {
       const result = await saveProfileStepAction(profile);
@@ -144,15 +147,28 @@ export function SignupWizard() {
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         >
           {step === 0 && (
-            <div className="flex flex-col gap-4">
+            <form onSubmit={submitAccount} className="flex flex-col gap-4">
               <div>
                 <h1 className="text-xl font-semibold text-text-primary">Crée ton compte</h1>
                 <p className="mt-1 text-sm text-text-secondary">Gratuit pendant la bêta. Aucune carte bancaire.</p>
+              </div>
+              {/* Honeypot — invisible to real visitors, bots fill every field they can find. */}
+              <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
+                <label htmlFor="website">Site web</label>
+                <input
+                  id="website"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={account.website}
+                  onChange={(e) => setAccount({ ...account, website: e.target.value })}
+                />
               </div>
               <Field label="E-mail" htmlFor="email">
                 <Input
                   id="email"
                   type="email"
+                  required
                   value={account.email}
                   onChange={(e) => setAccount({ ...account, email: e.target.value })}
                   placeholder="toi@entreprise.com"
@@ -163,6 +179,8 @@ export function SignupWizard() {
                 <Input
                   id="password"
                   type="password"
+                  required
+                  minLength={8}
                   value={account.password}
                   onChange={(e) => setAccount({ ...account, password: e.target.value })}
                   autoComplete="new-password"
@@ -171,6 +189,11 @@ export function SignupWizard() {
               <Field label="Nom d'utilisateur" htmlFor="username" hint="Ton profil public : ascend.app/profile/pseudo">
                 <Input
                   id="username"
+                  required
+                  minLength={3}
+                  maxLength={30}
+                  pattern="[a-z0-9_]+"
+                  title="Lettres minuscules, chiffres et underscores uniquement."
                   value={account.username}
                   onChange={(e) =>
                     setAccount({ ...account, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "") })
@@ -179,20 +202,20 @@ export function SignupWizard() {
                   autoComplete="off"
                 />
               </Field>
-              <Button onClick={submitAccount} disabled={pending} className="mt-2">
+              <Button type="submit" disabled={pending} className="mt-2">
                 Continuer <ArrowRight className="h-4 w-4" />
               </Button>
               <p className="text-center text-sm text-text-muted">
                 Déjà un compte ?{" "}
-                <a href="/login" className="text-gold hover:text-gold-light">
+                <Link href="/login" className="text-gold hover:text-gold-light">
                   Se connecter
-                </a>
+                </Link>
               </p>
-            </div>
+            </form>
           )}
 
           {step === 1 && (
-            <div className="flex flex-col gap-4">
+            <form onSubmit={submitProfile} className="flex flex-col gap-4">
               <div>
                 <h1 className="text-xl font-semibold text-text-primary">Que construis-tu ?</h1>
                 <p className="mt-1 text-sm text-text-secondary">Cela façonne ton profil public de fondateur.</p>
@@ -201,6 +224,7 @@ export function SignupWizard() {
                 <Field label="Prénom" htmlFor="firstName">
                   <Input
                     id="firstName"
+                    required
                     value={profile.firstName}
                     onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
                   />
@@ -208,6 +232,7 @@ export function SignupWizard() {
                 <Field label="Nom" htmlFor="lastName">
                   <Input
                     id="lastName"
+                    required
                     value={profile.lastName}
                     onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
                   />
@@ -242,15 +267,16 @@ export function SignupWizard() {
               <Field label="Nom de l'activité" htmlFor="businessName">
                 <Input
                   id="businessName"
+                  required
                   value={profile.businessName}
                   onChange={(e) => setProfile({ ...profile, businessName: e.target.value })}
                   placeholder="Acme Inc."
                 />
               </Field>
-              <Button onClick={submitProfile} disabled={pending} className="mt-2">
+              <Button type="submit" disabled={pending} className="mt-2">
                 Continuer <ArrowRight className="h-4 w-4" />
               </Button>
-            </div>
+            </form>
           )}
 
           {step === 2 && (

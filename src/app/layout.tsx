@@ -1,6 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { ToastProvider } from "@/components/ui/Toast";
+import { CookieBanner } from "@/components/layout/CookieBanner";
+import { PageviewTracker } from "@/components/layout/PageviewTracker";
 import { getAppUrl } from "@/lib/utils";
 import "./globals.css";
 
@@ -32,16 +34,19 @@ export const metadata: Metadata = {
     title: "ASCEND — Construis. Prouve. Progresse.",
     description: DESCRIPTION,
   },
-  icons: {
-    icon: "/favicon.ico",
-  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0b0d",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-bg-primary text-text-primary">
+    <html lang="fr" className={`${inter.variable} h-full overflow-x-hidden antialiased`}>
+      <body className="min-h-full flex flex-col overflow-x-hidden bg-bg-primary text-text-primary">
+        <PageviewTracker />
         <ToastProvider>{children}</ToastProvider>
+        <CookieBanner />
       </body>
     </html>
   );

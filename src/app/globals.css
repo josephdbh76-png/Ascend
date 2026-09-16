@@ -15,16 +15,16 @@
 
   --color-text-primary: #f4f1ea;
   --color-text-secondary: #a8a9ad;
-  --color-text-muted: #6f7278;
+  --color-text-muted: #8b8f96;
 
   --color-success: #39b980;
-  --color-error: #d95c5c;
-  --color-info: #5b8def;
-  --color-exclusive: #8b6cff;
+  --color-error: #ff7070;
+  --color-info: #749ef1;
+  --color-exclusive: #a289ff;
 
   --color-rank-1: #d6a84f;
   --color-rank-2: #a8a9ad;
-  --color-rank-3: #9a722d;
+  --color-rank-3: #b58635;
 
   --background: var(--color-bg-primary);
   --foreground: var(--color-text-primary);

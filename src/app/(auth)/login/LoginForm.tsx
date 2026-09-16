@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -68,18 +69,18 @@ export function LoginForm() {
         />
       </Field>
       <div className="flex justify-end">
-        <a href="/reset-password" className="text-xs text-text-muted hover:text-text-primary">
+        <Link href="/reset-password" className="text-xs text-text-muted hover:text-text-primary">
           Mot de passe oublié ?
-        </a>
+        </Link>
       </div>
       <Button type="submit" disabled={pending}>
         Se connecter <ArrowRight className="h-4 w-4" />
       </Button>
       <p className="text-center text-sm text-text-muted">
         Nouveau sur ASCEND ?{" "}
-        <a href="/signup" className="text-gold hover:text-gold-light">
+        <Link href="/signup" className="text-gold hover:text-gold-light">
           Rejoindre ASCEND
-        </a>
+        </Link>
       </p>
     </form>
   );
