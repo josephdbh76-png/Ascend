@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { Link2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -39,9 +40,14 @@ export function VerificationCTA({
           </p>
         )}
       </div>
-      <Button href="/api/stripe/connect" className="shrink-0">
-        <Link2 className="h-4 w-4" /> Connecter Stripe
-      </Button>
+      <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+        <Button href="/api/stripe/connect" className="shrink-0">
+          <Link2 className="h-4 w-4" /> Connecter Stripe
+        </Button>
+        <Link href="/app/settings#revenus" className="text-xs text-text-muted hover:text-text-primary">
+          Pas Stripe ? Déclare tes revenus manuellement
+        </Link>
+      </div>
     </motion.div>
   );
 }

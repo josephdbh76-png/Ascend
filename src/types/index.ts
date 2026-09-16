@@ -44,6 +44,9 @@ export interface Business {
   name: string;
   category: string;
   website: string | null;
+  siret: string | null;
+  legalName: string | null;
+  siretVerifiedAt: string | null;
 }
 
 export interface RevenuePoint {
@@ -133,6 +136,7 @@ export interface PublicProfile {
   activeTitle: EarnedTitle | null;
   accentTheme: AccentTheme;
   isCofounder: boolean;
+  legalName: string | null;
 }
 
 export interface TitleRow {

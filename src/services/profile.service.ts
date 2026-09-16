@@ -83,6 +83,7 @@ function mapPublicProfileRow(
     activeTitle,
     accentTheme: row.accent_theme,
     isCofounder: row.is_cofounder,
+    legalName: row.legal_name,
   };
 }
 

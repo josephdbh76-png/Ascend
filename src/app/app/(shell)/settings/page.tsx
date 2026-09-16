@@ -31,13 +31,35 @@ export default async function SettingsPage() {
 
   const [{ data: business }, { data: privacy }, { data: source }, verificationStatus, subscription, isAdmin] =
     await Promise.all([
-      supabase.from("businesses").select("name, category, website").eq("user_id", user.id).maybeSingle(),
+      supabase
+        .from("businesses")
+        .select("name, category, website, siret, legal_name")
+        .eq("user_id", user.id)
+        .maybeSingle(),
       supabase.from("privacy_settings").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("revenue_sources").select("status").eq("user_id", user.id).eq("provider", "stripe").maybeSingle(),
       getVerificationStatus(user.id),
       getSubscription(user.id),
       isCurrentUserAdmin(),
     ]);
+
+  const now = new Date();
+  const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const { data: manualSource } = await supabase
+    .from("revenue_sources")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("provider", "manual")
+    .maybeSingle();
+  const { data: currentDeclared } = manualSource
+    ? await supabase
+        .from("revenue_snapshots")
+        .select("amount_cents")
+        .eq("user_id", user.id)
+        .eq("period", currentPeriod)
+        .eq("revenue_source_id", manualSource.id)
+        .maybeSingle()
+    : { data: null };
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
@@ -100,6 +122,8 @@ export default async function SettingsPage() {
             category: business?.category ?? "saas",
             website: business?.website ?? "",
             skills: profile.skills.join(", "),
+            siret: business?.siret ?? "",
+            legalName: business?.legal_name ?? null,
           }}
         />
       </Card>
@@ -124,6 +148,7 @@ export default async function SettingsPage() {
           connected={source?.status === "connected"}
           status={verificationStatus}
           isCofounder={profile.isCofounder}
+          currentDeclaredAmountCents={currentDeclared?.amount_cents ?? null}
         />
       </Card>
 

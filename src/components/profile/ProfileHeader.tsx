@@ -1,4 +1,4 @@
-import { CheckCircle2, MapPin, Calendar, Globe2, Flag as FlagIcon, Crown } from "lucide-react";
+import { CheckCircle2, MapPin, Calendar, Globe2, Flag as FlagIcon, Crown, BadgeCheck } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { ShareProfileButton } from "./ShareProfileButton";
 import { FollowButton } from "@/components/network/FollowButton";
@@ -98,6 +98,11 @@ export function ProfileHeader({
             <span className="flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5" /> Membre depuis {new Date(profile.memberSince).getFullYear()}
             </span>
+            {profile.legalName && (
+              <span className="flex items-center gap-1.5 text-success" title={profile.legalName}>
+                <BadgeCheck className="h-3.5 w-3.5" /> Entreprise vérifiée
+              </span>
+            )}
           </div>
         </div>
 

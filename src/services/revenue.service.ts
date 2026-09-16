@@ -11,6 +11,7 @@ interface UpsertMonthlyRevenueInput {
   amountCents: number;
   currency: string;
   isVerified: boolean;
+  proofPath?: string | null;
 }
 
 export async function upsertMonthlyRevenue(input: UpsertMonthlyRevenueInput) {
@@ -23,10 +24,64 @@ export async function upsertMonthlyRevenue(input: UpsertMonthlyRevenueInput) {
       amount_cents: input.amountCents,
       currency: input.currency,
       is_verified: input.isVerified,
+      proof_path: input.proofPath ?? null,
     },
     { onConflict: "user_id,period" },
   );
   if (error) throw new Error(error.message);
+}
+
+/**
+ * Self-reported revenue for members whose processor isn't supported yet
+ * (or who have no processor at all) — the only way for them to appear on
+ * their own dashboard today. Deliberately never touches is_verified or
+ * profiles.revenue_verified: it stays labeled "Déclaré", never "Vérifié".
+ */
+export async function submitManualRevenue(input: {
+  userId: string;
+  period: string; // YYYY-MM-01
+  amountCents: number;
+  proofPath?: string | null;
+}) {
+  const supabase = await createClient();
+
+  const { data: source, error: sourceError } = await supabase
+    .from("revenue_sources")
+    .upsert(
+      {
+        user_id: input.userId,
+        provider: "manual",
+        status: "connected",
+        is_test_mode: false,
+        connected_at: new Date().toISOString(),
+        last_synced_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,provider" },
+    )
+    .select("id")
+    .single();
+  if (sourceError || !source) throw new Error(sourceError?.message ?? "Impossible d'enregistrer la source.");
+
+  await upsertMonthlyRevenue({
+    userId: input.userId,
+    revenueSourceId: source.id,
+    period: input.period,
+    amountCents: input.amountCents,
+    currency: "EUR",
+    isVerified: false,
+    proofPath: input.proofPath,
+  });
+}
+
+export async function getManualRevenueSource(userId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("revenue_sources")
+    .select("id, status, last_synced_at")
+    .eq("user_id", userId)
+    .eq("provider", "manual")
+    .maybeSingle();
+  return data;
 }
 
 export async function getRevenueHistory(userId: string, months = 12): Promise<RevenuePoint[]> {
@@ -72,7 +127,10 @@ export async function getVerificationStatus(userId: string): Promise<Verificatio
     .eq("provider", "stripe")
     .maybeSingle();
 
-  if (!source) return "unverified";
+  if (!source) {
+    const manual = await getManualRevenueSource(userId);
+    return manual?.status === "connected" ? "declared" : "unverified";
+  }
   if (source.status === "disconnected") return "disconnected";
 
   const { data: verification } = await supabase

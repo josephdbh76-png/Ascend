@@ -6,6 +6,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { profileUpdateSchema, privacySettingsSchema } from "@/lib/validations";
 import { toFriendlyAuthError } from "@/lib/errors";
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
+import { verifyAndSaveSiret } from "@/services/siret.service";
+import { submitManualRevenue, calculateMonthlyGrowth, getCurrentRevenue } from "@/services/revenue.service";
+import { evaluateChallengeProgress } from "@/services/challenge.service";
 import { ACCENT_THEMES } from "@/lib/constants";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { AccentTheme } from "@/types/database.types";
@@ -73,6 +76,69 @@ export async function updateBusinessAction(input: {
   if (skillsError) return { success: false, error: toFriendlyAuthError(skillsError.message) };
 
   return { success: true, data: undefined };
+}
+
+export async function verifySiretAction(siret: string): Promise<ActionResult<{ legalName: string }>> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  const result = await verifyAndSaveSiret(userData.user.id, siret.replace(/\s/g, ""));
+  if (!result.success) return { success: false, error: result.error };
+  return { success: true, data: { legalName: result.legalName } };
+}
+
+const MAX_PROOF_BYTES = 5 * 1024 * 1024;
+const ALLOWED_PROOF_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
+
+export async function submitManualRevenueAction(formData: FormData): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+  const userId = userData.user.id;
+
+  const amountRaw = String(formData.get("amount") ?? "").replace(",", ".");
+  const amount = Number.parseFloat(amountRaw);
+  if (!Number.isFinite(amount) || amount < 0) {
+    return { success: false, error: "Indique un montant valide." };
+  }
+  const amountCents = Math.round(amount * 100);
+
+  const now = new Date();
+  const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
+  let proofPath: string | null = null;
+  const proof = formData.get("proof");
+  if (proof instanceof File && proof.size > 0) {
+    if (proof.size > MAX_PROOF_BYTES) {
+      return { success: false, error: "Le fichier ne doit pas dépasser 5 Mo." };
+    }
+    if (!ALLOWED_PROOF_TYPES.includes(proof.type)) {
+      return { success: false, error: "Formats acceptés : PDF, PNG, JPEG, WebP." };
+    }
+    const ext = proof.name.split(".").pop() || "bin";
+    const path = `${userId}/${period}-${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from("revenue-proofs").upload(path, proof, {
+      contentType: proof.type,
+      upsert: true,
+    });
+    if (uploadError) return { success: false, error: "Le téléversement de la preuve a échoué." };
+    proofPath = path;
+  }
+
+  try {
+    await submitManualRevenue({ userId, period, amountCents, proofPath });
+
+    const { current, previous } = await getCurrentRevenue(userId);
+    if (current) {
+      const growth = calculateMonthlyGrowth(current.amountCents, previous?.amountCents ?? null);
+      await evaluateChallengeProgress(userId, current.amountCents, growth);
+    }
+
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
 }
 
 export async function updatePrivacyAction(input: {

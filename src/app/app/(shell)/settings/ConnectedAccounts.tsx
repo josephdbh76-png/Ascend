@@ -6,16 +6,19 @@ import { Button } from "@/components/ui/Button";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";
+import { ManualRevenueCard } from "./ManualRevenueCard";
 import type { VerificationStatus } from "@/types/database.types";
 
 export function ConnectedAccounts({
   connected,
   status,
   isCofounder,
+  currentDeclaredAmountCents,
 }: {
   connected: boolean;
   status: VerificationStatus;
   isCofounder?: boolean;
+  currentDeclaredAmountCents: number | null;
 }) {
   const [pending, startTransition] = useTransition();
   const toast = useToast();
@@ -82,6 +85,8 @@ export function ConnectedAccounts({
           )}
         </div>
       </div>
+
+      <ManualRevenueCard currentDeclaredAmountCents={currentDeclaredAmountCents} />
 
       {(["Shopify", "PayPal", "Paddle"] as const).map((name) => (
         <div key={name} className="flex items-center justify-between rounded-md border border-border bg-card p-4 opacity-60">

@@ -6,7 +6,7 @@ export type OnboardingStep = "profile" | "business" | "bio" | "revenue" | "done"
 export type RevenueVisibility = "exact" | "range" | "private";
 export type SourceProvider = "stripe" | "shopify" | "paypal" | "paddle" | "manual";
 export type SourceStatus = "connected" | "disconnected" | "error";
-export type VerificationStatus = "unverified" | "verified" | "error" | "disconnected";
+export type VerificationStatus = "unverified" | "verified" | "declared" | "error" | "disconnected";
 export type AchievementRarity = "common" | "rare" | "epic" | "legendary";
 export type ChallengeType = "revenue_threshold" | "growth_threshold" | "consistency" | "coming_soon";
 export type ChallengeStatus = "in_progress" | "completed";
@@ -72,6 +72,9 @@ export interface Database {
           name: string;
           category: string;
           website: string | null;
+          siret: string | null;
+          legal_name: string | null;
+          siret_verified_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -129,6 +132,7 @@ export interface Database {
           amount_cents: number;
           currency: string;
           is_verified: boolean;
+          proof_path: string | null;
           created_at: string;
         };
         Insert: Partial<Omit<Database["public"]["Tables"]["revenue_snapshots"]["Row"], "id">> & {
@@ -537,4 +541,5 @@ export interface PublicProfileRow {
   country_rank: number | null;
   accent_theme: AccentTheme;
   is_cofounder: boolean;
+  legal_name: string | null;
 }
