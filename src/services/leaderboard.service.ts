@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { LeaderboardScope, LeaderboardRow, TitleRarity } from "@/types/database.types";
+import { getActiveTitlesByUserIds } from "@/services/title.service";
+import type { LeaderboardScope, LeaderboardRow } from "@/types/database.types";
 
 /** Attaches each user's currently-displayed title (if any) to leaderboard
  * rows — a second query rather than extending the get_leaderboard RPC,
@@ -8,19 +9,7 @@ import type { LeaderboardScope, LeaderboardRow, TitleRarity } from "@/types/data
  * DROP FUNCTION migrations and this is easy to compute alongside it. */
 async function attachActiveTitles(rows: LeaderboardRow[]): Promise<LeaderboardRow[]> {
   if (rows.length === 0) return rows;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("user_titles")
-    .select("user_id, titles(name, icon, rarity)")
-    .eq("is_active", true)
-    .in("user_id", rows.map((r) => r.user_id));
-
-  const byUserId = new Map(
-    (data ?? [])
-      .filter((d) => d.titles)
-      .map((d) => [d.user_id, d.titles as unknown as { name: string; icon: string; rarity: TitleRarity }]),
-  );
-
+  const byUserId = await getActiveTitlesByUserIds(rows.map((r) => r.user_id));
   return rows.map((r) => ({ ...r, active_title: byUserId.get(r.user_id) ?? null }));
 }
 

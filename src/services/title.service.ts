@@ -4,6 +4,25 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotification } from "@/services/notification.service";
 import { getStripe } from "@/lib/stripe";
 import type { TitleRow, EarnedTitle } from "@/types";
+import type { TitleRarity } from "@/types/database.types";
+
+export type ActiveTitleInfo = { name: string; icon: string; rarity: TitleRarity };
+
+/** Bulk-fetches each user's currently-displayed title, keyed by user id — used
+ * wherever a member's name appears in a list (leaderboard, network, ...). */
+export async function getActiveTitlesByUserIds(userIds: string[]): Promise<Map<string, ActiveTitleInfo>> {
+  if (userIds.length === 0) return new Map();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("user_titles")
+    .select("user_id, titles(name, icon, rarity)")
+    .eq("is_active", true)
+    .in("user_id", userIds);
+
+  return new Map(
+    (data ?? []).filter((d) => d.titles).map((d) => [d.user_id, d.titles as unknown as ActiveTitleInfo]),
+  );
+}
 
 /** % of (non-demo) members who own each title — shown as social proof next to rarity. */
 export async function getTitleCompletionRates(): Promise<Record<string, number>> {

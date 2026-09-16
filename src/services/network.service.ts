@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createNotificationForUser } from "@/services/notification.service";
+import { getActiveTitlesByUserIds, type ActiveTitleInfo } from "@/services/title.service";
 
 export interface NetworkProfileRow {
   userId: string;
@@ -15,6 +16,7 @@ export interface NetworkProfileRow {
   revenueVerified: boolean;
   followerCount: number;
   isFollowing: boolean;
+  activeTitle: ActiveTitleInfo | null;
 }
 
 type ProfileForNetwork = {
@@ -47,6 +49,8 @@ async function buildRows(
   const matchedIds = categoryFilter ? ids.filter((id) => businessByUser.has(id)) : ids;
   if (matchedIds.length === 0) return [];
 
+  const activeTitleByUser = await getActiveTitlesByUserIds(matchedIds);
+
   const { data: allFollows } = await supabase
     .from("follows")
     .select("follower_id, followee_id")
@@ -76,6 +80,7 @@ async function buildRows(
         revenueVerified: p.revenue_verified,
         followerCount: followerCountMap.get(id) ?? 0,
         isFollowing: followingSet.has(id),
+        activeTitle: activeTitleByUser.get(id) ?? null,
       };
     });
 }

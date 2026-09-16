@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { FollowButton } from "@/components/network/FollowButton";
 import { MessageButton } from "@/components/network/MessageButton";
+import { TitleBadge } from "@/components/titles/TitleBadge";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
 import { initials } from "@/lib/utils";
 import type { NetworkProfileRow } from "@/services/network.service";
@@ -36,8 +37,11 @@ export function NetworkResults({ results }: { results: NetworkProfileRow[] }) {
               )}
             </span>
             <span className="flex min-w-0 flex-col">
-              <span className="truncate font-medium text-text-primary">
-                {r.firstName} {r.lastName}
+              <span className="flex items-center gap-1.5 truncate font-medium text-text-primary">
+                <span className="truncate">
+                  {r.firstName} {r.lastName}
+                </span>
+                {r.activeTitle && <TitleBadge title={r.activeTitle} />}
               </span>
               <span className="truncate text-xs text-text-muted">@{r.username}</span>
             </span>
