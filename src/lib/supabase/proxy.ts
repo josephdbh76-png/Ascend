@@ -5,6 +5,14 @@ const PROTECTED_PREFIXES = ["/app", "/onboarding"];
 
 const AUTH_PREFIXES = ["/login", "/signup"];
 
+/** Matches a path against a prefix at a segment boundary, so "/app" never
+ * matches "/apple-icon" — a real bug this once caused, redirecting Next's
+ * apple-icon route to the login page because it starts with the same four
+ * characters as "/app". */
+function matchesPrefix(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(`${prefix}/`);
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -32,8 +40,8 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isProtected = PROTECTED_PREFIXES.some((p) => path.startsWith(p));
-  const isAuthPage = AUTH_PREFIXES.some((p) => path.startsWith(p));
+  const isProtected = PROTECTED_PREFIXES.some((p) => matchesPrefix(path, p));
+  const isAuthPage = AUTH_PREFIXES.some((p) => matchesPrefix(path, p));
 
   // A Server Action invocation POSTs to whatever page is currently open in
   // the browser (e.g. the signup wizard keeps calling actions on /signup
