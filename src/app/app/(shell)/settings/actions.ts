@@ -107,24 +107,24 @@ export async function submitManualRevenueAction(formData: FormData): Promise<Act
   const now = new Date();
   const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 
-  let proofPath: string | null = null;
   const proof = formData.get("proof");
-  if (proof instanceof File && proof.size > 0) {
-    if (proof.size > MAX_PROOF_BYTES) {
-      return { success: false, error: "Le fichier ne doit pas dépasser 5 Mo." };
-    }
-    if (!ALLOWED_PROOF_TYPES.includes(proof.type)) {
-      return { success: false, error: "Formats acceptés : PDF, PNG, JPEG, WebP." };
-    }
-    const ext = proof.name.split(".").pop() || "bin";
-    const path = `${userId}/${period}-${Date.now()}.${ext}`;
-    const { error: uploadError } = await supabase.storage.from("revenue-proofs").upload(path, proof, {
-      contentType: proof.type,
-      upsert: true,
-    });
-    if (uploadError) return { success: false, error: "Le téléversement de la preuve a échoué." };
-    proofPath = path;
+  if (!(proof instanceof File) || proof.size === 0) {
+    return { success: false, error: "Une preuve (facture, export comptable, capture bancaire...) est obligatoire." };
   }
+  if (proof.size > MAX_PROOF_BYTES) {
+    return { success: false, error: "Le fichier ne doit pas dépasser 5 Mo." };
+  }
+  if (!ALLOWED_PROOF_TYPES.includes(proof.type)) {
+    return { success: false, error: "Formats acceptés : PDF, PNG, JPEG, WebP." };
+  }
+  const ext = proof.name.split(".").pop() || "bin";
+  const path = `${userId}/${period}-${Date.now()}.${ext}`;
+  const { error: uploadError } = await supabase.storage.from("revenue-proofs").upload(path, proof, {
+    contentType: proof.type,
+    upsert: true,
+  });
+  if (uploadError) return { success: false, error: "Le téléversement de la preuve a échoué." };
+  const proofPath = path;
 
   try {
     await submitManualRevenue({ userId, period, amountCents, proofPath });

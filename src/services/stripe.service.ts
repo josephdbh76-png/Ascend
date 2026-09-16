@@ -162,6 +162,8 @@ export async function syncStripeRevenue(
 
   try {
     const monthlyTotals = new Map<string, number>();
+    const monthlyTransactionCounts = new Map<string, number>();
+    const monthlyCustomers = new Map<string, Set<string>>();
     let hasMore = true;
     let startingAfter: string | undefined;
 
@@ -179,6 +181,13 @@ export async function syncStripeRevenue(
         if (charge.status !== "succeeded" || charge.refunded) continue;
         const period = periodKeyFromUnixSeconds(charge.created);
         monthlyTotals.set(period, (monthlyTotals.get(period) ?? 0) + charge.amount);
+        monthlyTransactionCounts.set(period, (monthlyTransactionCounts.get(period) ?? 0) + 1);
+
+        const customerId = typeof charge.customer === "string" ? charge.customer : null;
+        if (customerId) {
+          if (!monthlyCustomers.has(period)) monthlyCustomers.set(period, new Set());
+          monthlyCustomers.get(period)!.add(customerId);
+        }
       }
 
       hasMore = charges.has_more;
@@ -193,6 +202,8 @@ export async function syncStripeRevenue(
         amountCents,
         currency: "EUR",
         isVerified: true,
+        transactionCount: monthlyTransactionCounts.get(period) ?? 0,
+        customerCount: monthlyCustomers.get(period)?.size ?? 0,
       });
     }
 

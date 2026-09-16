@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles, UserPlus, MessageCircle, Compass } from "lucide-react";
+import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles, UserPlus, MessageCircle, Compass, FileCheck } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
 import { markAllNotificationsReadAction } from "@/app/app/(shell)/actions";
 import type { NotificationType } from "@/types/database.types";
@@ -27,6 +27,7 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   new_message: MessageCircle,
   new_application: Compass,
   application_status_changed: Compass,
+  revenue_review_completed: FileCheck,
 };
 
 function notificationHref(n: NotificationItem): string | null {
@@ -35,6 +36,9 @@ function notificationHref(n: NotificationItem): string | null {
   }
   if (n.type === "new_follower" && typeof n.metadata?.username === "string") {
     return `/profile/${n.metadata.username}`;
+  }
+  if (n.type === "revenue_review_completed") {
+    return "/app/settings#revenus";
   }
   if (n.type === "new_application" || n.type === "application_status_changed") {
     return "/app/opportunities";

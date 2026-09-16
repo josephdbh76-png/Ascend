@@ -53,6 +53,8 @@ export interface RevenuePoint {
   period: string;
   amountCents: number;
   isVerified: boolean;
+  transactionCount: number | null;
+  customerCount: number | null;
 }
 
 export interface DashboardData {

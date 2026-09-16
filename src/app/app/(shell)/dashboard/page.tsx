@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { ArrowRight, TrendingUp, Globe2, Flag as FlagIcon, Award } from "lucide-react";
+import { ArrowRight, TrendingUp, Globe2, Flag as FlagIcon, Award, Users, ShoppingBag } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profile.service";
 import {
@@ -10,6 +10,7 @@ import {
   calculateMonthlyGrowth,
   getVerificationStatus,
   nextRevenueMilestone,
+  estimateMonthsToMilestone,
 } from "@/services/revenue.service";
 import { getUserRank, getRankMovement } from "@/services/leaderboard.service";
 import { getUserAchievements, getAllAchievementCatalog } from "@/services/achievement.service";
@@ -67,6 +68,15 @@ export default async function DashboardPage() {
 
   const milestone = nextRevenueMilestone(current?.amountCents ?? null);
   const remainingToMilestone = current ? milestone.targetCents - current.amountCents : milestone.targetCents;
+  const monthsToMilestone = estimateMonthsToMilestone(
+    current?.amountCents ?? null,
+    previous?.amountCents ?? null,
+    remainingToMilestone,
+  );
+  const avgBasketCents =
+    current?.transactionCount != null && current.transactionCount > 0
+      ? Math.round(current.amountCents / current.transactionCount)
+      : null;
 
   let foundingSupply: number | null = null;
   let remainingFoundingSlots: number | null = null;
@@ -125,6 +135,7 @@ export default async function DashboardPage() {
           label="Revenus mensuels"
           value={current ? formatCurrency(current.amountCents) : "—"}
           icon={TrendingUp}
+          trend={previous ? `${formatCurrency(previous.amountCents)} le mois dernier` : undefined}
           accent
         />
         <StatCard
@@ -151,6 +162,26 @@ export default async function DashboardPage() {
           icon={FlagIcon}
         />
       </div>
+
+      {(current?.customerCount != null || avgBasketCents != null) && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <StatCard
+            label="Clients ce mois-ci"
+            value={current?.customerCount != null ? current.customerCount.toLocaleString("fr-FR") : "—"}
+            icon={Users}
+          />
+          <StatCard
+            label="Panier moyen"
+            value={avgBasketCents != null ? formatCurrency(avgBasketCents) : "—"}
+            icon={ShoppingBag}
+            trend={
+              current?.transactionCount != null
+                ? `${current.transactionCount} transaction${current.transactionCount > 1 ? "s" : ""} ce mois-ci`
+                : undefined
+            }
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="p-6 lg:col-span-2" elevated hover>
@@ -191,6 +222,11 @@ export default async function DashboardPage() {
               </p>
             )}
             <p className="text-xs text-text-muted">{milestone.progressPercent.toFixed(0)} % atteint</p>
+            {monthsToMilestone != null && (
+              <p className="mt-1 text-xs text-text-muted">
+                À ce rythme : {monthsToMilestone} mois avant ce palier
+              </p>
+            )}
             <Link
               href="/app/challenges"
               className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-gold hover:text-gold-light"

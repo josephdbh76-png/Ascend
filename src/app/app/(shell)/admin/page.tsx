@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { isCurrentUserAdmin, listUsersForAdmin } from "@/services/admin.service";
+import { getPendingRevenueReviews } from "@/services/revenue.service";
 import { createClient } from "@/lib/supabase/server";
 import { AdminUsersTable } from "./AdminUsersTable";
 import { TitleStripeSyncButton } from "./TitleStripeSyncButton";
+import { RevenueReviewQueue } from "./RevenueReviewQueue";
 import { Card } from "@/components/ui/Card";
 
 export const metadata: Metadata = { title: "Administration" };
@@ -16,7 +18,7 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (!(await isCurrentUserAdmin())) redirect("/app/dashboard");
 
-  const users = await listUsersForAdmin();
+  const [users, pendingRevenueReviews] = await Promise.all([listUsersForAdmin(), getPendingRevenueReviews()]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -35,6 +37,16 @@ export default async function AdminPage() {
         </div>
         <TitleStripeSyncButton />
       </Card>
+
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-text-primary">
+          Revenus déclarés en attente de vérification
+          {pendingRevenueReviews.length > 0 && (
+            <span className="ml-2 text-xs font-normal text-text-muted">({pendingRevenueReviews.length})</span>
+          )}
+        </h2>
+        <RevenueReviewQueue reviews={pendingRevenueReviews} />
+      </div>
 
       <AdminUsersTable users={users} currentUserId={user.id} />
     </div>

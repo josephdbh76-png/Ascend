@@ -54,7 +54,7 @@ export default async function SettingsPage() {
   const { data: currentDeclared } = manualSource
     ? await supabase
         .from("revenue_snapshots")
-        .select("amount_cents")
+        .select("amount_cents, review_status, rejection_reason")
         .eq("user_id", user.id)
         .eq("period", currentPeriod)
         .eq("revenue_source_id", manualSource.id)
@@ -149,6 +149,8 @@ export default async function SettingsPage() {
           status={verificationStatus}
           isCofounder={profile.isCofounder}
           currentDeclaredAmountCents={currentDeclared?.amount_cents ?? null}
+          currentReviewStatus={currentDeclared?.review_status ?? null}
+          rejectionReason={currentDeclared?.rejection_reason ?? null}
         />
       </Card>
 

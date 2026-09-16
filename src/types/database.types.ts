@@ -6,7 +6,8 @@ export type OnboardingStep = "profile" | "business" | "bio" | "revenue" | "done"
 export type RevenueVisibility = "exact" | "range" | "private";
 export type SourceProvider = "stripe" | "shopify" | "paypal" | "paddle" | "manual";
 export type SourceStatus = "connected" | "disconnected" | "error";
-export type VerificationStatus = "unverified" | "verified" | "declared" | "error" | "disconnected";
+export type VerificationStatus = "unverified" | "verified" | "pending" | "rejected" | "error" | "disconnected";
+export type RevenueReviewStatus = "pending" | "approved" | "rejected";
 export type AchievementRarity = "common" | "rare" | "epic" | "legendary";
 export type ChallengeType = "revenue_threshold" | "growth_threshold" | "consistency" | "coming_soon";
 export type ChallengeStatus = "in_progress" | "completed";
@@ -20,7 +21,8 @@ export type NotificationType =
   | "new_follower"
   | "new_message"
   | "new_application"
-  | "application_status_changed";
+  | "application_status_changed"
+  | "revenue_review_completed";
 export type TitleRarity = "common" | "rare" | "epic" | "legendary" | "exclusive";
 export type TitleType = "earned" | "purchasable";
 export type SubscriptionTier = "free" | "pro" | "elite";
@@ -133,6 +135,12 @@ export interface Database {
           currency: string;
           is_verified: boolean;
           proof_path: string | null;
+          transaction_count: number | null;
+          customer_count: number | null;
+          review_status: RevenueReviewStatus | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          rejection_reason: string | null;
           created_at: string;
         };
         Insert: Partial<Omit<Database["public"]["Tables"]["revenue_snapshots"]["Row"], "id">> & {

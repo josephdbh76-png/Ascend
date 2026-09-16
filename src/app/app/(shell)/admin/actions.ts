@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
 import { isCurrentUserAdmin, adminSetTier, adminSetIsAdmin } from "@/services/admin.service";
 import { syncPurchasableTitleStripeProducts } from "@/services/title.service";
+import { approveRevenueDeclaration, rejectRevenueDeclaration } from "@/services/revenue.service";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { SubscriptionTier } from "@/types/database.types";
 
@@ -42,4 +44,35 @@ export async function adminSyncTitleStripeProductsAction(): Promise<ActionResult
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }
+}
+
+export async function adminApproveRevenueDeclarationAction(snapshotId: string): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  try {
+    await approveRevenueDeclaration(snapshotId, userData.user.id);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+  revalidatePath("/app/admin");
+  return { success: true, data: undefined };
+}
+
+export async function adminRejectRevenueDeclarationAction(snapshotId: string, reason: string): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  if (!reason.trim()) return { success: false, error: "Indique une raison pour le refus." };
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  try {
+    await rejectRevenueDeclaration(snapshotId, userData.user.id, reason.trim());
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+  revalidatePath("/app/admin");
+  return { success: true, data: undefined };
 }

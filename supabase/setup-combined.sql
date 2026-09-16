@@ -2251,3 +2251,39 @@ create policy "users can replace their own revenue proofs" on storage.objects
 create policy "users can delete their own revenue proofs" on storage.objects
   for delete using (bucket_id = 'revenue-proofs' and (storage.foldername(name))[1] = auth.uid()::text);
 
+-- ============================================================
+-- 20260101000031_revenue_business_metrics.sql
+-- ============================================================
+-- Stripe's charges.list already returns amount AND customer per charge —
+-- the sync loop was only summing amounts and throwing the rest away. No
+-- new API calls needed to also track unique customers and transaction
+-- count per month, which is what the dashboard needs for "clients" and
+-- "panier moyen" beyond the raw revenue figure.
+
+alter table revenue_snapshots add column transaction_count int;
+alter table revenue_snapshots add column customer_count int;
+
+-- ============================================================
+-- 20260101000032_revenue_review.sql
+-- ============================================================
+-- Manual revenue declarations now require proof (enforced in the app
+-- layer) and go through an admin review queue rather than sitting
+-- self-reported forever. Approved declarations are promoted to real
+-- verified status (same as Stripe) since a human has now confirmed them —
+-- rejected ones stay excluded and the member is told why.
+
+alter table revenue_snapshots add column review_status text check (review_status in ('pending', 'approved', 'rejected'));
+alter table revenue_snapshots add column reviewed_at timestamptz;
+alter table revenue_snapshots add column reviewed_by uuid references profiles (id);
+alter table revenue_snapshots add column rejection_reason text;
+
+alter table notifications drop constraint notifications_type_check;
+alter table notifications add constraint notifications_type_check
+  check (
+    type in (
+      'achievement_unlocked', 'rank_increased', 'challenge_started',
+      'milestone_reached', 'verification_completed', 'new_follower', 'new_message',
+      'new_application', 'application_status_changed', 'revenue_review_completed'
+    )
+  );
+
