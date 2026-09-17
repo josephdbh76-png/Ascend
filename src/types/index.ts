@@ -2,6 +2,7 @@ import type {
   AccentTheme,
   AchievementRarity,
   ApplicationStatus,
+  BillingInterval,
   ChallengeStatus,
   ChallengeType,
   CompensationType,
@@ -170,6 +171,9 @@ export interface SubscriptionInfo {
   status: SubscriptionStatus;
   currentPeriodEnd: string | null;
   hasStripeCustomer: boolean;
+  billingInterval: BillingInterval | null;
+  trialUsed: boolean;
+  trialEndsAt: string | null;
 }
 
 export interface Opportunity {

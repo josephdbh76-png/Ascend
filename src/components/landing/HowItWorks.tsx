@@ -2,7 +2,7 @@ import { Link2, ShieldCheck, Trophy, Rocket } from "lucide-react";
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 
 const STEPS = [
-  { number: "01", title: "Connecte", description: "Connecte ton entreprise — Stripe pour commencer.", icon: Link2 },
+  { number: "01", title: "Connecte", description: "Connecte ton entreprise via Stripe, ou déclare tes revenus manuellement.", icon: Link2 },
   { number: "02", title: "Vérifie", description: "Tes performances sont vérifiées à partir de données réelles.", icon: ShieldCheck },
   { number: "03", title: "Grimpe", description: "Monte dans les classements mondial, pays et catégorie.", icon: Trophy },
   { number: "04", title: "Progresse", description: "Construis ta réputation et partage ton profil.", icon: Rocket },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { getStripe, tierForPriceId } from "@/lib/stripe";
+import { getStripe, tierForPriceId, intervalForPriceId } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { grantPurchasedTitle } from "@/services/title.service";
 
@@ -68,6 +68,8 @@ async function syncSubscriptionFromStripe(subscription: Stripe.Subscription) {
   const currentPeriodEnd = item?.current_period_end
     ? new Date(item.current_period_end * 1000).toISOString()
     : null;
+  const interval = item ? intervalForPriceId(item.price.id) : null;
+  const isTrialing = subscription.status === "trialing";
 
   const admin = createAdminClient();
   await admin
@@ -77,6 +79,11 @@ async function syncSubscriptionFromStripe(subscription: Stripe.Subscription) {
       status,
       stripe_subscription_id: subscription.id,
       current_period_end: currentPeriodEnd,
+      billing_interval: interval,
+      // trial_used is set once and never reset back to false — a
+      // downgrade or cancellation must never make the trial available
+      // again for the same member.
+      ...(isTrialing ? { trial_used: true, trial_ends_at: new Date(subscription.trial_end! * 1000).toISOString() } : {}),
     })
     .eq("user_id", userId);
 }

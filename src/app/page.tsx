@@ -9,7 +9,7 @@ import { LeaderboardPreview } from "@/components/landing/LeaderboardPreview";
 import { ProfileShowcase } from "@/components/landing/ProfileShowcase";
 import { AchievementsPreview } from "@/components/landing/AchievementsPreview";
 import { TitlesPreview } from "@/components/landing/TitlesPreview";
-import { ComingSoonStrip } from "@/components/landing/ComingSoonStrip";
+import { CommunityPreview } from "@/components/landing/CommunityPreview";
 import { ChallengesPreview } from "@/components/landing/ChallengesPreview";
 import { Pricing } from "@/components/landing/Pricing";
 import { FAQ } from "@/components/landing/FAQ";
@@ -29,7 +29,7 @@ export default function LandingPage() {
         <ProfileShowcase />
         <AchievementsPreview />
         <TitlesPreview />
-        <ComingSoonStrip />
+        <CommunityPreview />
         <ChallengesPreview />
         <Pricing />
         <FAQ />

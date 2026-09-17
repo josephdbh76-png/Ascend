@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isCurrentUserAdmin, adminSetTier, adminSetIsAdmin } from "@/services/admin.service";
 import { syncPurchasableTitleStripeProducts } from "@/services/title.service";
 import { approveRevenueDeclaration, rejectRevenueDeclaration } from "@/services/revenue.service";
+import { syncAnnualPrices, type AnnualPriceSyncResult } from "@/services/subscription.service";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { SubscriptionTier } from "@/types/database.types";
 
@@ -40,6 +41,17 @@ export async function adminSyncTitleStripeProductsAction(): Promise<ActionResult
 
   try {
     const result = await syncPurchasableTitleStripeProducts();
+    return { success: true, data: result };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function adminSyncAnnualPricesAction(): Promise<ActionResult<AnnualPriceSyncResult[]>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+
+  try {
+    const result = await syncAnnualPrices();
     return { success: true, data: result };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };

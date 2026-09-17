@@ -22,6 +22,8 @@ export function SignupWizard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const plan = searchParams.get("plan");
+  const interval = searchParams.get("interval") === "year" ? "year" : "month";
+  const trial = searchParams.get("trial") === "1";
   const [step, setStep] = useState(0);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +92,7 @@ export function SignupWizard() {
       if (!result.success) return setError(result.error);
       track("signup_completed");
       if (plan === "pro" || plan === "elite") {
-        router.push(`/api/stripe/checkout?tier=${plan}`);
+        router.push(`/api/stripe/checkout?tier=${plan}&interval=${interval}${trial ? "&trial=1" : ""}`);
       } else if (connect) {
         track("stripe_connection_started");
         router.push("/api/stripe/connect");

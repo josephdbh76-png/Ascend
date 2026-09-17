@@ -12,7 +12,7 @@ const ITEMS = [
   },
   {
     q: "Comment fonctionne la vérification des revenus ?",
-    a: "Tu connectes ta source de revenus (Stripe) et ASCEND récupère tes vraies données de transaction côté serveur. Rien n'est vérifié tant que des données réelles n'ont pas été récupérées avec succès.",
+    a: "Connecte Stripe et ASCEND récupère tes vraies données de transaction côté serveur — vérifié automatiquement, instantanément. Pas de Stripe ? Déclare tes revenus manuellement avec une preuve (facture, export comptable...) : un administrateur la vérifie avant qu'elle ne compte comme un revenu vérifié.",
   },
   {
     q: "Puis-je masquer mes revenus exacts ?",
@@ -24,7 +24,15 @@ const ITEMS = [
   },
   {
     q: "Que se passe-t-il après la bêta ?",
-    a: "Les fonctionnalités gratuites resteront gratuites. Des offres Pro et Elite payantes sont prévues, mais les membres de la bêta ne seront jamais facturés rétroactivement.",
+    a: "Les fonctionnalités du compte Gratuit resteront gratuites pour toujours. Pro et Elite sont déjà disponibles dès aujourd'hui, résiliables à tout moment depuis les Réglages.",
+  },
+  {
+    q: "Puis-je essayer Elite gratuitement ?",
+    a: "Oui, si tu n'as jamais eu d'abonnement payant : 14 jours d'essai gratuit, carte bancaire requise à l'inscription. Tu peux annuler à tout moment pendant l'essai depuis les Réglages ; sinon, la facturation démarre automatiquement à la fin des 14 jours.",
+  },
+  {
+    q: "Y a-t-il une réduction pour un engagement annuel ?",
+    a: "Oui. L'abonnement annuel Pro équivaut à 2 mois offerts, et l'abonnement annuel Elite à 3 mois offerts par rapport au tarif mensuel.",
   },
 ];
 

@@ -15,7 +15,7 @@ import { AccentThemeForm } from "./AccentThemeForm";
 import { ConnectedAccounts } from "./ConnectedAccounts";
 import { DangerZone } from "./DangerZone";
 import { SubscriptionCard } from "./SubscriptionCard";
-import { CheckoutStatusToast } from "./CheckoutStatusToast";
+import { CheckoutStatusHandler } from "./CheckoutStatusHandler";
 
 export const metadata: Metadata = { title: "Réglages" };
 
@@ -50,7 +50,7 @@ export default async function SettingsPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
       <Suspense fallback={null}>
-        <CheckoutStatusToast />
+        <CheckoutStatusHandler />
       </Suspense>
 
       <div>
@@ -93,7 +93,7 @@ export default async function SettingsPage() {
         />
       </Card>
 
-      <Card className="p-6" elevated>
+      <Card id="personnalisation" className="scroll-mt-6 p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
           Personnalisation du profil
         </h2>

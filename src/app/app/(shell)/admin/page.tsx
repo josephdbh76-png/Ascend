@@ -5,6 +5,7 @@ import { getPendingRevenueReviews } from "@/services/revenue.service";
 import { createClient } from "@/lib/supabase/server";
 import { AdminUsersTable } from "./AdminUsersTable";
 import { TitleStripeSyncButton } from "./TitleStripeSyncButton";
+import { AnnualPriceSyncPanel } from "./AnnualPriceSyncPanel";
 import { RevenueReviewQueue } from "./RevenueReviewQueue";
 import { Card } from "@/components/ui/Card";
 
@@ -36,6 +37,16 @@ export default async function AdminPage() {
           </p>
         </div>
         <TitleStripeSyncButton />
+      </Card>
+
+      <Card className="flex flex-col gap-3 p-5" elevated>
+        <div>
+          <h2 className="text-sm font-semibold text-text-primary">Tarifs annuels</h2>
+          <p className="text-xs text-text-secondary">
+            Crée les prix Stripe annuels (Pro, Elite) sur les mêmes produits que les prix mensuels.
+          </p>
+        </div>
+        <AnnualPriceSyncPanel />
       </Card>
 
       <div>

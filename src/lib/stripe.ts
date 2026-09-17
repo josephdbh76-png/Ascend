@@ -1,6 +1,6 @@
 import "server-only";
 import Stripe from "stripe";
-import type { SubscriptionTier } from "@/types/database.types";
+import type { SubscriptionTier, BillingInterval } from "@/types/database.types";
 
 let _stripe: Stripe | null = null;
 
@@ -24,19 +24,42 @@ function isBillableTier(tier: string): tier is BillableTier {
   return (BILLABLE_TIERS as readonly string[]).includes(tier);
 }
 
-export function priceIdForTier(tier: BillableTier): string {
-  const envVar = tier === "pro" ? "STRIPE_PRICE_PRO" : "STRIPE_PRICE_ELITE";
+const PRICE_ENV_VARS: Record<BillableTier, Record<BillingInterval, string>> = {
+  pro: { month: "STRIPE_PRICE_PRO", year: "STRIPE_PRICE_PRO_ANNUAL" },
+  elite: { month: "STRIPE_PRICE_ELITE", year: "STRIPE_PRICE_ELITE_ANNUAL" },
+};
+
+export function priceIdForTier(tier: BillableTier, interval: BillingInterval = "month"): string {
+  const envVar = PRICE_ENV_VARS[tier][interval];
   const priceId = process.env[envVar];
   if (!priceId) throw new Error(`${envVar} is not configured.`);
   return priceId;
 }
 
+const PRICE_ID_LOOKUP: Record<string, { tier: SubscriptionTier; interval: BillingInterval } | undefined> = {};
+function buildPriceIdLookup() {
+  for (const tier of BILLABLE_TIERS) {
+    for (const interval of ["month", "year"] as const) {
+      const id = process.env[PRICE_ENV_VARS[tier][interval]];
+      if (id) PRICE_ID_LOOKUP[id] = { tier, interval };
+    }
+  }
+}
+
 export function tierForPriceId(priceId: string): SubscriptionTier | null {
-  if (priceId === process.env.STRIPE_PRICE_PRO) return "pro";
-  if (priceId === process.env.STRIPE_PRICE_ELITE) return "elite";
-  return null;
+  if (Object.keys(PRICE_ID_LOOKUP).length === 0) buildPriceIdLookup();
+  return PRICE_ID_LOOKUP[priceId]?.tier ?? null;
+}
+
+export function intervalForPriceId(priceId: string): BillingInterval | null {
+  if (Object.keys(PRICE_ID_LOOKUP).length === 0) buildPriceIdLookup();
+  return PRICE_ID_LOOKUP[priceId]?.interval ?? null;
 }
 
 export function parseBillableTier(value: string | null): BillableTier | null {
   return value && isBillableTier(value) ? value : null;
+}
+
+export function parseBillingInterval(value: string | null): BillingInterval {
+  return value === "year" ? "year" : "month";
 }

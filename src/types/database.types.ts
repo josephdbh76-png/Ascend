@@ -26,6 +26,7 @@ export type NotificationType =
 export type TitleRarity = "common" | "rare" | "epic" | "legendary" | "exclusive";
 export type TitleType = "earned" | "purchasable";
 export type SubscriptionTier = "free" | "pro" | "elite";
+export type BillingInterval = "month" | "year";
 export type SubscriptionStatus = "active" | "past_due" | "canceled";
 export type AccentTheme = "gold" | "emerald" | "violet" | "crimson" | "sky";
 export type ConversationStatus = "pending" | "accepted";
@@ -381,6 +382,9 @@ export interface Database {
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
           current_period_end: string | null;
+          billing_interval: BillingInterval | null;
+          trial_used: boolean;
+          trial_ends_at: string | null;
           created_at: string;
           updated_at: string;
         };
