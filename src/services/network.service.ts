@@ -193,3 +193,44 @@ export async function toggleFollow(followerId: string, followeeId: string): Prom
 
   return { following: true };
 }
+
+export interface NetworkTeaser {
+  totalActive: number;
+  sameCategoryCount: number;
+  category: string | null;
+}
+
+/**
+ * A safe-to-show-to-anyone summary of the Réseau directory — real counts,
+ * never actual member data — used to tease non-Elite members.
+ */
+export async function getNetworkTeaser(viewerId: string): Promise<NetworkTeaser> {
+  const supabase = await createClient();
+
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("category")
+    .eq("user_id", viewerId)
+    .maybeSingle();
+
+  const [{ count: totalActive }, { count: sameCategoryCount }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("is_demo", false)
+      .neq("id", viewerId),
+    business?.category
+      ? supabase
+          .from("businesses")
+          .select("*", { count: "exact", head: true })
+          .eq("category", business.category)
+          .neq("user_id", viewerId)
+      : Promise.resolve({ count: 0 }),
+  ]);
+
+  return {
+    totalActive: totalActive ?? 0,
+    sameCategoryCount: sameCategoryCount ?? 0,
+    category: business?.category ?? null,
+  };
+}

@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import { Lock, Flame, Sparkles } from "lucide-react";
+import { Flame, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getSubscription, hasEliteAccess } from "@/services/subscription.service";
-import { searchNetwork, getTrendingFounders, getNewestFounders } from "@/services/network.service";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { Button } from "@/components/ui/Button";
+import { searchNetwork, getTrendingFounders, getNewestFounders, getNetworkTeaser } from "@/services/network.service";
+import { NetworkFomoTeaser } from "@/components/fomo/NetworkFomoTeaser";
 import { NetworkSearchForm } from "./NetworkSearchForm";
 import { NetworkResults } from "./NetworkResults";
 
@@ -32,6 +31,8 @@ export default async function NetworkPage({
   const [trending, newest] = isElite && user && !hasFilters
     ? await Promise.all([getTrendingFounders(user.id), getNewestFounders(user.id)])
     : [[], []];
+
+  const teaser = !isElite && user ? await getNetworkTeaser(user.id) : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -71,15 +72,10 @@ export default async function NetworkPage({
           {hasFilters && <NetworkResults results={results} />}
         </>
       ) : (
-        <EmptyState
-          icon={Lock}
-          title="Réservé aux membres Elite."
-          description="Recherche des fondateurs par nom, ville ou activité, et suis-les — une fonctionnalité Elite."
-          action={
-            <Button href="/api/stripe/checkout?tier=elite" size="sm">
-              Passer Elite
-            </Button>
-          }
+        <NetworkFomoTeaser
+          totalActive={teaser?.totalActive ?? 0}
+          sameCategoryCount={teaser?.sameCategoryCount ?? 0}
+          category={teaser?.category ?? null}
         />
       )}
     </div>

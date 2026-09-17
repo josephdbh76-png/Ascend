@@ -187,6 +187,26 @@ export async function listDiscoverableOpportunities(viewerId: string): Promise<O
     .sort((a, b) => b.matchScore - a.matchScore || +new Date(b.createdAt) - +new Date(a.createdAt));
 }
 
+export interface DiscoverTeaser {
+  count: number;
+  topMatchScore: number | null;
+  topMatchType: OpportunityType | null;
+}
+
+/**
+ * A safe-to-show-to-anyone summary of the Découvrir catalog — real
+ * numbers (never fabricated), but never the opportunities themselves, so
+ * it can be used to tease non-Elite members without leaking gated data.
+ */
+export async function getDiscoverTeaser(viewerId: string): Promise<DiscoverTeaser> {
+  const matches = await listDiscoverableOpportunities(viewerId);
+  return {
+    count: matches.length,
+    topMatchScore: matches[0]?.matchScore ?? null,
+    topMatchType: matches[0]?.type ?? null,
+  };
+}
+
 export interface CreateOpportunityInput {
   type: OpportunityType;
   title: string;

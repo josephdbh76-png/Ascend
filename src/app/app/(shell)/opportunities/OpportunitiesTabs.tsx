@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Lock } from "lucide-react";
 import { Tabs } from "@/components/ui/Tabs";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { Button } from "@/components/ui/Button";
+import { OpportunitiesFomoTeaser } from "@/components/fomo/OpportunitiesFomoTeaser";
 import { DiscoverOpportunities } from "./DiscoverOpportunities";
 import { MyApplications } from "./MyApplications";
 import { MyOpportunities } from "./MyOpportunities";
 import type { OpportunityMatch, OpportunityApplication, Opportunity, MyOpportunity } from "@/types";
+import type { DiscoverTeaser } from "@/services/opportunity.service";
 
 const TABS = [
   { value: "discover", label: "Découvrir" },
@@ -19,11 +18,13 @@ const TABS = [
 export function OpportunitiesTabs({
   isElite,
   discoverable,
+  teaser,
   applications,
   myOpportunities,
 }: {
   isElite: boolean;
   discoverable: OpportunityMatch[];
+  teaser: DiscoverTeaser | null;
   applications: (OpportunityApplication & { opportunity: Opportunity })[];
   myOpportunities: MyOpportunity[];
 }) {
@@ -37,15 +38,10 @@ export function OpportunitiesTabs({
         (isElite ? (
           <DiscoverOpportunities opportunities={discoverable} />
         ) : (
-          <EmptyState
-            icon={Lock}
-            title="Réservé aux membres Elite."
-            description="Découvre les opportunités partagées par les fondateurs du réseau ASCEND, triées par pertinence pour ton activité."
-            action={
-              <Button href="/api/stripe/checkout?tier=elite" size="sm">
-                Passer Elite
-              </Button>
-            }
+          <OpportunitiesFomoTeaser
+            count={teaser?.count ?? 0}
+            topMatchScore={teaser?.topMatchScore ?? null}
+            topMatchType={teaser?.topMatchType ?? null}
           />
         ))}
 
