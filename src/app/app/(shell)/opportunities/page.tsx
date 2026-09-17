@@ -38,7 +38,7 @@ export default async function OpportunitiesPage() {
             Associé, développeur, partenaire, growth, cofondateur.
           </p>
         </div>
-        <NewOpportunityModal />
+        <NewOpportunityModal isElite={isElite} />
       </div>
 
       <OpportunitiesTabs

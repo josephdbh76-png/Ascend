@@ -13,10 +13,8 @@ interface UpsertMonthlyRevenueInput {
   amountCents: number;
   currency: string;
   isVerified: boolean;
-  proofPath?: string | null;
   transactionCount?: number | null;
   customerCount?: number | null;
-  reviewStatus?: RevenueReviewStatus | null;
 }
 
 export async function upsertMonthlyRevenue(input: UpsertMonthlyRevenueInput) {
@@ -29,16 +27,8 @@ export async function upsertMonthlyRevenue(input: UpsertMonthlyRevenueInput) {
       amount_cents: input.amountCents,
       currency: input.currency,
       is_verified: input.isVerified,
-      proof_path: input.proofPath ?? null,
       transaction_count: input.transactionCount ?? null,
       customer_count: input.customerCount ?? null,
-      review_status: input.reviewStatus ?? null,
-      // A fresh submission clears any previous review outcome — it's a
-      // new claim (new amount, new proof) and deserves a fresh look, not
-      // to inherit a stale approval or rejection from last month's row.
-      reviewed_at: null,
-      reviewed_by: null,
-      rejection_reason: null,
     },
     { onConflict: "user_id,period" },
   );
@@ -47,46 +37,120 @@ export async function upsertMonthlyRevenue(input: UpsertMonthlyRevenueInput) {
 
 /**
  * Self-reported revenue for members whose processor isn't supported yet
- * (or who have no processor at all). Requires proof and always starts
- * "pending" — an admin has to approve it (see approveRevenueDeclaration)
- * before it counts as real "Vérifié" status anywhere, same trust bar as
- * a Stripe sync.
+ * (or who have no processor at all). Each contract/client is its own row —
+ * submitting a second one for the same month adds to it instead of
+ * replacing it, and each is reviewed independently. Requires proof and
+ * always starts "pending"; only recomputeManualSnapshot's sum of
+ * *approved* declarations ever counts as real "Vérifié" revenue.
  */
-export async function submitManualRevenue(input: {
+export async function submitRevenueDeclaration(input: {
   userId: string;
   period: string; // YYYY-MM-01
+  label?: string;
   amountCents: number;
   proofPath: string;
 }) {
   const supabase = await createClient();
 
-  const { data: source, error: sourceError } = await supabase
-    .from("revenue_sources")
-    .upsert(
-      {
-        user_id: input.userId,
-        provider: "manual",
-        status: "connected",
-        is_test_mode: false,
-        connected_at: new Date().toISOString(),
-        last_synced_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id,provider" },
-    )
-    .select("id")
-    .single();
-  if (sourceError || !source) throw new Error(sourceError?.message ?? "Impossible d'enregistrer la source.");
+  await supabase.from("revenue_sources").upsert(
+    {
+      user_id: input.userId,
+      provider: "manual",
+      status: "connected",
+      is_test_mode: false,
+      connected_at: new Date().toISOString(),
+      last_synced_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,provider" },
+  );
 
-  await upsertMonthlyRevenue({
-    userId: input.userId,
-    revenueSourceId: source.id,
+  const { error } = await supabase.from("revenue_declarations").insert({
+    user_id: input.userId,
     period: input.period,
-    amountCents: input.amountCents,
-    currency: "EUR",
-    isVerified: false,
-    proofPath: input.proofPath,
-    reviewStatus: "pending",
+    label: input.label || null,
+    amount_cents: input.amountCents,
+    proof_path: input.proofPath,
+    review_status: "pending",
   });
+  if (error) throw new Error(error.message);
+}
+
+export interface RevenueDeclaration {
+  id: string;
+  period: string;
+  label: string | null;
+  amountCents: number;
+  reviewStatus: RevenueReviewStatus;
+  rejectionReason: string | null;
+  createdAt: string;
+}
+
+export async function getRevenueDeclarations(userId: string, period: string): Promise<RevenueDeclaration[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("revenue_declarations")
+    .select("id, period, label, amount_cents, review_status, rejection_reason, created_at")
+    .eq("user_id", userId)
+    .eq("period", period)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((d) => ({
+    id: d.id,
+    period: d.period,
+    label: d.label,
+    amountCents: d.amount_cents,
+    reviewStatus: d.review_status,
+    rejectionReason: d.rejection_reason,
+    createdAt: d.created_at,
+  }));
+}
+
+/**
+ * The one true "manual revenue" figure for a period: the sum of every
+ * *approved* declaration. Recomputed after every submission or review so
+ * revenue_snapshots (what the dashboard, milestones and challenges read)
+ * never counts a pending or rejected claim.
+ */
+async function recomputeManualSnapshot(userId: string, period: string) {
+  const admin = createAdminClient();
+
+  const { data: source } = await admin
+    .from("revenue_sources")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("provider", "manual")
+    .maybeSingle();
+  if (!source) return;
+
+  const { data: approved } = await admin
+    .from("revenue_declarations")
+    .select("amount_cents")
+    .eq("user_id", userId)
+    .eq("period", period)
+    .eq("review_status", "approved");
+  const sum = (approved ?? []).reduce((total, d) => total + d.amount_cents, 0);
+
+  if (sum > 0) {
+    await admin.from("revenue_snapshots").upsert(
+      {
+        user_id: userId,
+        revenue_source_id: source.id,
+        period,
+        amount_cents: sum,
+        currency: "EUR",
+        is_verified: true,
+      },
+      { onConflict: "user_id,period" },
+    );
+  } else {
+    await admin
+      .from("revenue_snapshots")
+      .delete()
+      .eq("user_id", userId)
+      .eq("period", period)
+      .eq("revenue_source_id", source.id);
+  }
 }
 
 export async function getManualRevenueSource(userId: string) {
@@ -149,18 +213,25 @@ export async function getVerificationStatus(userId: string): Promise<Verificatio
     const manual = await getManualRevenueSource(userId);
     if (manual?.status !== "connected") return "unverified";
 
-    const { data: latestSnapshot } = await supabase
-      .from("revenue_snapshots")
-      .select("review_status")
+    const { data: latestPeriodRow } = await supabase
+      .from("revenue_declarations")
+      .select("period")
       .eq("user_id", userId)
-      .eq("revenue_source_id", manual.id)
       .order("period", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (!latestPeriodRow) return "unverified";
 
-    if (latestSnapshot?.review_status === "approved") return "verified";
-    if (latestSnapshot?.review_status === "rejected") return "rejected";
-    if (latestSnapshot?.review_status === "pending") return "pending";
+    const { data: declarations } = await supabase
+      .from("revenue_declarations")
+      .select("review_status")
+      .eq("user_id", userId)
+      .eq("period", latestPeriodRow.period);
+
+    const statuses = new Set((declarations ?? []).map((d) => d.review_status));
+    if (statuses.has("approved")) return "verified";
+    if (statuses.has("pending")) return "pending";
+    if (statuses.has("rejected")) return "rejected";
     return "unverified";
   }
   if (source.status === "disconnected") return "disconnected";
@@ -207,12 +278,13 @@ export function estimateMonthsToMilestone(
 }
 
 export interface PendingRevenueReview {
-  snapshotId: string;
+  declarationId: string;
   userId: string;
   username: string;
   firstName: string | null;
   lastName: string | null;
   period: string;
+  label: string | null;
   amountCents: number;
   submittedAt: string;
   proofUrl: string | null;
@@ -221,95 +293,81 @@ export interface PendingRevenueReview {
 /** Admin-only — callers must check isCurrentUserAdmin() first, this trusts them. */
 export async function getPendingRevenueReviews(): Promise<PendingRevenueReview[]> {
   const admin = createAdminClient();
-  const { data: snapshots, error } = await admin
-    .from("revenue_snapshots")
-    .select("id, user_id, period, amount_cents, proof_path, created_at")
+  const { data: declarations, error } = await admin
+    .from("revenue_declarations")
+    .select("id, user_id, period, label, amount_cents, proof_path, created_at")
     .eq("review_status", "pending")
     .order("created_at", { ascending: true });
   if (error) throw new Error(error.message);
-  if (!snapshots || snapshots.length === 0) return [];
+  if (!declarations || declarations.length === 0) return [];
 
   const { data: profiles } = await admin
     .from("profiles")
     .select("id, username, first_name, last_name")
-    .in("id", snapshots.map((s) => s.user_id));
+    .in("id", declarations.map((d) => d.user_id));
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
 
   return Promise.all(
-    snapshots.map(async (s) => {
-      let proofUrl: string | null = null;
-      if (s.proof_path) {
-        const { data: signed } = await admin.storage
-          .from("revenue-proofs")
-          .createSignedUrl(s.proof_path, 60 * 10);
-        proofUrl = signed?.signedUrl ?? null;
-      }
-      const profile = profileById.get(s.user_id);
+    declarations.map(async (d) => {
+      const { data: signed } = await admin.storage.from("revenue-proofs").createSignedUrl(d.proof_path, 60 * 10);
+      const profile = profileById.get(d.user_id);
       return {
-        snapshotId: s.id,
-        userId: s.user_id,
+        declarationId: d.id,
+        userId: d.user_id,
         username: profile?.username ?? "",
         firstName: profile?.first_name ?? null,
         lastName: profile?.last_name ?? null,
-        period: s.period,
-        amountCents: s.amount_cents,
-        submittedAt: s.created_at,
-        proofUrl,
+        period: d.period,
+        label: d.label,
+        amountCents: d.amount_cents,
+        submittedAt: d.created_at,
+        proofUrl: signed?.signedUrl ?? null,
       };
     }),
   );
 }
 
 /** Admin-only — callers must check isCurrentUserAdmin() first, this trusts them. */
-export async function approveRevenueDeclaration(snapshotId: string, adminUserId: string) {
+export async function approveRevenueDeclaration(declarationId: string, adminUserId: string) {
   const admin = createAdminClient();
-  const { data: snapshot, error } = await admin
-    .from("revenue_snapshots")
-    .update({
-      is_verified: true,
-      review_status: "approved",
-      reviewed_at: new Date().toISOString(),
-      reviewed_by: adminUserId,
-      rejection_reason: null,
-    })
-    .eq("id", snapshotId)
-    .select("user_id, period, amount_cents")
+  const { data: declaration, error } = await admin
+    .from("revenue_declarations")
+    .update({ review_status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: adminUserId, rejection_reason: null })
+    .eq("id", declarationId)
+    .select("user_id, period, amount_cents, label")
     .single();
-  if (error || !snapshot) throw new Error(error?.message ?? "Déclaration introuvable.");
+  if (error || !declaration) throw new Error(error?.message ?? "Déclaration introuvable.");
 
-  await admin.from("profiles").update({ revenue_verified: true }).eq("id", snapshot.user_id);
+  await recomputeManualSnapshot(declaration.user_id, declaration.period);
+  await admin.from("profiles").update({ revenue_verified: true }).eq("id", declaration.user_id);
 
   await createNotificationForUser({
-    userId: snapshot.user_id,
+    userId: declaration.user_id,
     type: "revenue_review_completed",
     title: "Revenu déclaré vérifié",
-    body: `Ta déclaration de ${(snapshot.amount_cents / 100).toLocaleString("fr-FR")} € a été validée et compte désormais comme un revenu vérifié.`,
-    metadata: { period: snapshot.period },
+    body: `Ta déclaration${declaration.label ? ` « ${declaration.label} »` : ""} de ${(declaration.amount_cents / 100).toLocaleString("fr-FR")} € a été validée et compte désormais comme un revenu vérifié.`,
+    metadata: { period: declaration.period },
   });
 }
 
 /** Admin-only — callers must check isCurrentUserAdmin() first, this trusts them. */
-export async function rejectRevenueDeclaration(snapshotId: string, adminUserId: string, reason: string) {
+export async function rejectRevenueDeclaration(declarationId: string, adminUserId: string, reason: string) {
   const admin = createAdminClient();
-  const { data: snapshot, error } = await admin
-    .from("revenue_snapshots")
-    .update({
-      is_verified: false,
-      review_status: "rejected",
-      reviewed_at: new Date().toISOString(),
-      reviewed_by: adminUserId,
-      rejection_reason: reason,
-    })
-    .eq("id", snapshotId)
-    .select("user_id, period")
+  const { data: declaration, error } = await admin
+    .from("revenue_declarations")
+    .update({ review_status: "rejected", reviewed_at: new Date().toISOString(), reviewed_by: adminUserId, rejection_reason: reason })
+    .eq("id", declarationId)
+    .select("user_id, period, label")
     .single();
-  if (error || !snapshot) throw new Error(error?.message ?? "Déclaration introuvable.");
+  if (error || !declaration) throw new Error(error?.message ?? "Déclaration introuvable.");
+
+  await recomputeManualSnapshot(declaration.user_id, declaration.period);
 
   await createNotificationForUser({
-    userId: snapshot.user_id,
+    userId: declaration.user_id,
     type: "revenue_review_completed",
     title: "Déclaration de revenu refusée",
-    body: `Ta déclaration de revenu n'a pas été validée : ${reason}`,
-    metadata: { period: snapshot.period },
+    body: `Ta déclaration${declaration.label ? ` « ${declaration.label} »` : ""} n'a pas été validée : ${reason}`,
+    metadata: { period: declaration.period },
   });
 }

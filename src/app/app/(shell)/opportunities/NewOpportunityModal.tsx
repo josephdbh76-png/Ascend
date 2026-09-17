@@ -25,7 +25,7 @@ const EMPTY_FORM = {
   targetStage: "any" as OpportunityStage,
 };
 
-export function NewOpportunityModal() {
+export function NewOpportunityModal({ isElite }: { isElite: boolean }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [pending, startTransition] = useTransition();
@@ -49,6 +49,14 @@ export function NewOpportunityModal() {
       setOpen(false);
       router.refresh();
     });
+  }
+
+  if (!isElite) {
+    return (
+      <Button href="/app/settings#abonnement">
+        <Plus className="h-4 w-4" /> Publier une opportunité
+      </Button>
+    );
   }
 
   return (

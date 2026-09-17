@@ -46,14 +46,14 @@ export async function adminSyncTitleStripeProductsAction(): Promise<ActionResult
   }
 }
 
-export async function adminApproveRevenueDeclarationAction(snapshotId: string): Promise<ActionResult> {
+export async function adminApproveRevenueDeclarationAction(declarationId: string): Promise<ActionResult> {
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
   try {
-    await approveRevenueDeclaration(snapshotId, userData.user.id);
+    await approveRevenueDeclaration(declarationId, userData.user.id);
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }
@@ -61,7 +61,7 @@ export async function adminApproveRevenueDeclarationAction(snapshotId: string): 
   return { success: true, data: undefined };
 }
 
-export async function adminRejectRevenueDeclarationAction(snapshotId: string, reason: string): Promise<ActionResult> {
+export async function adminRejectRevenueDeclarationAction(declarationId: string, reason: string): Promise<ActionResult> {
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   if (!reason.trim()) return { success: false, error: "Indique une raison pour le refus." };
   const supabase = await createClient();
@@ -69,7 +69,7 @@ export async function adminRejectRevenueDeclarationAction(snapshotId: string, re
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
   try {
-    await rejectRevenueDeclaration(snapshotId, userData.user.id, reason.trim());
+    await rejectRevenueDeclaration(declarationId, userData.user.id, reason.trim());
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }

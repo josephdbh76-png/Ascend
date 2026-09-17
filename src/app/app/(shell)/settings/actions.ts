@@ -7,7 +7,7 @@ import { profileUpdateSchema, privacySettingsSchema } from "@/lib/validations";
 import { toFriendlyAuthError } from "@/lib/errors";
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
 import { verifyAndSaveSiret } from "@/services/siret.service";
-import { submitManualRevenue, calculateMonthlyGrowth, getCurrentRevenue } from "@/services/revenue.service";
+import { submitRevenueDeclaration, calculateMonthlyGrowth, getCurrentRevenue } from "@/services/revenue.service";
 import { evaluateChallengeProgress } from "@/services/challenge.service";
 import { ACCENT_THEMES } from "@/lib/constants";
 import type { ActionResult } from "@/app/(auth)/actions";
@@ -91,7 +91,7 @@ export async function verifySiretAction(siret: string): Promise<ActionResult<{ l
 const MAX_PROOF_BYTES = 5 * 1024 * 1024;
 const ALLOWED_PROOF_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
 
-export async function submitManualRevenueAction(formData: FormData): Promise<ActionResult> {
+export async function submitRevenueDeclarationAction(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
@@ -99,10 +99,11 @@ export async function submitManualRevenueAction(formData: FormData): Promise<Act
 
   const amountRaw = String(formData.get("amount") ?? "").replace(",", ".");
   const amount = Number.parseFloat(amountRaw);
-  if (!Number.isFinite(amount) || amount < 0) {
+  if (!Number.isFinite(amount) || amount <= 0) {
     return { success: false, error: "Indique un montant valide." };
   }
   const amountCents = Math.round(amount * 100);
+  const label = String(formData.get("label") ?? "").trim().slice(0, 120);
 
   const now = new Date();
   const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
@@ -127,7 +128,7 @@ export async function submitManualRevenueAction(formData: FormData): Promise<Act
   const proofPath = path;
 
   try {
-    await submitManualRevenue({ userId, period, amountCents, proofPath });
+    await submitRevenueDeclaration({ userId, period, label, amountCents, proofPath });
 
     const { current, previous } = await getCurrentRevenue(userId);
     if (current) {

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { ShieldCheck, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profile.service";
-import { getVerificationStatus } from "@/services/revenue.service";
+import { getVerificationStatus, getRevenueDeclarations } from "@/services/revenue.service";
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
 import { isCurrentUserAdmin } from "@/services/admin.service";
 import { Card } from "@/components/ui/Card";
@@ -45,21 +45,7 @@ export default async function SettingsPage() {
 
   const now = new Date();
   const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-  const { data: manualSource } = await supabase
-    .from("revenue_sources")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("provider", "manual")
-    .maybeSingle();
-  const { data: currentDeclared } = manualSource
-    ? await supabase
-        .from("revenue_snapshots")
-        .select("amount_cents, review_status, rejection_reason")
-        .eq("user_id", user.id)
-        .eq("period", currentPeriod)
-        .eq("revenue_source_id", manualSource.id)
-        .maybeSingle()
-    : { data: null };
+  const declarations = await getRevenueDeclarations(user.id, currentPeriod);
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
@@ -148,9 +134,7 @@ export default async function SettingsPage() {
           connected={source?.status === "connected"}
           status={verificationStatus}
           isCofounder={profile.isCofounder}
-          currentDeclaredAmountCents={currentDeclared?.amount_cents ?? null}
-          currentReviewStatus={currentDeclared?.review_status ?? null}
-          rejectionReason={currentDeclared?.rejection_reason ?? null}
+          declarations={declarations}
         />
       </Card>
 

@@ -20,9 +20,9 @@ export function RevenueReviewQueue({ reviews }: { reviews: PendingRevenueReview[
   const [rejectTarget, setRejectTarget] = useState<PendingRevenueReview | null>(null);
   const [reason, setReason] = useState("");
 
-  function approve(snapshotId: string) {
+  function approve(declarationId: string) {
     startTransition(async () => {
-      const result = await adminApproveRevenueDeclarationAction(snapshotId);
+      const result = await adminApproveRevenueDeclarationAction(declarationId);
       if (!result.success) return toast.show(result.error, "error");
       toast.show("Déclaration approuvée.", "success");
       router.refresh();
@@ -33,7 +33,7 @@ export function RevenueReviewQueue({ reviews }: { reviews: PendingRevenueReview[
     e.preventDefault();
     if (!rejectTarget) return;
     startTransition(async () => {
-      const result = await adminRejectRevenueDeclarationAction(rejectTarget.snapshotId, reason);
+      const result = await adminRejectRevenueDeclarationAction(rejectTarget.declarationId, reason);
       if (!result.success) return toast.show(result.error, "error");
       toast.show("Déclaration refusée.", "success");
       setRejectTarget(null);
@@ -49,13 +49,14 @@ export function RevenueReviewQueue({ reviews }: { reviews: PendingRevenueReview[
   return (
     <div className="flex flex-col gap-3">
       {reviews.map((r) => (
-        <Card key={r.snapshotId} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <Card key={r.declarationId} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium text-text-primary">
               {r.firstName} {r.lastName} <span className="text-text-muted">@{r.username}</span>
             </p>
             <p className="text-sm text-text-secondary">
-              {formatCurrency(r.amountCents)} déclarés pour {r.period.slice(0, 7)}
+              {formatCurrency(r.amountCents)}
+              {r.label && ` — ${r.label}`} — {r.period.slice(0, 7)}
             </p>
             <p className="text-xs text-text-muted">Envoyé {timeAgo(r.submittedAt)}</p>
           </div>
@@ -72,7 +73,7 @@ export function RevenueReviewQueue({ reviews }: { reviews: PendingRevenueReview[
             ) : (
               <span className="text-xs text-text-muted">Aucune preuve</span>
             )}
-            <Button size="sm" onClick={() => approve(r.snapshotId)} disabled={pending}>
+            <Button size="sm" onClick={() => approve(r.declarationId)} disabled={pending}>
               <Check className="h-3.5 w-3.5" /> Approuver
             </Button>
             <Button variant="danger" size="sm" onClick={() => setRejectTarget(r)} disabled={pending}>

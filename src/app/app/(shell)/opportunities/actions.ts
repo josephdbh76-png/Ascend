@@ -22,6 +22,11 @@ export async function createOpportunityAction(input: CreateOpportunityInput): Pr
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
+  const subscription = await getSubscription(userData.user.id);
+  if (!hasEliteAccess(subscription.tier)) {
+    return { success: false, error: "Publier une opportunité est réservé aux membres Elite." };
+  }
+
   try {
     await createOpportunity(userData.user.id, parsed.data);
     revalidatePath("/app/opportunities");

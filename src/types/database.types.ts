@@ -134,13 +134,8 @@ export interface Database {
           amount_cents: number;
           currency: string;
           is_verified: boolean;
-          proof_path: string | null;
           transaction_count: number | null;
           customer_count: number | null;
-          review_status: RevenueReviewStatus | null;
-          reviewed_at: string | null;
-          reviewed_by: string | null;
-          rejection_reason: string | null;
           created_at: string;
         };
         Insert: Partial<Omit<Database["public"]["Tables"]["revenue_snapshots"]["Row"], "id">> & {
@@ -149,6 +144,30 @@ export interface Database {
           amount_cents: number;
         };
         Update: Partial<Database["public"]["Tables"]["revenue_snapshots"]["Row"]>;
+        Relationships: [];
+      };
+      revenue_declarations: {
+        Row: {
+          id: string;
+          user_id: string;
+          period: string;
+          label: string | null;
+          amount_cents: number;
+          proof_path: string;
+          review_status: RevenueReviewStatus;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          rejection_reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["revenue_declarations"]["Row"], "id">> & {
+          user_id: string;
+          period: string;
+          amount_cents: number;
+          proof_path: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["revenue_declarations"]["Row"]>;
         Relationships: [];
       };
       privacy_settings: {
