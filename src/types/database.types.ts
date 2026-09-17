@@ -58,6 +58,7 @@ export interface Database {
           is_admin: boolean;
           is_cofounder: boolean;
           skills: string[];
+          has_seen_tutorial: boolean;
           created_at: string;
           updated_at: string;
         };

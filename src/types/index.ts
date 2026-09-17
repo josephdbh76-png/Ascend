@@ -38,6 +38,7 @@ export interface Profile {
   isAdmin: boolean;
   isCofounder: boolean;
   skills: string[];
+  hasSeenTutorial: boolean;
   createdAt: string;
 }
 

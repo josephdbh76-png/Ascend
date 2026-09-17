@@ -25,6 +25,7 @@ import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { StripeStatusToast } from "@/components/dashboard/StripeStatusToast";
 import { VerificationCTA } from "@/components/dashboard/VerificationCTA";
 import { AchievementUnlockGate } from "@/components/dashboard/AchievementUnlockGate";
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { RankTransition } from "@/components/motion/RankTransition";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
 import { formatCurrency, formatPercent } from "@/lib/utils";
@@ -47,7 +48,7 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const [history, { current, previous }, verificationStatus, achievements, challenges, unreadAchievement] =
+  const [history, { current, previous }, verificationStatus, achievements, challenges, unreadAchievement, { count: memberCount }] =
     await Promise.all([
       getRevenueHistory(user.id, 12),
       getCurrentRevenue(user.id),
@@ -55,6 +56,7 @@ export default async function DashboardPage() {
       getUserAchievements(user.id),
       getActiveChallengesWithProgress(user.id),
       getLatestUnreadOfType(user.id, "achievement_unlocked"),
+      supabase.from("profiles").select("*", { count: "exact", head: true }).eq("is_demo", false),
     ]);
 
   const growth = calculateMonthlyGrowth(current?.amountCents ?? null, previous?.amountCents ?? null);
@@ -105,6 +107,10 @@ export default async function DashboardPage() {
       <Suspense fallback={null}>
         <StripeStatusToast />
       </Suspense>
+
+      {!profile.hasSeenTutorial && (
+        <OnboardingTour firstName={profile.firstName} memberCount={memberCount ?? 0} isVerified={isVerified} />
+      )}
 
       {unlockedAchievement && (
         <AchievementUnlockGate

@@ -29,6 +29,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     isAdmin: data.is_admin,
     isCofounder: data.is_cofounder,
     skills: data.skills,
+    hasSeenTutorial: data.has_seen_tutorial,
     createdAt: data.created_at,
   };
 }
