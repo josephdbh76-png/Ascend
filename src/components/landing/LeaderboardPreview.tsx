@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 import { Crown, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/motion/Reveal";
@@ -53,7 +54,7 @@ const RANK_COLORS: Record<number, string> = { 1: "text-rank-1", 2: "text-rank-2"
 export function LeaderboardPreview() {
   const [tab, setTab] = useState("global");
   const rows = DATASETS[tab];
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
 
   return (
     <section id="classement" className="border-b border-border">

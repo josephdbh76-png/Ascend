@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 import { Crown } from "lucide-react";
 import { cn, formatCurrency, formatCurrencyRange, formatPercent, initials } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
@@ -20,7 +21,7 @@ function categoryLabel(value: string) {
 }
 
 export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
 
   if (rows.length === 0) {
     return (

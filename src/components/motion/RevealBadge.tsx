@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 import { Check } from "lucide-react";
 
 /**
@@ -9,7 +10,7 @@ import { Check } from "lucide-react";
  * (perspective + rotateY) — no WebGL, but reads as genuinely dimensional.
  */
 export function RevealBadge({ size = 128 }: { size?: number }) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
 
   return (
     <div style={{ perspective: 900 }} className="mx-auto" aria-hidden>

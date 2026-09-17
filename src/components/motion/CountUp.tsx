@@ -24,24 +24,29 @@ export function CountUp({
   const spring = useSpring(motionValue, { duration: duration * 1000, bounce: 0 });
   const factor = 10 ** decimals;
 
+  // Framer Motion's useReducedMotion() can already report the OS preference
+  // on the very first client render, while the server (which can't know
+  // it) always assumes false — branching the returned JSX on `reduced`
+  // used to make that first client render disagree with the server's HTML
+  // (a real hydration mismatch, not just a lint nitpick). Rendering the
+  // same structure unconditionally and only changing *how the value gets
+  // there* client-side avoids that.
   useEffect(() => {
-    if (inView && !reduced) motionValue.set(value);
-  }, [inView, reduced, motionValue, value]);
+    if (!inView) return;
+    if (reduced && "jump" in spring) {
+      (spring as unknown as { jump: (v: number) => void }).jump(value);
+    } else {
+      motionValue.set(value);
+    }
+  }, [inView, reduced, motionValue, spring, value]);
 
   useEffect(() => {
     if (!ref.current) return;
+    ref.current.textContent = format(Math.round(spring.get() * factor) / factor);
     return spring.on("change", (v) => {
       if (ref.current) ref.current.textContent = format(Math.round(v * factor) / factor);
     });
   }, [spring, format, factor]);
-
-  if (reduced) {
-    return (
-      <span ref={ref} className={className}>
-        {format(value)}
-      </span>
-    );
-  }
 
   return (
     <motion.span ref={ref} className={className}>

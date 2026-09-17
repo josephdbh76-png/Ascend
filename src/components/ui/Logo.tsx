@@ -1,7 +1,8 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 
 const SIZES = {
   sm: "text-lg",
@@ -11,7 +12,7 @@ const SIZES = {
 };
 
 export function Logo({ size = "md", className }: { size?: keyof typeof SIZES; className?: string }) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
 
   if (reduced) {
     return <span className={cn("font-semibold tracking-tight text-gold", SIZES[size], className)}>ASCEND</span>;

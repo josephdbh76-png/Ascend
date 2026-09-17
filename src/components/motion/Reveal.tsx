@@ -1,8 +1,9 @@
 "use client";
 
-import { motion, useReducedMotion, type HTMLMotionProps } from "framer-motion";
+import { motion, type HTMLMotionProps } from "framer-motion";
 import type { ReactNode, ElementType } from "react";
 import { fadeUp, viewportOnce } from "@/lib/motion";
+import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 
 type MotionTagProps = HTMLMotionProps<"div">;
 const motionTags = motion as unknown as Record<string, ElementType<MotionTagProps>>;
@@ -18,7 +19,7 @@ export function Reveal({
   className?: string;
   delay?: number;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
 
   if (reduced) {
     const Tag = as as ElementType;
@@ -50,7 +51,7 @@ export function RevealGroup({
   className?: string;
   stagger?: number;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
 
   if (reduced) return <div className={className}>{children}</div>;
 

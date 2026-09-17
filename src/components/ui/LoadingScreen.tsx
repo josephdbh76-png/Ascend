@@ -1,11 +1,12 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/utils";
 
 export function LoadingScreen({ className }: { className?: string }) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
 
   return (
     <div className={cn("flex min-h-[60vh] w-full flex-col items-center justify-center gap-5", className)}>

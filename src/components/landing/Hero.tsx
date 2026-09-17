@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 import { ArrowRight, CheckCircle2, TrendingUp, ArrowUp, Award } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -9,7 +10,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils";
 import { staggerContainer, fadeUp, easeOut } from "@/lib/motion";
 
 export function Hero() {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
 
   return (
     <section className="border-b border-border">
@@ -66,7 +67,7 @@ export function Hero() {
 }
 
 function FounderCard() {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
 
   return (
     <motion.div

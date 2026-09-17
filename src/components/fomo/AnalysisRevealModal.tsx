@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 import { Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
@@ -47,7 +48,7 @@ export function AnalysisRevealModal({
   ctaLabel: string;
   ctaHref: string;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const [stepIndex, setStepIndex] = useState(0);
   const [phase, setPhase] = useState<"scanning" | "result">("scanning");
   // Reduced motion skips straight to the result — derived at render time

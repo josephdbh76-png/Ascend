@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 
 interface Particle {
   id: number;
@@ -22,7 +23,7 @@ function pseudoRandom(seed: number): number {
 
 /** A field of slow-drifting gold specks — ambient premium texture, not confetti. */
 export function GoldParticles({ count = 26, burst = false }: { count?: number; burst?: boolean }) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const particles = useMemo<Particle[]>(
     () =>
       Array.from({ length: count }).map((_, i) => ({

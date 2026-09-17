@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 import { Link2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -12,7 +13,7 @@ export function VerificationCTA({
   remainingFoundingSlots: number | null;
   foundingSupply: number | null;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const scarce =
     remainingFoundingSlots != null && foundingSupply != null && remainingFoundingSlots > 0
       ? remainingFoundingSlots
