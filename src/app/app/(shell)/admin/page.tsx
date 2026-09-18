@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { isCurrentUserAdmin, listUsersForAdmin } from "@/services/admin.service";
 import { getPendingRevenueReviews } from "@/services/revenue.service";
+import { getCampaignHistory } from "@/services/email-campaign.service";
 import { createClient } from "@/lib/supabase/server";
 import { AdminUsersTable } from "./AdminUsersTable";
 import { TitleStripeSyncButton } from "./TitleStripeSyncButton";
 import { AnnualPriceSyncPanel } from "./AnnualPriceSyncPanel";
 import { RevenueReviewQueue } from "./RevenueReviewQueue";
+import { EmailCampaignPanel } from "./EmailCampaignPanel";
 import { Card } from "@/components/ui/Card";
 
 export const metadata: Metadata = { title: "Administration" };
@@ -19,7 +21,11 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (!(await isCurrentUserAdmin())) redirect("/app/dashboard");
 
-  const [users, pendingRevenueReviews] = await Promise.all([listUsersForAdmin(), getPendingRevenueReviews()]);
+  const [users, pendingRevenueReviews, campaignHistory] = await Promise.all([
+    listUsersForAdmin(),
+    getPendingRevenueReviews(),
+    getCampaignHistory(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -47,6 +53,16 @@ export default async function AdminPage() {
           </p>
         </div>
         <AnnualPriceSyncPanel />
+      </Card>
+
+      <Card className="flex flex-col gap-3 p-5" elevated>
+        <div>
+          <h2 className="text-sm font-semibold text-text-primary">Campagne email</h2>
+          <p className="text-xs text-text-secondary">
+            Envoie un email à un segment de membres — un lien de désinscription est ajouté automatiquement, seuls les membres ayant donné leur consentement le reçoivent.
+          </p>
+        </div>
+        <EmailCampaignPanel history={campaignHistory} />
       </Card>
 
       <div>

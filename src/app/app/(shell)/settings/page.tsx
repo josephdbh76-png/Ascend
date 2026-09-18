@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { ProfileSettingsForm } from "./ProfileSettingsForm";
 import { BusinessSettingsForm } from "./BusinessSettingsForm";
 import { PrivacySettingsForm } from "./PrivacySettingsForm";
+import { MarketingConsentToggle } from "./MarketingConsentToggle";
 import { AccentThemeForm } from "./AccentThemeForm";
 import { ConnectedAccounts } from "./ConnectedAccounts";
 import { DangerZone } from "./DangerZone";
@@ -29,7 +30,7 @@ export default async function SettingsPage() {
   const profile = await getProfile(user.id);
   if (!profile) return null;
 
-  const [{ data: business }, { data: privacy }, { data: source }, { data: shopifySource }, verificationStatus, shopifyStatus, subscription, isAdmin] =
+  const [{ data: business }, { data: privacy }, { data: marketing }, { data: source }, { data: shopifySource }, verificationStatus, shopifyStatus, subscription, isAdmin] =
     await Promise.all([
       supabase
         .from("businesses")
@@ -37,6 +38,7 @@ export default async function SettingsPage() {
         .eq("user_id", user.id)
         .maybeSingle(),
       supabase.from("privacy_settings").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("profiles").select("marketing_consent").eq("id", user.id).maybeSingle(),
       supabase.from("revenue_sources").select("status").eq("user_id", user.id).eq("provider", "stripe").maybeSingle(),
       supabase
         .from("revenue_sources")
@@ -131,6 +133,11 @@ export default async function SettingsPage() {
             showCountry: privacy?.show_country ?? true,
           }}
         />
+      </Card>
+
+      <Card className="p-6" elevated>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Emails</h2>
+        <MarketingConsentToggle initial={marketing?.marketing_consent ?? false} />
       </Card>
 
       <Card className="p-6" elevated>

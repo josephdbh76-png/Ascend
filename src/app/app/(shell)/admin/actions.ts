@@ -6,6 +6,8 @@ import { isCurrentUserAdmin, adminSetTier, adminSetIsAdmin } from "@/services/ad
 import { syncPurchasableTitleStripeProducts } from "@/services/title.service";
 import { approveRevenueDeclaration, rejectRevenueDeclaration } from "@/services/revenue.service";
 import { syncAnnualPrices, type AnnualPriceSyncResult } from "@/services/subscription.service";
+import { getAudienceCount, sendCampaign, sendCampaignPreview } from "@/services/email-campaign.service";
+import type { CampaignAudience } from "@/lib/emailCampaignDisplay";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { SubscriptionTier } from "@/types/database.types";
 
@@ -87,4 +89,53 @@ export async function adminRejectRevenueDeclarationAction(declarationId: string,
   }
   revalidatePath("/app/admin");
   return { success: true, data: undefined };
+}
+
+export async function getAudienceCountAction(audience: CampaignAudience): Promise<ActionResult<number>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    return { success: true, data: await getAudienceCount(audience) };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function sendCampaignPreviewAction(subject: string, body: string): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  if (!subject.trim() || !body.trim()) return { success: false, error: "Sujet et message obligatoires." };
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user?.email) return { success: false, error: "Impossible de trouver ton adresse email." };
+
+  try {
+    await sendCampaignPreview(userData.user.email, subject.trim(), body.trim());
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+  return { success: true, data: undefined };
+}
+
+export async function sendCampaignAction(
+  subject: string,
+  body: string,
+  audience: CampaignAudience,
+): Promise<ActionResult<{ recipientCount: number }>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  if (!subject.trim() || !body.trim()) return { success: false, error: "Sujet et message obligatoires." };
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  try {
+    const result = await sendCampaign({
+      subject: subject.trim(),
+      body: body.trim(),
+      audience,
+      sentByUserId: userData.user.id,
+    });
+    revalidatePath("/app/admin");
+    return { success: true, data: result };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
 }

@@ -59,6 +59,8 @@ export interface Database {
           is_cofounder: boolean;
           skills: string[];
           has_seen_tutorial: boolean;
+          marketing_consent: boolean;
+          unsubscribe_token: string;
           created_at: string;
           updated_at: string;
         };
@@ -523,6 +525,25 @@ export interface Database {
           content_type: string;
         };
         Update: Partial<Database["public"]["Tables"]["opportunity_application_attachments"]["Row"]>;
+        Relationships: [];
+      };
+      email_campaigns: {
+        Row: {
+          id: string;
+          subject: string;
+          body: string;
+          audience: string;
+          recipient_count: number;
+          sent_by: string;
+          sent_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["email_campaigns"]["Row"], "id">> & {
+          subject: string;
+          body: string;
+          audience: string;
+          sent_by: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_campaigns"]["Row"]>;
         Relationships: [];
       };
     };
