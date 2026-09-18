@@ -205,6 +205,15 @@ export interface OpportunityMatch extends Opportunity {
   matchReasons: string[];
 }
 
+export interface OpportunityAttachment {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  contentType: string;
+  /** A short-lived signed URL, resolved server-side — never a raw storage path. */
+  url: string | null;
+}
+
 export interface OpportunityApplication {
   id: string;
   opportunityId: string;
@@ -215,6 +224,7 @@ export interface OpportunityApplication {
   message: string;
   status: ApplicationStatus;
   createdAt: string;
+  attachments: OpportunityAttachment[];
 }
 
 export interface MyOpportunity extends Opportunity {

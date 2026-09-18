@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X, Archive, Compass } from "lucide-react";
+import { Check, X, Archive, Compass, Paperclip } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -82,6 +82,23 @@ export function MyOpportunities({ opportunities }: { opportunities: MyOpportunit
                         {a.applicantFirstName} {a.applicantLastName}
                       </p>
                       <p className="truncate text-xs text-text-muted">{a.message}</p>
+                      {a.attachments.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1.5">
+                          {a.attachments.map((att) =>
+                            att.url ? (
+                              <a
+                                key={att.id}
+                                href={att.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-[11px] text-gold hover:underline"
+                              >
+                                <Paperclip className="h-3 w-3" /> {att.fileName}
+                              </a>
+                            ) : null,
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">

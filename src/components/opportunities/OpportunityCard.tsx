@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { MapPin, Wifi, Sparkles } from "lucide-react";
+import { MapPin, Wifi, Sparkles, Paperclip, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -16,14 +16,28 @@ import type { OpportunityMatch } from "@/types";
 export function OpportunityCard({ opportunity }: { opportunity: OpportunityMatch }) {
   const [applyOpen, setApplyOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [applied, setApplied] = useState(false);
   const [pending, startTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
+
+  function addFiles(newFiles: FileList | null) {
+    if (!newFiles) return;
+    setFiles((prev) => [...prev, ...Array.from(newFiles)].slice(0, 5));
+  }
+
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }
 
   function submitApplication(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
-      const result = await applyToOpportunityAction(opportunity.id, message);
+      const formData = new FormData();
+      formData.set("message", message);
+      for (const file of files) formData.append("files", file);
+      const result = await applyToOpportunityAction(opportunity.id, formData);
       if (!result.success) return toast.show(result.error, "error");
       toast.show("Ta candidature a été envoyée.", "success");
       setApplied(true);
@@ -87,6 +101,48 @@ export function OpportunityCard({ opportunity }: { opportunity: OpportunityMatch
               required
             />
           </Field>
+
+          <Field label="Documents (facultatif)" hint="Portfolio, lettre de motivation... PDF, Word ou image, 10 Mo max chacun, 5 max.">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 rounded-md border border-dashed border-border-strong bg-card px-3.5 py-2.5 text-sm text-text-muted hover:border-gold/50 hover:text-text-secondary"
+            >
+              <Paperclip className="h-4 w-4" /> Ajouter un ou plusieurs documents
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
+              className="hidden"
+              onChange={(e) => {
+                addFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            {files.length > 0 && (
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {files.map((file, i) => (
+                  <li
+                    key={`${file.name}-${i}`}
+                    className="flex items-center justify-between gap-2 rounded-md bg-card-elevated px-3 py-1.5 text-xs text-text-secondary"
+                  >
+                    <span className="truncate">{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      aria-label={`Retirer ${file.name}`}
+                      className="shrink-0 text-text-muted hover:text-error"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Field>
+
           <Button type="submit" disabled={pending} className="self-start">
             Envoyer ma candidature
           </Button>

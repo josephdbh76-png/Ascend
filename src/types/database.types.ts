@@ -505,6 +505,26 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["opportunity_applications"]["Row"]>;
         Relationships: [];
       };
+      opportunity_application_attachments: {
+        Row: {
+          id: string;
+          application_id: string;
+          file_path: string;
+          file_name: string;
+          file_size: number;
+          content_type: string;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["opportunity_application_attachments"]["Row"], "id">> & {
+          application_id: string;
+          file_path: string;
+          file_name: string;
+          file_size: number;
+          content_type: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["opportunity_application_attachments"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

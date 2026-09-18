@@ -1,8 +1,9 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotificationForUser } from "@/services/notification.service";
 import { getCurrentRevenue } from "@/services/revenue.service";
-import type { Opportunity, OpportunityMatch, OpportunityApplication, MyOpportunity } from "@/types";
+import type { Opportunity, OpportunityMatch, OpportunityApplication, OpportunityAttachment, MyOpportunity } from "@/types";
 import type {
   OpportunityType,
   CompensationType,
@@ -73,7 +74,7 @@ function mapApplication(row: {
   message: string;
   status: ApplicationStatus;
   created_at: string;
-}, applicant: MiniProfile | undefined): OpportunityApplication {
+}, applicant: MiniProfile | undefined, attachments: OpportunityAttachment[] = []): OpportunityApplication {
   return {
     id: row.id,
     opportunityId: row.opportunity_id,
@@ -84,7 +85,44 @@ function mapApplication(row: {
     message: row.message,
     status: row.status,
     createdAt: row.created_at,
+    attachments,
   };
+}
+
+/**
+ * The opportunity author isn't the uploader, so their own session client
+ * has no storage RLS grant to read an applicant's files (same reason
+ * admin revenue-proof review uses the admin client) — signed URLs are
+ * always minted with the admin client here. Safe because both call sites
+ * already scope the underlying query to the caller's own id (their own
+ * applications, or applications to their own opportunities) before this
+ * ever runs, so nobody uninvolved gets a link.
+ */
+async function fetchAttachmentsByApplicationIds(applicationIds: string[]): Promise<Map<string, OpportunityAttachment[]>> {
+  const byApplication = new Map<string, OpportunityAttachment[]>();
+  if (applicationIds.length === 0) return byApplication;
+
+  const admin = createAdminClient();
+  const { data: rows } = await admin
+    .from("opportunity_application_attachments")
+    .select("id, application_id, file_path, file_name, file_size, content_type")
+    .in("application_id", applicationIds)
+    .order("created_at", { ascending: true });
+
+  for (const row of rows ?? []) {
+    const { data: signed } = await admin.storage
+      .from("opportunity-attachments")
+      .createSignedUrl(row.file_path, 60 * 10);
+    const attachment: OpportunityAttachment = {
+      id: row.id,
+      fileName: row.file_name,
+      fileSize: row.file_size,
+      contentType: row.content_type,
+      url: signed?.signedUrl ?? null,
+    };
+    byApplication.set(row.application_id, [...(byApplication.get(row.application_id) ?? []), attachment]);
+  }
+  return byApplication;
 }
 
 type RevenueStage = Exclude<OpportunityStage, "any">;
@@ -266,9 +304,10 @@ export async function listMyOpportunities(authorId: string): Promise<MyOpportuni
     .order("created_at", { ascending: false });
 
   const applicants = await fetchProfilesById((appRows ?? []).map((a) => a.applicant_id));
+  const attachmentsByApplication = await fetchAttachmentsByApplicationIds((appRows ?? []).map((a) => a.id));
   const appsByOpportunity = new Map<string, OpportunityApplication[]>();
   for (const a of appRows ?? []) {
-    const mapped = mapApplication(a, applicants.get(a.applicant_id));
+    const mapped = mapApplication(a, applicants.get(a.applicant_id), attachmentsByApplication.get(a.id));
     appsByOpportunity.set(a.opportunity_id, [...(appsByOpportunity.get(a.opportunity_id) ?? []), mapped]);
   }
 
@@ -299,16 +338,29 @@ export async function listMyApplications(applicantId: string): Promise<(Opportun
   const authors = await fetchProfilesById((oppRows ?? []).map((o) => o.author_id));
   const opportunitiesById = new Map((oppRows ?? []).map((o) => [o.id, mapOpportunity(o, authors.get(o.author_id))]));
   const applicantProfile = (await fetchProfilesById([applicantId])).get(applicantId);
+  const attachmentsByApplication = await fetchAttachmentsByApplicationIds(appRows.map((a) => a.id));
 
   return appRows
     .filter((a) => opportunitiesById.has(a.opportunity_id))
     .map((a) => ({
-      ...mapApplication(a, applicantProfile),
+      ...mapApplication(a, applicantProfile, attachmentsByApplication.get(a.id)),
       opportunity: opportunitiesById.get(a.opportunity_id)!,
     }));
 }
 
-export async function applyToOpportunity(applicantId: string, opportunityId: string, message: string) {
+export interface UploadedAttachment {
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  contentType: string;
+}
+
+export async function applyToOpportunity(
+  applicantId: string,
+  opportunityId: string,
+  message: string,
+  attachments: UploadedAttachment[] = [],
+) {
   const supabase = await createClient();
   const { data: opportunity } = await supabase
     .from("opportunities")
@@ -318,12 +370,27 @@ export async function applyToOpportunity(applicantId: string, opportunityId: str
   if (!opportunity || opportunity.status !== "open") throw new Error("Cette opportunité n'est plus disponible.");
   if (opportunity.author_id === applicantId) throw new Error("Tu ne peux pas postuler à ta propre opportunité.");
 
-  const { error } = await supabase
+  const { data: application, error } = await supabase
     .from("opportunity_applications")
-    .insert({ opportunity_id: opportunityId, applicant_id: applicantId, message });
+    .insert({ opportunity_id: opportunityId, applicant_id: applicantId, message })
+    .select("id")
+    .single();
   if (error) {
     if (error.code === "23505") throw new Error("Tu as déjà postulé à cette opportunité.");
     throw new Error(error.message);
+  }
+
+  if (attachments.length > 0) {
+    const { error: attachmentError } = await supabase.from("opportunity_application_attachments").insert(
+      attachments.map((a) => ({
+        application_id: application.id,
+        file_path: a.filePath,
+        file_name: a.fileName,
+        file_size: a.fileSize,
+        content_type: a.contentType,
+      })),
+    );
+    if (attachmentError) throw new Error(attachmentError.message);
   }
 
   const { data: applicant } = await supabase
