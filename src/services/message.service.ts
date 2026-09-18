@@ -256,6 +256,18 @@ export async function getConversationThread(
   const unreadIds = (messages ?? []).filter((m) => m.sender_id !== userId && !m.read_at).map((m) => m.id);
   if (unreadIds.length > 0) {
     await supabase.from("messages").update({ read_at: new Date().toISOString() }).in("id", unreadIds);
+
+    // Opening this thread just read every unread message in it — the
+    // matching "new_message" bell notification(s) for this conversation
+    // are now stale too. Scoped to this conversation only (via the
+    // metadata it was created with), never all of the user's notifications.
+    await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("type", "new_message")
+      .is("read_at", null)
+      .contains("metadata", { conversation_id: conversationId });
   }
 
   return {

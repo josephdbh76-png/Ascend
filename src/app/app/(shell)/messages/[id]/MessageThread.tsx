@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Send, Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -24,11 +25,21 @@ export function MessageThread({
   const [body, setBody] = useState("");
   const [pending, startTransition] = useTransition();
   const toast = useToast();
+  const router = useRouter();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [messages.length]);
+
+  // Loading this page already marked this conversation's messages (and its
+  // matching bell notification) read server-side — refresh so the sidebar's
+  // "Messages" badge and the notification bell drop immediately instead of
+  // waiting for the next navigation or background poll.
+  useEffect(() => {
+    router.refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const awaitingReply = status === "pending" && thread.isRequester && messages.some((m) => m.senderId === currentUserId);
   const canReplyToAccept = status === "pending" && !thread.isRequester;

@@ -1,5 +1,6 @@
 import { AppSidebar } from "./AppSidebar";
 import { AppMobileHeader, AppBottomNav } from "./AppMobileNav";
+import { AppDataRefresher } from "./AppDataRefresher";
 import type { NotificationItem } from "./NotificationBell";
 
 export function AppShell({
@@ -23,6 +24,7 @@ export function AppShell({
 }) {
   return (
     <div className="min-h-screen bg-bg-primary">
+      <AppDataRefresher />
       <AppSidebar
         username={username}
         avatarUrl={avatarUrl}

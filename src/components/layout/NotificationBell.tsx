@@ -63,6 +63,20 @@ export function NotificationBell({
   const [unread, setUnread] = useState(unreadCount);
   const [, startTransition] = useTransition();
 
+  // `initial`/`unreadCount` only feed useState on the very first render —
+  // without re-syncing here, a fresh server render (a periodic refresh, or
+  // opening a message thread that just marked its notification read) would
+  // pass new props down that this component would otherwise never pick up,
+  // leaving the badge showing stale counts until a full remount. Adjusting
+  // state during render (React's own recommended pattern for this) rather
+  // than in a useEffect avoids an extra cascading render.
+  const [syncedFrom, setSyncedFrom] = useState({ initial, unreadCount });
+  if (syncedFrom.initial !== initial || syncedFrom.unreadCount !== unreadCount) {
+    setSyncedFrom({ initial, unreadCount });
+    setItems(initial);
+    setUnread(unreadCount);
+  }
+
   function toggle() {
     const next = !open;
     setOpen(next);
