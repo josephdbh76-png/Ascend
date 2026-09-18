@@ -516,6 +516,10 @@ export interface Database {
         Args: { p_user_id: string; p_title_id: string };
         Returns: boolean;
       };
+      get_benchmark_stats: {
+        Args: { p_user_id: string };
+        Returns: BenchmarkStatsRow[];
+      };
     };
   };
 }
@@ -574,4 +578,16 @@ export interface PublicProfileRow {
   accent_theme: AccentTheme;
   is_cofounder: boolean;
   legal_name: string | null;
+}
+
+export interface BenchmarkStatsRow {
+  category: string;
+  category_sample_size: number;
+  /** 0–1 fraction of same-category verified peers this user's revenue exceeds. */
+  category_revenue_percentile: number | null;
+  category_growth_percentile: number | null;
+  category_median_revenue_cents: number | null;
+  global_sample_size: number;
+  global_revenue_percentile: number | null;
+  global_growth_percentile: number | null;
 }

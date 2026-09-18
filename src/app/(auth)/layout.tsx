@@ -4,7 +4,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex min-h-screen flex-col bg-bg-primary">
       <header className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="text-lg font-semibold tracking-tight text-text-primary">
+        <Link href="/" className="font-display text-lg font-medium tracking-tight text-text-primary">
           ASCEND
         </Link>
       </header>

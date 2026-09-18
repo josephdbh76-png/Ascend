@@ -61,10 +61,10 @@ export function VerificationReveal({ rank }: { rank: number | null; revenueCents
             key: "rank",
             render: () => (
               <div className="flex flex-col items-center gap-2">
-                <span className="text-sm font-medium uppercase tracking-wide text-text-muted">
+                <span className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-text-muted">
                   Classement mondial
                 </span>
-                <span className="text-6xl font-semibold tracking-tight text-gold sm:text-7xl">
+                <span className="font-display text-6xl font-medium tracking-tight text-gold sm:text-7xl">
                   #<CountUp value={rank} format={(n) => `${n}`} duration={1.4} />
                 </span>
               </div>
@@ -138,7 +138,7 @@ function Line({
 }) {
   return (
     <p
-      className={`text-2xl font-medium sm:text-3xl ${
+      className={`font-display text-2xl font-medium sm:text-3xl ${
         muted ? "text-text-secondary" : accent ? "text-success" : gold ? "text-gold" : "text-text-primary"
       }`}
     >

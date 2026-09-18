@@ -58,7 +58,7 @@ export function ManualRevenueCard({ declarations }: { declarations: RevenueDecla
     .reduce((sum, d) => sum + d.amountCents, 0);
 
   return (
-    <div id="revenus" className="scroll-mt-6 rounded-md border border-border-strong bg-card-elevated p-4">
+    <div id="revenus" className="scroll-mt-6 border border-border-strong bg-card-elevated p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-text-primary">Déclaration manuelle</p>
@@ -119,7 +119,7 @@ export function ManualRevenueCard({ declarations }: { declarations: RevenueDecla
             />
           </Field>
           <Field label="Preuve" hint="Obligatoire — PDF, PNG, JPEG ou WebP, 5 Mo maximum.">
-            <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border-strong bg-card px-3.5 py-2.5 text-sm text-text-muted hover:border-gold/50 hover:text-text-secondary">
+            <label className="flex cursor-pointer items-center gap-2 border border-dashed border-border-strong bg-card px-3.5 py-2.5 text-sm text-text-muted hover:border-gold/50 hover:text-text-secondary">
               <Upload className="h-4 w-4" />
               {fileName ?? "Choisir un fichier"}
               <input

@@ -31,19 +31,19 @@ export function LoginForm() {
   return (
     <form onSubmit={submit} className="animate-fade-up flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold text-text-primary">Ravi de te revoir</h1>
-        <p className="mt-1 text-sm text-text-secondary">Connecte-toi pour voir où tu en es.</p>
+        <h1 className="font-display text-2xl font-medium text-text-primary">Ravi de te revoir</h1>
+        <p className="mt-1.5 text-sm text-text-secondary">Connecte-toi pour voir où tu en es.</p>
       </div>
 
       {needsAuth && !error && (
-        <div className="flex items-center gap-2 rounded-md border border-border-strong bg-card-elevated px-3.5 py-2.5 text-sm text-text-secondary">
+        <div className="flex items-center gap-2 border border-border-strong bg-card-elevated px-3.5 py-2.5 text-sm text-text-secondary">
           <Lock className="h-3.5 w-3.5 shrink-0 text-text-muted" />
           Connecte-toi pour accéder à ton espace ASCEND.
         </div>
       )}
 
       {error && (
-        <div className="rounded-md border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
+        <div className="border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
           {error}
         </div>
       )}

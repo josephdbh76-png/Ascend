@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getPublicProfileByUsername } from "@/services/profile.service";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
+import { MilestoneTimeline } from "@/components/profile/MilestoneTimeline";
 import { AchievementCard } from "@/components/achievements/AchievementCard";
 import { TrophyCard } from "@/components/achievements/TrophyCard";
 import { TitleCard } from "@/components/titles/TitleCard";
@@ -16,7 +17,7 @@ import { getFollowCounts, isFollowing as checkIsFollowing } from "@/services/net
 import { getUnreadMessageCount } from "@/services/message.service";
 import { isCurrentUserAdmin } from "@/services/admin.service";
 import { formatCurrency, formatCurrencyRange } from "@/lib/utils";
-import { Award, Trophy, Gem } from "lucide-react";
+import { Award, Trophy, Gem, TrendingUp } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -89,8 +90,17 @@ export default async function PublicProfilePage({
         isCreator={isCreator}
       />
 
+      {profile.revenueVerified && (
+        <section>
+          <h2 className="mb-4 flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
+            <TrendingUp className="h-4 w-4" /> Trajectoire
+          </h2>
+          <MilestoneTimeline achievements={profile.achievements} />
+        </section>
+      )}
+
       <section>
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2 className="mb-4 flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
           <Gem className="h-4 w-4" /> Titres
         </h2>
         {titles.length === 0 ? (
@@ -115,7 +125,7 @@ export default async function PublicProfilePage({
       </section>
 
       <section>
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2 className="mb-4 flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
           <Trophy className="h-4 w-4" /> Trophées
         </h2>
         {profile.trophies.length === 0 ? (
@@ -130,7 +140,7 @@ export default async function PublicProfilePage({
       </section>
 
       <section>
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2 className="mb-4 flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
           <Award className="h-4 w-4" /> Accomplissements
         </h2>
         {profile.achievements.length === 0 ? (

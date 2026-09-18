@@ -58,7 +58,7 @@ export function ConnectedAccounts({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between rounded-md border border-border-strong bg-card-elevated p-4">
+      <div className="flex items-center justify-between border border-border-strong bg-card-elevated p-4">
         <div>
           <p className="text-sm font-medium text-text-primary">Stripe</p>
           <div className="mt-1">
@@ -90,9 +90,9 @@ export function ConnectedAccounts({
       <ManualRevenueCard declarations={declarations} />
 
       {(["Shopify", "PayPal", "Paddle"] as const).map((name) => (
-        <div key={name} className="flex items-center justify-between rounded-md border border-border bg-card p-4 opacity-60">
+        <div key={name} className="flex items-center justify-between border border-border bg-card p-4 opacity-60">
           <p className="text-sm font-medium text-text-secondary">{name}</p>
-          <span className="text-xs font-medium uppercase tracking-wide text-text-muted">Bientôt disponible</span>
+          <span className="font-mono text-[11px] font-medium uppercase tracking-wide text-text-muted">Bientôt disponible</span>
         </div>
       ))}
     </div>

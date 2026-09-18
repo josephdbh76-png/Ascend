@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Reveal } from "@/components/motion/Reveal";
 
@@ -41,24 +41,27 @@ export function FAQ() {
 
   return (
     <section id="faq" className="border-b border-border">
-      <div className="mx-auto max-w-2xl px-4 py-20 sm:px-6 lg:px-8">
-        <Reveal as="h2" className="text-center text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
-          Questions fréquentes
+      <div className="mx-auto max-w-2xl px-4 py-24 sm:px-6 lg:px-8">
+        <Reveal as="div" className="text-center">
+          <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-gold">Questions</span>
+          <h2 className="mt-5 font-display text-4xl font-medium tracking-tight text-text-primary sm:text-5xl">
+            Questions fréquentes
+          </h2>
         </Reveal>
-        <Reveal as="div" delay={0.1} className="mt-10 divide-y divide-border rounded-lg border border-border">
+        <Reveal as="div" delay={0.1} className="mt-12 border-t border-border">
           {ITEMS.map((item, i) => (
-            <div key={item.q}>
+            <div key={item.q} className="border-b border-border">
               <button
                 onClick={() => setOpen(open === i ? null : i)}
-                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                className="flex w-full items-center justify-between gap-4 py-5 text-left"
                 aria-expanded={open === i}
               >
                 <span className="text-sm font-medium text-text-primary">{item.q}</span>
-                <ChevronDown
-                  className={cn("h-4 w-4 shrink-0 text-text-muted transition-transform", open === i && "rotate-180")}
+                <Plus
+                  className={cn("h-4 w-4 shrink-0 text-gold transition-transform duration-200", open === i && "rotate-45")}
                 />
               </button>
-              {open === i && <p className="px-5 pb-4 text-sm text-text-secondary">{item.a}</p>}
+              {open === i && <p className="pb-5 pr-8 text-sm leading-relaxed text-text-secondary">{item.a}</p>}
             </div>
           ))}
         </Reveal>

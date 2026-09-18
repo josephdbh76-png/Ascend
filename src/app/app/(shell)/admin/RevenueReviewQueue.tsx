@@ -66,7 +66,7 @@ export function RevenueReviewQueue({ reviews }: { reviews: PendingRevenueReview[
                 href={r.proofUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-8 items-center gap-2 rounded-md border border-border-strong bg-card-elevated px-3 text-xs font-medium text-text-primary hover:bg-card-active"
+                className="inline-flex h-8 items-center gap-2 border border-border-strong bg-card-elevated px-3 text-xs font-medium text-text-primary hover:bg-card-active"
               >
                 <FileText className="h-3.5 w-3.5" /> Voir la preuve
               </a>

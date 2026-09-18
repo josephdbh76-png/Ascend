@@ -33,7 +33,7 @@ export default async function OpportunitiesPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Opportunités</h1>
+          <h1 className="font-display text-3xl font-medium tracking-tight text-text-primary">Opportunités</h1>
           <p className="mt-1 text-sm text-text-secondary">
             Associé, développeur, partenaire, growth, cofondateur.
           </p>

@@ -11,28 +11,32 @@ const STEPS = [
 export function HowItWorks() {
   return (
     <section id="comment-ca-marche" className="border-b border-border">
-      <div className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 lg:px-8">
-        <Reveal as="div" className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
-            Comment fonctionne ASCEND
-          </h2>
+      <div className="mx-auto max-w-[1240px] px-4 py-24 sm:px-6 lg:px-8">
+        <Reveal as="div" className="flex items-center gap-3">
+          <span className="h-px w-8 bg-gold" />
+          <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-gold">Le mécanisme</span>
+        </Reveal>
+        <Reveal as="h2" delay={0.05} className="mt-5 max-w-xl font-display text-4xl font-medium tracking-tight text-text-primary sm:text-5xl">
+          Comment fonctionne ASCEND
         </Reveal>
 
-        <RevealGroup className="mt-14 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4" stagger={0.1}>
+        <div className="hairline mt-14" />
+        <RevealGroup className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" stagger={0.1}>
           {STEPS.map((step, i) => (
-            <RevealItem key={step.number} className="relative">
-              <span className="text-5xl font-semibold text-border-strong tabular-nums">{step.number}</span>
-              <div className="mt-3 flex items-center gap-2">
+            <RevealItem
+              key={step.number}
+              className={`relative py-8 pr-6 ${i > 0 ? "lg:border-l lg:border-border lg:pl-8" : ""}`}
+            >
+              <span className="font-display text-5xl font-medium text-border-strong tabular-nums">{step.number}</span>
+              <div className="mt-4 flex items-center gap-2">
                 <step.icon className="h-4 w-4 text-gold" />
                 <h3 className="text-base font-semibold text-text-primary">{step.title}</h3>
               </div>
-              <p className="mt-2 text-sm text-text-secondary">{step.description}</p>
-              {i < STEPS.length - 1 && (
-                <div className="absolute right-[-1rem] top-6 hidden h-px w-8 bg-border-strong lg:block" />
-              )}
+              <p className="mt-2 text-sm leading-relaxed text-text-secondary">{step.description}</p>
             </RevealItem>
           ))}
         </RevealGroup>
+        <div className="hairline" />
       </div>
     </section>
   );

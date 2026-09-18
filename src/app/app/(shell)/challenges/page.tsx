@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveChallengesWithProgress, getChallengeCompletionRates } from "@/services/challenge.service";
 import { ChallengeCard } from "@/components/challenges/ChallengeCard";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { FrameCorners } from "@/components/ui/FrameCorners";
 import { Flag } from "lucide-react";
 
 export const metadata: Metadata = { title: "Défis" };
@@ -29,13 +30,14 @@ export default async function ChallengesPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="rounded-lg border border-gold/30 bg-card p-6">
-        <span className="text-xs font-semibold uppercase tracking-wide text-gold">
+      <div className="relative border border-gold/30 bg-card p-6">
+        <FrameCorners />
+        <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-gold">
           {season?.name ?? "Saison ASCEND"}
         </span>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-text-primary">{season?.label}</h1>
+        <h1 className="mt-2 font-display text-3xl font-medium tracking-tight text-text-primary">{season?.label}</h1>
         {daysLeft != null && (
-          <p className="mt-1 text-sm text-text-secondary">{daysLeft} jours restants dans cette saison.</p>
+          <p className="mt-1.5 font-mono text-xs text-text-secondary">{daysLeft} jours restants dans cette saison.</p>
         )}
       </div>
 

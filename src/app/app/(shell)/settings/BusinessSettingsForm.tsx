@@ -86,7 +86,7 @@ export function BusinessSettingsForm({
 
       <div className="border-t border-border pt-6">
         {initial.legalName ? (
-          <div className="flex items-center gap-2 rounded-md border border-success/30 bg-success/10 px-3.5 py-2.5 text-sm text-success">
+          <div className="flex items-center gap-2 border border-success/30 bg-success/10 px-3.5 py-2.5 text-sm text-success">
             <BadgeCheck className="h-4 w-4 shrink-0" />
             Entreprise vérifiée : <span className="font-medium">{initial.legalName}</span>
           </div>

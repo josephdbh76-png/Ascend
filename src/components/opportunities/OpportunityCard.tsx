@@ -40,15 +40,15 @@ export function OpportunityCard({ opportunity }: { opportunity: OpportunityMatch
         </div>
         <div
           title={opportunity.matchReasons.join(" · ") || undefined}
-          className="flex shrink-0 items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-2 py-1 text-[11px] font-semibold text-gold"
+          className="flex shrink-0 items-center gap-1 border border-gold/30 bg-gold/10 px-2 py-1 font-mono text-[11px] font-semibold text-gold"
         >
           <Sparkles className="h-3 w-3" /> {opportunity.matchScore}% compatible
         </div>
       </div>
 
-      <p className="line-clamp-3 text-xs text-text-secondary">{opportunity.description}</p>
+      <p className="line-clamp-3 text-xs leading-relaxed text-text-secondary">{opportunity.description}</p>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-text-muted">
         <span className="flex items-center gap-1">
           {opportunity.locationType === "remote" ? <Wifi className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
           {locationTypeLabel(opportunity.locationType)}
@@ -60,7 +60,7 @@ export function OpportunityCard({ opportunity }: { opportunity: OpportunityMatch
       {opportunity.skills.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {opportunity.skills.map((s) => (
-            <span key={s} className="rounded-full border border-border-strong bg-card-elevated px-2 py-0.5 text-[10px] text-text-secondary">
+            <span key={s} className="border border-border-strong bg-card-elevated px-2 py-0.5 font-mono text-[10px] text-text-secondary">
               {s}
             </span>
           ))}

@@ -65,7 +65,7 @@ export function PrivacySettingsForm({
               }}
               disabled={pending}
               className={cn(
-                "flex flex-col gap-2 rounded-md border p-4 text-left transition-colors",
+                "flex flex-col gap-2 border p-4 text-left transition-colors",
                 active ? "border-gold/50 bg-gold/5" : "border-border-strong bg-card-elevated hover:border-border-strong/80",
               )}
             >
@@ -74,13 +74,13 @@ export function PrivacySettingsForm({
                 {opt.label}
               </span>
               <span className="text-xs text-text-secondary">{opt.description}</span>
-              <span className="mt-1 text-xs font-medium tabular-nums text-text-muted">{opt.preview}</span>
+              <span className="mt-1 font-mono text-xs font-medium tabular-nums text-text-muted">{opt.preview}</span>
             </button>
           );
         })}
       </div>
 
-      <label className="flex items-center gap-3 rounded-md border border-border-strong bg-card-elevated p-4 text-sm text-text-secondary">
+      <label className="flex items-center gap-3 border border-border-strong bg-card-elevated p-4 text-sm text-text-secondary">
         <input
           type="checkbox"
           checked={showCountry}

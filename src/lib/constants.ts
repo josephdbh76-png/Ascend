@@ -127,6 +127,16 @@ export const CHALLENGE_DEFINITIONS = [
   { id: "launch-something-new", title: "Nouveau lancement", description: "Bientôt disponible — enregistre le lancement d'un nouveau produit ou d'une fonctionnalité.", type: "coming_soon", target: 1 },
 ] as const;
 
+/**
+ * The revenue-threshold achievements, in ascending order — the "story" a
+ * profile's trajectory timeline walks through. Each one is a real,
+ * already-public achievement (see ACHIEVEMENT_DEFINITIONS), just replayed
+ * as a sequence instead of a scattered badge grid.
+ */
+export const REVENUE_MILESTONE_LADDER = ACHIEVEMENT_DEFINITIONS.filter(
+  (a): a is Extract<(typeof ACHIEVEMENT_DEFINITIONS)[number], { threshold: number }> => "threshold" in a,
+).sort((a, b) => a.threshold - b.threshold);
+
 export const FOUNDING_MEMBER_LIMIT = 500;
 
 export const ACCENT_THEMES = [

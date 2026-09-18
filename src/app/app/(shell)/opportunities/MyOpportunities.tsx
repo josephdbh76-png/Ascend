@@ -72,9 +72,9 @@ export function MyOpportunities({ opportunities }: { opportunities: MyOpportunit
           ) : (
             <div className="flex flex-col gap-2 border-t border-border pt-3">
               {o.applications.map((a) => (
-                <div key={a.id} className="flex flex-col gap-2 rounded-md bg-card-elevated p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div key={a.id} className="flex flex-col gap-2 border border-border bg-card-elevated p-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card-active text-xs font-semibold text-gold">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center border border-border-strong font-mono text-xs font-semibold text-gold">
                       {initials(a.applicantFirstName, a.applicantLastName)}
                     </span>
                     <div className="min-w-0">
@@ -102,7 +102,7 @@ export function MyOpportunities({ opportunities }: { opportunities: MyOpportunit
               ))}
             </div>
           )}
-          <span className="text-[11px] text-text-muted">Publiée {timeAgo(o.createdAt)}</span>
+          <span className="font-mono text-[10px] text-text-muted">Publiée {timeAgo(o.createdAt)}</span>
         </Card>
       ))}
     </div>

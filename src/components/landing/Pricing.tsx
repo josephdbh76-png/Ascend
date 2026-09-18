@@ -13,9 +13,10 @@ export async function Pricing() {
 
   return (
     <section id="tarifs" className="border-b border-border">
-      <div className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1240px] px-4 py-24 sm:px-6 lg:px-8">
         <Reveal as="div" className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
+          <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-gold">Les tarifs</span>
+          <h2 className="mt-5 font-display text-4xl font-medium tracking-tight text-text-primary sm:text-5xl">
             Des tarifs simples, qui grandissent avec toi.
           </h2>
         </Reveal>

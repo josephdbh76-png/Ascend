@@ -13,6 +13,7 @@ import {
   estimateMonthsToMilestone,
 } from "@/services/revenue.service";
 import { getUserRank, getRankMovement } from "@/services/leaderboard.service";
+import { getBenchmarkStats } from "@/services/benchmark.service";
 import { getUserAchievements, getAllAchievementCatalog } from "@/services/achievement.service";
 import { getActiveChallengesWithProgress } from "@/services/challenge.service";
 import { getLatestUnreadOfType } from "@/services/notification.service";
@@ -22,6 +23,7 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
+import { BenchmarkCard } from "@/components/dashboard/BenchmarkCard";
 import { StripeStatusToast } from "@/components/dashboard/StripeStatusToast";
 import { VerificationCTA } from "@/components/dashboard/VerificationCTA";
 import { AchievementUnlockGate } from "@/components/dashboard/AchievementUnlockGate";
@@ -67,6 +69,7 @@ export default async function DashboardPage() {
     isVerified && profile.country ? await getUserRank(user.id, "country", profile.country) : null;
   const movement =
     isVerified && globalRank ? await getRankMovement(user.id, "global", "", globalRank.rank) : null;
+  const benchmark = isVerified ? await getBenchmarkStats(user.id) : null;
 
   const milestone = nextRevenueMilestone(current?.amountCents ?? null);
   const remainingToMilestone = current ? milestone.targetCents - current.amountCents : milestone.targetCents;
@@ -122,7 +125,7 @@ export default async function DashboardPage() {
       )}
 
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
+        <h1 className="font-display text-3xl font-medium tracking-tight text-text-primary">
           {timeOfDayGreeting()}, {profile.firstName ?? profile.username} 👋
         </h1>
         <p className="mt-1 text-sm text-text-secondary">
@@ -169,6 +172,8 @@ export default async function DashboardPage() {
         />
       </div>
 
+      {benchmark && <BenchmarkCard stats={benchmark} />}
+
       {(current?.customerCount != null || avgBasketCents != null) && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <StatCard
@@ -192,7 +197,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="p-6 lg:col-span-2" elevated hover>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Performance</h2>
+            <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">Performance</h2>
             <VerificationBadge status={verificationStatus} />
           </div>
           <div className="mt-4">
@@ -208,7 +213,7 @@ export default async function DashboardPage() {
         </Card>
 
         <Card className="p-6" elevated hover>
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Prochain palier</h2>
+          <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">Prochain palier</h2>
           <div className="mt-4">
             <div className="flex items-baseline justify-between">
               <span className="text-lg font-semibold text-text-primary">
@@ -246,7 +251,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="p-6" elevated hover>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Défis en cours</h2>
+            <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">Défis en cours</h2>
             <Link href="/app/challenges" className="text-xs font-medium text-gold hover:text-gold-light">
               Tout voir
             </Link>
@@ -256,7 +261,7 @@ export default async function DashboardPage() {
               <EmptyState title="Le prochain défi arrive bientôt." />
             ) : (
               challenges.slice(0, 3).map((c) => (
-                <div key={c.id} className="rounded-md border border-border bg-card p-4 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-gold/30">
+                <div key={c.id} className="border border-border bg-card p-4 transition-colors duration-200 ease-out hover:border-gold/30">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-text-primary">{c.title}</span>
                     <span className="text-xs text-text-muted">{c.progress.toFixed(0)} %</span>
@@ -270,7 +275,7 @@ export default async function DashboardPage() {
 
         <Card className="p-6" elevated hover>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Accomplissements</h2>
+            <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">Accomplissements</h2>
             <Link href="/app/achievements" className="text-xs font-medium text-gold hover:text-gold-light">
               Tout voir
             </Link>
@@ -284,7 +289,7 @@ export default async function DashboardPage() {
                   <div
                     key={a.id}
                     title={a.description}
-                    className="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-md border border-border bg-card text-center transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-gold/40 hover:bg-gold/5"
+                    className="flex h-16 w-16 flex-col items-center justify-center gap-1 border border-border bg-card text-center transition-colors duration-200 ease-out hover:border-gold/40 hover:bg-gold/5"
                   >
                     <Award className="h-4 w-4 text-gold" />
                     <span className="px-1 text-[9px] leading-tight text-text-secondary">{a.name}</span>

@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
-import { Crown, ArrowUp } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { Crown, ArrowUp, ArrowRight } from "lucide-react";
 import { Reveal } from "@/components/motion/Reveal";
 import { Tabs } from "@/components/ui/Tabs";
 import { formatCurrency, formatPercent } from "@/lib/utils";
@@ -58,29 +57,37 @@ export function LeaderboardPreview() {
 
   return (
     <section id="classement" className="border-b border-border">
-      <div className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 lg:px-8">
-        <Reveal as="div" className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+      <div className="mx-auto max-w-[1240px] px-4 py-24 sm:px-6 lg:px-8">
+        <Reveal as="div" className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
+            <div className="flex items-center gap-3">
+              <span className="h-px w-8 bg-gold" />
+              <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-gold">Le classement</span>
+            </div>
+            <h2 className="mt-5 font-display text-4xl font-medium tracking-tight text-text-primary sm:text-5xl">
               Sais-tu où tu te situes ?
             </h2>
-            <p className="mt-3 max-w-lg text-sm text-text-secondary">
+            <p className="mt-4 max-w-lg text-sm leading-relaxed text-text-secondary">
               Compare ta progression à celle des entrepreneurs qui construisent comme toi.
             </p>
           </div>
-          <Button href="/signup" variant="secondary">
+          <a
+            href="/signup"
+            className="group inline-flex shrink-0 items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary"
+          >
             Voir le classement complet
-          </Button>
+            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+          </a>
         </Reveal>
 
-        <Reveal as="div" delay={0.1} className="mt-8">
+        <Reveal as="div" delay={0.1} className="mt-10">
           <Tabs items={TABS} defaultValue="global" onChange={setTab} />
         </Reveal>
 
-        <Reveal as="div" delay={0.15} className="mt-6 overflow-x-auto rounded-lg border border-border">
+        <Reveal as="div" delay={0.15} className="mt-6 overflow-x-auto border-y border-border">
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-border bg-bg-secondary text-left text-xs uppercase tracking-wide text-text-muted">
+              <tr className="border-b border-border text-left font-mono text-[10px] uppercase tracking-[0.15em] text-text-muted">
                 <th className="w-16 px-4 py-3 font-medium">Rang</th>
                 <th className="px-4 py-3 font-medium">Entrepreneur</th>
                 <th className="px-4 py-3 font-medium">Activité</th>
@@ -100,33 +107,33 @@ export function LeaderboardPreview() {
                   transition={{ duration: 0.3, delay: reduced ? 0 : i * 0.04, ease: [0.16, 1, 0.3, 1] }}
                   className={
                     row.isYou
-                      ? "border-b border-border bg-gold/5 shadow-[inset_0_0_0_1px_rgba(245,196,81,0.4)] last:border-0"
+                      ? "border-b border-border bg-gold/5 shadow-[inset_2px_0_0_0_var(--color-gold)] last:border-0"
                       : "border-b border-border transition-colors last:border-0 hover:bg-bg-secondary"
                   }
                 >
-                  <td className="px-4 py-3.5">
+                  <td className="px-4 py-4">
                     <span className="flex items-center gap-1.5">
                       {row.rank <= 3 && <Crown className={`h-4 w-4 ${RANK_COLORS[row.rank]}`} />}
-                      <span className={`font-semibold tabular-nums ${RANK_COLORS[row.rank] ?? "text-text-primary"}`}>
+                      <span className={`font-display text-base font-medium tabular-nums ${RANK_COLORS[row.rank] ?? "text-text-primary"}`}>
                         #{row.rank}
                       </span>
                     </span>
                   </td>
-                  <td className="px-4 py-3.5 font-medium text-text-primary">
+                  <td className="px-4 py-4 font-medium text-text-primary">
                     <span className="flex items-center gap-2">
                       {row.name}
                       {row.isYou && (
-                        <span className="flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-gold">
+                        <span className="flex items-center gap-1 border border-gold/30 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase text-gold">
                           <ArrowUp className="h-3 w-3" /> 12 places
                         </span>
                       )}
                     </span>
                   </td>
-                  <td className="px-4 py-3.5 text-text-secondary">{row.business}</td>
-                  <td className="px-4 py-3.5 text-right font-medium tabular-nums text-text-primary">
+                  <td className="px-4 py-4 text-text-secondary">{row.business}</td>
+                  <td className="px-4 py-4 text-right font-medium tabular-nums text-text-primary">
                     {formatCurrency(row.revenue)}
                   </td>
-                  <td className="px-4 py-3.5 text-right font-medium tabular-nums text-success">
+                  <td className="px-4 py-4 text-right font-medium tabular-nums text-success">
                     {formatPercent(row.growth)}
                   </td>
                 </motion.tr>
@@ -135,7 +142,7 @@ export function LeaderboardPreview() {
             </tbody>
           </table>
         </Reveal>
-        <p className="mt-3 text-xs text-text-muted">
+        <p className="mt-3 font-mono text-[11px] text-text-muted">
           Données d&apos;exemple à but illustratif — pas un classement réel.
         </p>
       </div>

@@ -113,13 +113,13 @@ export function AnalysisRevealModal({
                 <ResultIcon className="h-7 w-7 text-gold" />
               </div>
               {resultScore != null && (
-                <span className="text-5xl font-semibold tracking-tight text-gold">
+                <span className="font-display text-5xl font-medium tracking-tight text-gold">
                   <CountUp value={resultScore} format={resultScoreFormat} duration={1} />
                 </span>
               )}
-              {resultScoreLabel && <p className="text-xs uppercase tracking-wide text-text-muted">{resultScoreLabel}</p>}
-              <p className="mt-1 text-lg font-semibold text-text-primary">{resultHeadline}</p>
-              <p className="max-w-xs text-sm text-text-secondary">{resultSubtext}</p>
+              {resultScoreLabel && <p className="font-mono text-[11px] uppercase tracking-wide text-text-muted">{resultScoreLabel}</p>}
+              <p className="mt-1 font-display text-xl font-medium text-text-primary">{resultHeadline}</p>
+              <p className="max-w-xs text-sm leading-relaxed text-text-secondary">{resultSubtext}</p>
               <Button href={ctaHref} className="mt-3">
                 {ctaLabel}
               </Button>

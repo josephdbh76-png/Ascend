@@ -64,10 +64,10 @@ export function AdminUsersTable({ users, currentUserId }: { users: AdminUserRow[
         className="max-w-sm"
       />
 
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-x-auto border-y border-border">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border bg-bg-secondary text-left text-xs uppercase tracking-wide text-text-muted">
+            <tr className="border-b border-border text-left font-mono text-[10px] uppercase tracking-[0.15em] text-text-muted">
               <th className="px-4 py-3 font-medium">Membre</th>
               <th className="px-4 py-3 font-medium">Localisation</th>
               <th className="px-4 py-3 font-medium">Vérifié</th>
@@ -103,7 +103,7 @@ export function AdminUsersTable({ users, currentUserId }: { users: AdminUserRow[
                     value={u.tier}
                     disabled={pending}
                     onChange={(e) => changeTier(u.id, e.target.value as SubscriptionTier)}
-                    className="rounded-md border border-border-strong bg-card-elevated px-2 py-1.5 text-xs text-text-primary focus:border-gold/60 focus:outline-none"
+                    className="rounded-sm border border-border-strong bg-card-elevated px-2 py-1.5 text-xs text-text-primary focus:border-gold/60 focus:outline-none"
                   >
                     {Object.entries(TIER_LABELS).map(([value, label]) => (
                       <option key={value} value={value}>

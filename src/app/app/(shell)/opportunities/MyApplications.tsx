@@ -31,8 +31,8 @@ export function MyApplications({ applications }: { applications: (OpportunityApp
             </div>
             <Badge variant={APPLICATION_STATUS_BADGE[a.status]}>{APPLICATION_STATUS_LABELS[a.status]}</Badge>
           </div>
-          <p className="text-xs text-text-secondary">{a.message}</p>
-          <span className="text-[11px] text-text-muted">Envoyée {timeAgo(a.createdAt)}</span>
+          <p className="text-xs leading-relaxed text-text-secondary">{a.message}</p>
+          <span className="font-mono text-[10px] text-text-muted">Envoyée {timeAgo(a.createdAt)}</span>
         </Card>
       ))}
     </div>

@@ -37,7 +37,7 @@ export default async function NetworkPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Réseau</h1>
+        <h1 className="font-display text-3xl font-medium tracking-tight text-text-primary">Réseau</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Les bonnes personnes accélèrent les bons projets.
         </p>
@@ -53,7 +53,7 @@ export default async function NetworkPage({
 
           {!hasFilters && trending.length > 0 && (
             <section className="flex flex-col gap-3">
-              <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-text-muted">
+              <h2 className="flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
                 <Flame className="h-4 w-4 text-gold" /> Tendances
               </h2>
               <NetworkResults results={trending} />
@@ -62,7 +62,7 @@ export default async function NetworkPage({
 
           {!hasFilters && newest.length > 0 && (
             <section className="flex flex-col gap-3">
-              <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-text-muted">
+              <h2 className="flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
                 <Sparkles className="h-4 w-4 text-gold" /> Nouveaux membres
               </h2>
               <NetworkResults results={newest} />

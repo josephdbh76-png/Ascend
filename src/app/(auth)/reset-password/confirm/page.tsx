@@ -33,10 +33,10 @@ export default function ResetPasswordConfirmPage() {
   return (
     <form onSubmit={submit} className="animate-fade-up flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold text-text-primary">Définis un nouveau mot de passe</h1>
+        <h1 className="font-display text-2xl font-medium text-text-primary">Définis un nouveau mot de passe</h1>
       </div>
       {error && (
-        <div className="rounded-md border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
+        <div className="border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
           {error}
         </div>
       )}

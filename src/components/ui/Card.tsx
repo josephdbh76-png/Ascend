@@ -10,10 +10,9 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-lg border border-border",
+        "rounded-sm border border-border",
         elevated ? "bg-card-elevated" : "bg-card",
-        hover &&
-          "transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-gold/30 hover:shadow-[0_10px_30px_rgba(0,0,0,0.18)]",
+        hover && "transition-colors duration-200 ease-out hover:border-gold/30",
         className,
       )}
       {...props}
