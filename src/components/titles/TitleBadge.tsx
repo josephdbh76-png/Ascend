@@ -9,7 +9,7 @@ export function TitleBadge({ title }: { title: { name: string; icon: string; rar
     <span
       title={title.name}
       className={cn(
-        "flex items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide",
+        "flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
         TITLE_RARITY_STYLES[title.rarity],
       )}
     >

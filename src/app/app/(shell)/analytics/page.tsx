@@ -7,7 +7,7 @@ import { getBenchmarkStats, percentileToWhole } from "@/services/benchmark.servi
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
-import { FrameCorners } from "@/components/ui/FrameCorners";
+import { Card } from "@/components/ui/Card";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
@@ -34,11 +34,8 @@ export default async function AnalyticsPage() {
 
   const header = (
     <div>
-      <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-gold">Analyses avancées</span>
-      <h1 className="mt-2 font-display text-3xl font-medium tracking-tight text-text-primary">
-        Où tu te situes, précisément.
-      </h1>
-      <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+      <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Analyses avancées</h1>
+      <p className="mt-1 text-sm text-text-secondary">
         Des statistiques réelles, calculées sur les entreprises vérifiées du réseau — jamais de chiffres inventés.
       </p>
     </div>
@@ -83,36 +80,34 @@ export default async function AnalyticsPage() {
       <div className="flex flex-col gap-8">
         {header}
 
-        <div className="relative border border-gold/30 bg-gold/5 p-6 text-center sm:p-8">
-          <FrameCorners />
+        <Card className="p-6 text-center sm:p-8" elevated>
           {revenuePct != null ? (
-            <p className="text-sm leading-relaxed text-text-secondary">
-              Tu es devant{" "}
-              <span className="font-display text-2xl font-medium text-gold">{revenuePct}%</span>{" "}
+            <p className="text-sm text-text-secondary">
+              Tu es devant <span className="text-2xl font-semibold text-gold">{revenuePct}%</span>{" "}
               {useCategory ? `des entreprises ${categoryLabel(benchmark.category)} vérifiées` : "des entrepreneurs vérifiés"}.
             </p>
           ) : (
             <p className="text-sm text-text-secondary">Ton premier benchmark arrive dès ton prochain mois vérifié.</p>
           )}
-          <p className="mx-auto mt-3 max-w-sm font-mono text-xs text-text-muted">
+          <p className="mx-auto mt-3 max-w-sm text-xs text-text-muted">
             Passe Pro pour voir la comparaison détaillée : croissance, médiane de ta catégorie, position mondiale.
           </p>
           <Button href="/app/settings#abonnement" size="sm" className="mt-4">
             Débloquer avec Pro
           </Button>
-        </div>
+        </Card>
 
         <div className="pointer-events-none relative grid grid-cols-1 gap-4 opacity-40 blur-[2px] sm:grid-cols-2">
-          <div className="flex flex-col gap-2 border border-border bg-card p-6">
-            <span className="h-3 w-32 bg-card-elevated" />
-            <span className="h-8 w-20 bg-card-elevated" />
-            <span className="h-3 w-full bg-card-elevated" />
-          </div>
-          <div className="flex flex-col gap-2 border border-border bg-card p-6">
-            <span className="h-3 w-32 bg-card-elevated" />
-            <span className="h-8 w-20 bg-card-elevated" />
-            <span className="h-3 w-full bg-card-elevated" />
-          </div>
+          <Card className="flex flex-col gap-2 p-6">
+            <span className="h-3 w-32 rounded bg-card-elevated" />
+            <span className="h-8 w-20 rounded bg-card-elevated" />
+            <span className="h-3 w-full rounded bg-card-elevated" />
+          </Card>
+          <Card className="flex flex-col gap-2 p-6">
+            <span className="h-3 w-32 rounded bg-card-elevated" />
+            <span className="h-8 w-20 rounded bg-card-elevated" />
+            <span className="h-3 w-full rounded bg-card-elevated" />
+          </Card>
           <div className="absolute inset-0 flex items-center justify-center">
             <Lock className="h-6 w-6 text-text-muted" />
           </div>
@@ -124,43 +119,39 @@ export default async function AnalyticsPage() {
   const history = await getRevenueHistory(user.id, 12);
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-8">
       {header}
 
-      <div className="grid grid-cols-1 gap-px bg-border sm:grid-cols-2">
-        <div className="relative bg-bg-primary p-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Card className="p-6" elevated>
           <div className="flex items-center gap-2">
             <Target className="h-4 w-4 text-gold" />
-            <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-text-muted">
+            <span className="text-xs font-medium uppercase tracking-wide text-text-muted">
               Revenu vs {useCategory ? categoryLabel(benchmark.category) : "réseau"}
             </span>
           </div>
-          <p className="mt-3 font-display text-4xl font-medium text-gold">
-            {revenuePct != null ? `${revenuePct}%` : "—"}
-          </p>
+          <p className="mt-2 text-3xl font-semibold text-gold">{revenuePct != null ? `${revenuePct}%` : "—"}</p>
           <p className="mt-1 text-xs text-text-muted">
             {revenuePct != null ? "de tes pairs ont un revenu inférieur au tien." : "Pas encore assez de données."}
           </p>
-        </div>
-        <div className="relative bg-bg-primary p-6">
+        </Card>
+        <Card className="p-6" elevated>
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-gold" />
-            <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-text-muted">
+            <span className="text-xs font-medium uppercase tracking-wide text-text-muted">
               Croissance vs {useCategory ? categoryLabel(benchmark.category) : "réseau"}
             </span>
           </div>
-          <p className="mt-3 font-display text-4xl font-medium text-success">
-            {growthPct != null ? `${growthPct}%` : "—"}
-          </p>
+          <p className="mt-2 text-3xl font-semibold text-success">{growthPct != null ? `${growthPct}%` : "—"}</p>
           <p className="mt-1 text-xs text-text-muted">
             {growthPct != null ? "de tes pairs ont une croissance inférieure à la tienne." : "Pas assez d'historique."}
           </p>
-        </div>
+        </Card>
       </div>
 
       {benchmark.categoryMedianRevenueCents != null && (
-        <div>
-          <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-text-muted">
+        <Card className="p-6" elevated>
+          <span className="text-xs font-medium uppercase tracking-wide text-text-muted">
             Médiane · {categoryLabel(benchmark.category)}
           </span>
           <p className="mt-2 text-sm text-text-secondary">
@@ -168,12 +159,12 @@ export default async function AnalyticsPage() {
             <span className="font-medium text-text-primary">{formatCurrency(benchmark.categoryMedianRevenueCents)}</span>{" "}
             de revenus mensuels.
           </p>
-        </div>
+        </Card>
       )}
 
       {(globalRevenuePct != null || globalGrowthPct != null) && useCategory && (
-        <div className="border-t border-border pt-6">
-          <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-text-muted">Position mondiale</span>
+        <Card className="p-6" elevated>
+          <span className="text-xs font-medium uppercase tracking-wide text-text-muted">Position mondiale</span>
           <p className="mt-2 text-sm text-text-secondary">
             {globalRevenuePct != null && (
               <>
@@ -189,24 +180,24 @@ export default async function AnalyticsPage() {
             )}
             .
           </p>
-        </div>
+        </Card>
       )}
 
       {history.length > 0 && (
-        <div className="border-t border-border pt-6">
-          <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-text-muted">Ta trajectoire</span>
+        <Card className="p-6" elevated>
+          <span className="text-xs font-medium uppercase tracking-wide text-text-muted">Ta trajectoire</span>
           <div className="mt-4">
             <PerformanceChart data={history} />
           </div>
-        </div>
+        </Card>
       )}
 
-      <p className="font-mono text-[10px] text-text-muted">
+      <p className="text-xs text-text-muted">
         Basé sur {benchmark.categorySampleSize} entreprise{benchmark.categorySampleSize > 1 ? "s" : ""} vérifiée
         {benchmark.categorySampleSize > 1 ? "s" : ""} en {categoryLabel(benchmark.category)}
         {" · "}
         {benchmark.globalSampleSize} au total sur ASCEND.{" "}
-        <Link href="/app/leaderboard" className="underline hover:text-text-secondary">
+        <Link href="/app/leaderboard" className="text-gold hover:text-gold-light">
           Voir le classement
         </Link>
       </p>

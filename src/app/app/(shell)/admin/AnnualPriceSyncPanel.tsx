@@ -35,20 +35,20 @@ export function AnnualPriceSyncPanel() {
       </Button>
 
       {results && (
-        <div className="flex flex-col gap-2 border border-border-strong bg-card-elevated p-3">
+        <div className="flex flex-col gap-2 rounded-md border border-border-strong bg-card-elevated p-3">
           <p className="text-xs text-text-secondary">
             Ajoute ces variables d&apos;environnement dans Vercel (type Config, scope Production), puis
             redéploie.
           </p>
           {results.map((r) => (
-            <div key={r.envVar} className="flex items-center justify-between gap-3 border border-border bg-card px-3 py-2">
+            <div key={r.envVar} className="flex items-center justify-between gap-3 rounded bg-card px-3 py-2">
               <div className="min-w-0">
                 <p className="font-mono text-xs text-text-primary">{r.envVar}</p>
                 <p className="truncate font-mono text-xs text-text-muted">{r.priceId}</p>
               </div>
               <button
                 onClick={() => copy(r.envVar, r.priceId)}
-                className="flex shrink-0 items-center gap-1 border border-border-strong px-2 py-1 text-xs text-text-secondary hover:bg-card-active"
+                className="flex shrink-0 items-center gap-1 rounded-md border border-border-strong px-2 py-1 text-xs text-text-secondary hover:bg-card-active"
               >
                 {copiedVar === r.envVar ? (
                   <Check className="h-3 w-3 text-success" />

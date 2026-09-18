@@ -92,7 +92,7 @@ export default async function PublicProfilePage({
 
       {profile.revenueVerified && (
         <section>
-          <h2 className="mb-4 flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
             <TrendingUp className="h-4 w-4" /> Trajectoire
           </h2>
           <MilestoneTimeline achievements={profile.achievements} />
@@ -100,7 +100,7 @@ export default async function PublicProfilePage({
       )}
 
       <section>
-        <h2 className="mb-4 flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
           <Gem className="h-4 w-4" /> Titres
         </h2>
         {titles.length === 0 ? (
@@ -125,7 +125,7 @@ export default async function PublicProfilePage({
       </section>
 
       <section>
-        <h2 className="mb-4 flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
           <Trophy className="h-4 w-4" /> Trophées
         </h2>
         {profile.trophies.length === 0 ? (
@@ -140,7 +140,7 @@ export default async function PublicProfilePage({
       </section>
 
       <section>
-        <h2 className="mb-4 flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
           <Award className="h-4 w-4" /> Accomplissements
         </h2>
         {profile.achievements.length === 0 ? (

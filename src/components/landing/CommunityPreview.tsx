@@ -18,20 +18,19 @@ const OPPORTUNITIES = [
 export function CommunityPreview() {
   return (
     <section id="communaute" className="border-b border-border">
-      <div className="mx-auto max-w-[1240px] px-4 py-24 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 lg:px-8">
         <Reveal as="div" className="mx-auto max-w-2xl text-center">
-          <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-gold">La communauté</span>
-          <h2 className="mt-5 font-display text-4xl font-medium tracking-tight text-text-primary sm:text-5xl">
+          <h2 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
             Les bonnes personnes accélèrent les bons projets.
           </h2>
-          <p className="mt-5 text-sm leading-relaxed text-text-secondary">
+          <p className="mt-4 text-sm text-text-secondary">
             Réseau et Opportunités sont réservés aux membres Elite — recherche des fondateurs de ton
             secteur et trouve les bonnes collaborations, avec un matching pensé pour ton activité.
           </p>
         </Reveal>
 
-        <div className="mt-14 grid grid-cols-1 gap-px bg-border lg:grid-cols-2">
-          <RevealGroup className="flex flex-col gap-3 bg-bg-primary p-7">
+        <div className="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <RevealGroup className="flex flex-col gap-3 rounded-lg border border-border bg-card p-6">
             <div className="flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
                 <Users className="h-4 w-4 text-gold" /> Réseau
@@ -41,17 +40,17 @@ export function CommunityPreview() {
             {FOUNDERS.map((f) => (
               <RevealItem
                 key={f.name}
-                className="flex items-center gap-3 border border-border p-3"
+                className="flex items-center gap-3 rounded-md border border-border bg-card-elevated p-3"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-border-strong font-mono text-xs font-medium text-gold">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-card-active text-xs font-semibold text-gold">
                   {f.initials}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-text-primary">{f.name}</p>
-                  <p className="truncate font-mono text-[11px] text-text-muted">{f.business}</p>
+                  <p className="truncate text-xs text-text-muted">{f.business}</p>
                 </div>
                 {f.verified && (
-                  <span className="flex shrink-0 items-center gap-1 font-mono text-[10px] uppercase text-success">
+                  <span className="flex shrink-0 items-center gap-1 text-xs text-success">
                     <CheckCircle2 className="h-3.5 w-3.5" /> Vérifié
                   </span>
                 )}
@@ -59,7 +58,7 @@ export function CommunityPreview() {
             ))}
           </RevealGroup>
 
-          <RevealGroup className="flex flex-col gap-3 bg-bg-primary p-7">
+          <RevealGroup className="flex flex-col gap-3 rounded-lg border border-border bg-card p-6">
             <div className="flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
                 <Compass className="h-4 w-4 text-gold" /> Opportunités
@@ -69,11 +68,11 @@ export function CommunityPreview() {
             {OPPORTUNITIES.map((o) => (
               <RevealItem
                 key={o.title}
-                className="flex flex-col gap-1.5 border border-border p-3"
+                className="flex flex-col gap-1.5 rounded-md border border-border bg-card-elevated p-3"
               >
                 <div className="flex items-center justify-between">
                   <Badge variant="neutral">{o.type}</Badge>
-                  <span className="flex items-center gap-1 font-mono text-[11px] font-medium text-gold">
+                  <span className="flex items-center gap-1 text-xs font-medium text-gold">
                     <Sparkles className="h-3 w-3" /> {o.match}% compatible
                   </span>
                 </div>

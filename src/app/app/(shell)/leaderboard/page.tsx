@@ -30,7 +30,7 @@ export default async function LeaderboardPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-3xl font-medium tracking-tight text-text-primary">Classement</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Classement</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Seuls les fondateurs vérifiés apparaissent ici, classés par revenus mensuels.
         </p>
@@ -41,11 +41,11 @@ export default async function LeaderboardPage({
       {yourRank && !isOnPage && (
         <Card className="flex items-center justify-between p-4" elevated>
           <div className="flex items-center gap-3">
-            <span className="font-display text-lg font-medium tabular-nums text-gold">#{yourRank.rank}</span>
+            <span className="text-lg font-semibold tabular-nums text-gold">#{yourRank.rank}</span>
             <span className="text-sm text-text-secondary">Ton rang · {yourRank.total} fondateurs classés</span>
           </div>
           {yourRank.growth_percent != null && (
-            <span className={yourRank.growth_percent >= 0 ? "text-success text-sm tabular-nums" : "text-error text-sm tabular-nums"}>
+            <span className={yourRank.growth_percent >= 0 ? "text-success text-sm" : "text-error text-sm"}>
               {formatPercent(yourRank.growth_percent)}
             </span>
           )}

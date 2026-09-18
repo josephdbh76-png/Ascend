@@ -44,9 +44,9 @@ export function ProfileHeader({
         : null;
 
   return (
-    <div className="flex flex-col gap-6 border border-border bg-card p-6 sm:p-8">
+    <div className="flex flex-col gap-6 rounded-lg border border-border bg-card p-6 sm:p-8">
       {isCreator && (
-        <div className="-mx-6 -mt-6 flex items-center gap-2 border-b border-gold/30 bg-gold/10 px-6 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-wide text-gold sm:-mx-8 sm:-mt-8 sm:px-8">
+        <div className="-mx-6 -mt-6 flex items-center gap-2 rounded-t-lg bg-gradient-to-r from-gold/20 via-gold/10 to-transparent px-6 py-2.5 text-xs font-semibold uppercase tracking-wide text-gold sm:-mx-8 sm:-mt-8 sm:px-8">
           <Crown className="h-3.5 w-3.5" /> A cofondé ASCEND
         </div>
       )}
@@ -68,7 +68,7 @@ export function ProfileHeader({
 
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-display text-2xl font-medium text-text-primary">
+            <h1 className="text-xl font-semibold text-text-primary">
               {profile.firstName} {profile.lastName}
             </h1>
             {profile.activeTitle && <Badge variant="gold">{profile.activeTitle.name}</Badge>}
@@ -77,7 +77,7 @@ export function ProfileHeader({
             )}
             {profile.isDemo && <Badge variant="demo">Démo</Badge>}
           </div>
-          <p className="font-mono text-[13px] text-text-muted">@{profile.username}</p>
+          <p className="text-sm text-text-muted">@{profile.username}</p>
           {(followerCount != null || followingCount != null) && (
             <div className="mt-1.5 flex items-center gap-3 text-xs text-text-secondary">
               <span>
@@ -169,8 +169,8 @@ export function ProfileHeader({
 function Stat({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-text-muted">{label}</p>
-      <div className="mt-1.5 font-display text-base font-medium">{children}</div>
+      <p className="text-[11px] font-medium uppercase tracking-wide text-text-muted">{label}</p>
+      <div className="mt-1 text-sm font-medium">{children}</div>
     </div>
   );
 }

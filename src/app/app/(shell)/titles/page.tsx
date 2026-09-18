@@ -26,7 +26,7 @@ export default async function TitlesPage() {
         <PurchaseStatusToast />
       </Suspense>
       <div>
-        <h1 className="font-display text-3xl font-medium tracking-tight text-text-primary">Titres</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Titres</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Des statuts à collectionner. Certains se gagnent, d&apos;autres sont extrêmement limités.
         </p>

@@ -60,8 +60,6 @@
   --color-rank-3: var(--color-rank-3);
 
   --font-sans: var(--font-inter);
-  --font-display: var(--font-fraunces);
-  --font-mono: var(--font-jetbrains);
 }
 
 html {
@@ -86,36 +84,6 @@ body {
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
-}
-
-/* Film-grain texture worn over the whole UI — the one detail that makes the
-   dark surfaces feel like a printed, physical thing instead of a flat
-   gradient. Rendered as a real element (not a ::before) so its stacking is
-   unambiguous; pointer-events are off so it never blocks interaction. */
-.grain-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* A single hand-drawn-feeling rule, used instead of boxed cards to divide
-   editorial sections — fades at both ends rather than hard-stopping. */
-.hairline {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-border-strong) 15%, var(--color-border-strong) 85%, transparent);
-}
-
-.hairline-gold {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-gold) 15%, var(--color-gold) 85%, transparent);
-}
-
-.font-display {
-  font-family: var(--font-display), ui-serif, serif;
 }
 
 @media (prefers-reduced-motion: reduce) {

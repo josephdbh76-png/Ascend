@@ -40,7 +40,7 @@ export function AppShell({
       />
 
       <main className="pb-20 lg:ml-60 lg:pb-0">
-        <div className="mx-auto max-w-[1160px] px-4 py-8 sm:px-6 lg:px-10 lg:py-12">{children}</div>
+        <div className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8 lg:py-10">{children}</div>
       </main>
 
       <AppBottomNav username={username} />

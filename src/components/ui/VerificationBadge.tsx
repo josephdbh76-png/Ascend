@@ -20,7 +20,7 @@ export function VerificationBadge({
 }) {
   const { label, icon: Icon, className: colorClass } = CONFIG[status];
   return (
-    <span className={cn("inline-flex items-center gap-1.5 font-mono text-[11px] font-medium uppercase tracking-wide", colorClass, className)}>
+    <span className={cn("inline-flex items-center gap-1.5 text-sm font-medium", colorClass, className)}>
       <Icon className="h-4 w-4" />
       {label}
     </span>

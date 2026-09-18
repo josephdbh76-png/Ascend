@@ -105,12 +105,12 @@ export function SignupWizard() {
 
   if (needsConfirmation) {
     return (
-      <div className="animate-fade-up border border-border bg-card p-8 text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center border border-gold/30 bg-gold/10">
+      <div className="animate-fade-up rounded-lg border border-border bg-card p-8 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/10">
           <Check className="h-6 w-6 text-gold" />
         </div>
-        <h1 className="font-display text-xl font-medium text-text-primary">Vérifie ta boîte mail</h1>
-        <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+        <h1 className="text-lg font-semibold text-text-primary">Vérifie ta boîte mail</h1>
+        <p className="mt-2 text-sm text-text-secondary">
           Nous avons envoyé un lien de confirmation à <span className="text-text-primary">{account.email}</span>.
           Confirme ton adresse, puis connecte-toi pour terminer ton profil.
         </p>
@@ -126,8 +126,8 @@ export function SignupWizard() {
       <div className="mb-8 flex items-center gap-2">
         {STEPS.map((label, i) => (
           <div key={label} className="flex flex-1 flex-col gap-1.5">
-            <div className={`h-1 transition-colors ${i <= step ? "bg-gold" : "bg-border"}`} />
-            <span className={`font-mono text-[10px] uppercase tracking-wide font-medium ${i === step ? "text-gold" : "text-text-muted"}`}>
+            <div className={`h-1 rounded-full transition-colors ${i <= step ? "bg-gold" : "bg-border"}`} />
+            <span className={`text-[11px] font-medium ${i === step ? "text-gold" : "text-text-muted"}`}>
               {label}
             </span>
           </div>
@@ -135,7 +135,7 @@ export function SignupWizard() {
       </div>
 
       {error && (
-        <div className="mb-4 border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
+        <div className="mb-4 rounded-md border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
           {error}
         </div>
       )}
@@ -151,7 +151,7 @@ export function SignupWizard() {
           {step === 0 && (
             <form onSubmit={submitAccount} className="flex flex-col gap-4">
               <div>
-                <h1 className="font-display text-2xl font-medium text-text-primary">Crée ton compte</h1>
+                <h1 className="text-xl font-semibold text-text-primary">Crée ton compte</h1>
                 <p className="mt-1 text-sm text-text-secondary">Gratuit pendant la bêta. Aucune carte bancaire.</p>
               </div>
               {/* Honeypot — invisible to real visitors, bots fill every field they can find. */}
@@ -219,7 +219,7 @@ export function SignupWizard() {
           {step === 1 && (
             <form onSubmit={submitProfile} className="flex flex-col gap-4">
               <div>
-                <h1 className="font-display text-2xl font-medium text-text-primary">Que construis-tu ?</h1>
+                <h1 className="text-xl font-semibold text-text-primary">Que construis-tu ?</h1>
                 <p className="mt-1 text-sm text-text-secondary">Cela façonne ton profil public de fondateur.</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -284,7 +284,7 @@ export function SignupWizard() {
           {step === 2 && (
             <div className="flex flex-col gap-4">
               <div>
-                <h1 className="font-display text-2xl font-medium text-text-primary">Ajoute une courte bio</h1>
+                <h1 className="text-xl font-semibold text-text-primary">Ajoute une courte bio</h1>
                 <p className="mt-1 text-sm text-text-secondary">Optionnel — tu pourras toujours l&apos;ajouter plus tard.</p>
               </div>
               <Field label="Bio" htmlFor="bio" hint={`${bio.length}/280`}>
@@ -306,7 +306,7 @@ export function SignupWizard() {
           {step === 3 && (
             <div className="flex flex-col gap-4">
               <div>
-                <h1 className="font-display text-2xl font-medium text-text-primary">Vérifie tes performances</h1>
+                <h1 className="text-xl font-semibold text-text-primary">Vérifie tes performances</h1>
                 <p className="mt-1 text-sm text-text-secondary">
                   Connecte Stripe pour vérifier ton activité et apparaître au classement. Tu peux
                   passer cette étape et te connecter plus tard depuis ton tableau de bord.

@@ -11,28 +11,29 @@ const ACHIEVEMENTS = [
 export function AchievementsPreview() {
   return (
     <section id="recompenses" className="border-b border-border">
-      <div className="mx-auto max-w-[1240px] px-4 py-24 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-2">
+      <div className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           <Reveal as="div">
-            <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-gold">La reconnaissance</span>
-            <h2 className="mt-5 font-display text-4xl font-medium tracking-tight text-text-primary sm:text-5xl">
+            <h2 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
               Chaque résultat compte.
             </h2>
-            <p className="mt-5 max-w-md text-sm leading-relaxed text-text-secondary">
+            <p className="mt-4 text-sm text-text-secondary">
               Les accomplissements retracent ta progression au quotidien. Ils sont réservés au
               classement, à la croissance et au prestige de saison. Ils se gagnent, jamais ne
               s&apos;achètent.
             </p>
           </Reveal>
-          <RevealGroup className="grid grid-cols-2 border-t border-l border-border" stagger={0.1}>
+          <RevealGroup className="grid grid-cols-2 gap-3" stagger={0.1}>
             {ACHIEVEMENTS.map((a) => (
               <RevealItem
                 key={a.name}
-                className="flex flex-col items-center gap-3 border-r border-b border-border p-8 text-center"
+                className="flex flex-col items-center gap-3 rounded-lg border border-border bg-card p-6 text-center"
               >
-                <a.icon className="h-5 w-5 text-gold" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-full border border-border-strong bg-card-elevated">
+                  <a.icon className="h-4 w-4 text-gold" />
+                </div>
                 <span className="text-sm font-medium text-text-primary">{a.name}</span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-muted">{a.rarity}</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">{a.rarity}</span>
               </RevealItem>
             ))}
           </RevealGroup>

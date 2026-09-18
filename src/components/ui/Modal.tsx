@@ -38,7 +38,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={title ? "modal-title" : undefined}
         className={cn(
-          "relative w-full max-w-md border border-border-strong bg-card-elevated p-6 shadow-2xl animate-fade-up",
+          "relative w-full max-w-md rounded-lg border border-border-strong bg-card-elevated p-6 shadow-2xl animate-fade-up",
           className,
         )}
       >

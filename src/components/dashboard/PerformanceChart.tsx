@@ -17,34 +17,33 @@ export function PerformanceChart({ data }: { data: RevenuePoint[] }) {
         <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--color-gold)" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="var(--color-gold)" stopOpacity={0} />
+              <stop offset="0%" stopColor="#f5c451" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="#f5c451" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid stroke="var(--color-border)" vertical={false} />
+          <CartesianGrid stroke="#1c2635" vertical={false} />
           <XAxis
             dataKey="month"
-            stroke="var(--color-border-strong)"
-            tick={{ fill: "var(--color-text-muted)", fontSize: 11, fontFamily: "var(--font-mono)" }}
+            stroke="#687386"
+            tick={{ fill: "#687386", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis hide domain={["dataMin - dataMin * 0.1", "dataMax + dataMax * 0.1"]} />
           <Tooltip
             contentStyle={{
-              background: "var(--color-card-elevated)",
-              border: "1px solid var(--color-border-strong)",
-              borderRadius: 0,
+              background: "#111925",
+              border: "1px solid #293548",
+              borderRadius: 8,
               fontSize: 12,
-              fontFamily: "var(--font-mono)",
             }}
-            labelStyle={{ color: "var(--color-text-secondary)" }}
+            labelStyle={{ color: "#a8b1bf" }}
             formatter={(value) => [formatCurrency(Number(value)), "Revenus"]}
           />
           <Area
             type="monotone"
             dataKey="revenue"
-            stroke="var(--color-gold)"
+            stroke="#f5c451"
             strokeWidth={2}
             fill="url(#revenueFill)"
           />

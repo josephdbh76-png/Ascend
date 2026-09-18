@@ -24,12 +24,12 @@ export default function ResetPasswordPage() {
 
   if (sent) {
     return (
-      <div className="animate-fade-up border border-border bg-card p-8 text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center border border-gold/30 bg-gold/10">
+      <div className="animate-fade-up rounded-lg border border-border bg-card p-8 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/10">
           <MailCheck className="h-6 w-6 text-gold" />
         </div>
-        <h1 className="font-display text-xl font-medium text-text-primary">Vérifie ta boîte mail</h1>
-        <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+        <h1 className="text-lg font-semibold text-text-primary">Vérifie ta boîte mail</h1>
+        <p className="mt-2 text-sm text-text-secondary">
           Si un compte existe pour {email}, un lien de réinitialisation vient de partir.
         </p>
       </div>
@@ -39,11 +39,11 @@ export default function ResetPasswordPage() {
   return (
     <form onSubmit={submit} className="animate-fade-up flex flex-col gap-4">
       <div>
-        <h1 className="font-display text-2xl font-medium text-text-primary">Réinitialise ton mot de passe</h1>
+        <h1 className="text-xl font-semibold text-text-primary">Réinitialise ton mot de passe</h1>
         <p className="mt-1 text-sm text-text-secondary">Nous t&apos;enverrons un lien par e-mail.</p>
       </div>
       {error && (
-        <div className="border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
+        <div className="rounded-md border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
           {error}
         </div>
       )}

@@ -23,14 +23,14 @@ export function StatCard({
   return (
     <Card className={cn("p-5", className)} elevated hover>
       <div className="flex items-start justify-between">
-        <span className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-text-muted">
+        <span className="text-xs font-medium uppercase tracking-wide text-text-muted">
           {label}
         </span>
         {Icon && <Icon className={cn("h-4 w-4", accent ? "text-gold" : "text-text-muted")} />}
       </div>
       <div
         className={cn(
-          "mt-2 font-display text-2xl font-medium tabular-nums tracking-tight",
+          "mt-2 text-2xl font-semibold tabular-nums tracking-tight",
           accent ? "text-gold" : "text-text-primary",
         )}
       >
@@ -39,7 +39,7 @@ export function StatCard({
       {trend && (
         <div
           className={cn(
-            "mt-1 font-mono text-[11px] font-medium tabular-nums",
+            "mt-1 text-xs font-medium tabular-nums",
             trendPositive === false ? "text-error" : trendPositive === true ? "text-success" : "text-text-muted",
           )}
         >

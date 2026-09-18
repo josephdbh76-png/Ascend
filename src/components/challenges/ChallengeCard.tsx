@@ -24,7 +24,7 @@ export function ChallengeCard({
   return (
     <div
       className={cn(
-        "flex flex-col gap-4 border bg-card p-6",
+        "flex flex-col gap-4 rounded-lg border bg-card p-6",
         isCompleted ? "border-gold/40" : "border-border",
         isComingSoon && "opacity-60",
       )}
@@ -32,7 +32,7 @@ export function ChallengeCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold text-text-primary">{challenge.title}</h3>
-          <p className="mt-1 text-sm leading-relaxed text-text-secondary">{challenge.description}</p>
+          <p className="mt-1 text-sm text-text-secondary">{challenge.description}</p>
         </div>
         {isCompleted ? (
           <Badge variant="success">
@@ -47,15 +47,15 @@ export function ChallengeCard({
 
       {!isComingSoon && (
         <div>
-          <div className="flex items-center justify-between font-mono text-[11px] text-text-muted">
-            <span className="uppercase tracking-wide">Progression</span>
+          <div className="flex items-center justify-between text-xs text-text-muted">
+            <span>Progression</span>
             <span className="tabular-nums">{Math.min(100, challenge.progress).toFixed(0)} %</span>
           </div>
           <ProgressBar percent={challenge.progress} className="mt-1.5" />
         </div>
       )}
 
-      <div className="flex items-center justify-between border-t border-border pt-3 font-mono text-[11px] text-text-muted">
+      <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-text-muted">
         <span className="flex items-center gap-1.5">
           <Clock className="h-3.5 w-3.5" />
           {isComingSoon ? "À venir" : remaining > 0 ? `${remaining} jours restants` : "Terminé"}
@@ -67,7 +67,7 @@ export function ChallengeCard({
         )}
       </div>
       {completionRate != null && (
-        <p className="font-mono text-[10px] text-text-muted">
+        <p className="text-[11px] text-text-muted">
           {completionRate < 0.1 && completionRate > 0
             ? "< 0,1 % des entrepreneurs ont réussi ce défi"
             : `${completionRate.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} % des entrepreneurs ont réussi ce défi`}

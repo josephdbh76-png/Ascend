@@ -78,7 +78,7 @@ export function OnboardingWizard({
   return (
     <div className="animate-fade-up">
       {error && (
-        <div className="mb-4 border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
+        <div className="mb-4 rounded-md border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
           {error}
         </div>
       )}
@@ -86,7 +86,7 @@ export function OnboardingWizard({
       {step === 1 && (
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="font-display text-2xl font-medium text-text-primary">Que construis-tu ?</h1>
+            <h1 className="text-xl font-semibold text-text-primary">Que construis-tu ?</h1>
             <p className="mt-1 text-sm text-text-secondary">Cela façonne ton profil public de fondateur.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -123,7 +123,7 @@ export function OnboardingWizard({
       {step === 2 && (
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="font-display text-2xl font-medium text-text-primary">Ajoute une courte bio</h1>
+            <h1 className="text-xl font-semibold text-text-primary">Ajoute une courte bio</h1>
             <p className="mt-1 text-sm text-text-secondary">Optionnel — tu pourras toujours l&apos;ajouter plus tard.</p>
           </div>
           <Field label="Bio" htmlFor="bio" hint={`${bio.length}/280`}>
@@ -138,7 +138,7 @@ export function OnboardingWizard({
       {step === 3 && (
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="font-display text-2xl font-medium text-text-primary">Vérifie tes performances</h1>
+            <h1 className="text-xl font-semibold text-text-primary">Vérifie tes performances</h1>
             <p className="mt-1 text-sm text-text-secondary">
               Connecte Stripe pour vérifier ton activité et apparaître au classement.
             </p>

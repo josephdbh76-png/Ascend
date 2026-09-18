@@ -25,7 +25,7 @@ export default async function MessagesPage() {
     return (
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="font-display text-3xl font-medium tracking-tight text-text-primary">Messages</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Messages</h1>
           <p className="mt-1 text-sm text-text-secondary">Discute directement avec les fondateurs du réseau.</p>
         </div>
         <EmptyState
@@ -49,13 +49,13 @@ export default async function MessagesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-3xl font-medium tracking-tight text-text-primary">Messages</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Messages</h1>
         <p className="mt-1 text-sm text-text-secondary">Discute directement avec les fondateurs du réseau.</p>
       </div>
 
       {requests.length > 0 && (
         <div className="flex flex-col gap-2">
-          <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
             Demandes ({requests.length})
           </h2>
           <ConversationList conversations={requests} />
@@ -64,7 +64,7 @@ export default async function MessagesPage() {
 
       <div className="flex flex-col gap-2">
         {requests.length > 0 && (
-          <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">Messages</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Messages</h2>
         )}
         {active.length === 0 ? (
           <EmptyState
@@ -82,14 +82,14 @@ export default async function MessagesPage() {
 
 function ConversationList({ conversations }: { conversations: Awaited<ReturnType<typeof listConversations>> }) {
   return (
-    <div className="flex flex-col overflow-hidden border-y border-border">
+    <div className="flex flex-col overflow-hidden rounded-lg border border-border">
       {conversations.map((c) => (
         <Link
           key={c.id}
           href={`/app/messages/${c.id}`}
           className="flex items-center gap-3 border-b border-border bg-card px-4 py-3.5 transition-colors last:border-0 hover:bg-card-elevated"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden border border-border-strong font-mono text-sm font-semibold text-gold">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-card-elevated text-sm font-semibold text-gold">
             {c.otherUser.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={c.otherUser.avatarUrl} alt={c.otherUser.username} className="h-full w-full object-cover" />
@@ -107,7 +107,7 @@ function ConversationList({ conversations }: { conversations: Awaited<ReturnType
             <p className="truncate text-xs text-text-muted">{c.lastMessage?.body ?? "Aucun message"}</p>
           </div>
           {c.unreadCount > 0 && (
-            <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-gold px-1.5 font-mono text-[11px] font-semibold text-[#0a0a0a]">
+            <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-gold px-1.5 text-[11px] font-semibold text-[#0a0a0a]">
               {c.unreadCount}
             </span>
           )}

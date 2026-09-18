@@ -25,7 +25,7 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
 
   if (rows.length === 0) {
     return (
-      <div className="border border-dashed border-border-strong px-6 py-14 text-center text-sm text-text-secondary">
+      <div className="rounded-lg border border-dashed border-border-strong px-6 py-14 text-center text-sm text-text-secondary">
         Aucun fondateur vérifié dans cette catégorie pour l&apos;instant. Sois le premier à te connecter et à
         prendre la tête du classement.
       </div>
@@ -33,10 +33,10 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
   }
 
   return (
-    <div className="overflow-x-auto border-y border-border">
+    <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full min-w-[640px] border-collapse text-sm">
         <thead>
-          <tr className="border-b border-border text-left font-mono text-[10px] uppercase tracking-[0.15em] text-text-muted">
+          <tr className="border-b border-border bg-bg-secondary text-left text-xs uppercase tracking-wide text-text-muted">
             <th className="w-16 px-4 py-3 font-medium">Rang</th>
             <th className="px-4 py-3 font-medium">Entrepreneur</th>
             <th className="px-4 py-3 font-medium">Activité</th>
@@ -53,24 +53,26 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
               transition={{ duration: 0.35, delay: Math.min(i, 12) * 0.035, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
                 "border-b border-border last:border-0 transition-colors",
-                row.is_current_user ? "bg-gold/5 shadow-[inset_2px_0_0_0_var(--color-gold)]" : "hover:bg-card",
+                row.is_current_user
+                  ? "bg-gold/5 shadow-[inset_0_0_0_1px_rgba(245,196,81,0.35)]"
+                  : "hover:bg-card",
               )}
             >
-              <td className="px-4 py-4">
+              <td className="px-4 py-3.5">
                 <div className="flex items-center gap-1.5">
                   {row.rank <= 3 ? (
                     <Crown className={cn("h-4 w-4", RANK_COLORS[row.rank])} />
                   ) : (
                     <span className="w-4" />
                   )}
-                  <span className={cn("font-display text-base font-medium tabular-nums", RANK_COLORS[row.rank] ?? "text-text-primary")}>
+                  <span className={cn("font-semibold tabular-nums", RANK_COLORS[row.rank] ?? "text-text-primary")}>
                     #{row.rank}
                   </span>
                 </div>
               </td>
-              <td className="px-4 py-4">
+              <td className="px-4 py-3.5">
                 <Link href={`/profile/${row.username}`} className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center border border-border-strong font-mono text-xs font-semibold text-gold">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card-elevated text-xs font-semibold text-gold">
                     {initials(row.first_name, row.last_name)}
                   </span>
                   <span className="flex flex-col">
@@ -80,15 +82,15 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
                       {row.is_current_user && <Badge variant="gold">Toi</Badge>}
                       {row.is_demo && <Badge variant="demo">Démo</Badge>}
                     </span>
-                    <span className="font-mono text-[11px] text-text-muted">@{row.username}</span>
+                    <span className="text-xs text-text-muted">@{row.username}</span>
                   </span>
                 </Link>
               </td>
-              <td className="px-4 py-4 text-text-secondary">
+              <td className="px-4 py-3.5 text-text-secondary">
                 {row.business_name}
                 <span className="ml-1.5 text-xs text-text-muted">· {categoryLabel(row.business_category)}</span>
               </td>
-              <td className="px-4 py-4 text-right font-medium tabular-nums text-text-primary">
+              <td className="px-4 py-3.5 text-right font-medium tabular-nums text-text-primary">
                 {row.revenue_visibility === "exact" && row.revenue_display_cents != null
                   ? formatCurrency(row.revenue_display_cents)
                   : row.revenue_visibility === "range" &&
@@ -99,7 +101,7 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
               </td>
               <td
                 className={cn(
-                  "px-4 py-4 text-right font-medium tabular-nums",
+                  "px-4 py-3.5 text-right font-medium tabular-nums",
                   row.growth_percent == null
                     ? "text-text-muted"
                     : row.growth_percent >= 0

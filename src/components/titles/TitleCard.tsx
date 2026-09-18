@@ -73,32 +73,32 @@ export function TitleCard({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 border bg-card p-5 transition-colors duration-200 ease-out",
+        "flex flex-col gap-3 rounded-lg border bg-card p-5 transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(0,0,0,0.2)]",
         owned ? RARITY_STYLES[rarity] : "border-border opacity-80 hover:border-border-strong hover:opacity-100",
       )}
     >
       <div className="flex items-center justify-between">
         <div
           className={cn(
-            "flex h-10 w-10 items-center justify-center border",
-            owned ? "border-gold/40 bg-gold/10" : "border-border-strong bg-card-elevated",
+            "flex h-10 w-10 items-center justify-center rounded-full",
+            owned ? "bg-gold/10" : "bg-card-elevated",
           )}
         >
           {owned ? <Icon className="h-5 w-5 text-gold" /> : <Lock className="h-4 w-4 text-text-muted" />}
         </div>
-        <span className={cn("font-mono text-[10px] font-semibold uppercase tracking-wide", owned ? RARITY_STYLES[rarity].split(" ")[1] : "text-text-muted")}>
+        <span className={cn("text-[10px] font-semibold uppercase tracking-wide", owned ? RARITY_STYLES[rarity].split(" ")[1] : "text-text-muted")}>
           {RARITY_LABELS[rarity]}
         </span>
       </div>
 
       <div>
-        <h3 className="font-mono text-sm font-semibold uppercase tracking-[0.08em] text-text-primary">{name}</h3>
-        <p className="mt-1.5 text-xs leading-relaxed text-text-secondary">{description}</p>
+        <h3 className="text-sm font-semibold uppercase tracking-tight text-text-primary">{name}</h3>
+        <p className="mt-1 text-xs text-text-secondary">{description}</p>
         {requirement && requirementLabel(requirement) && (
-          <p className="mt-2 font-mono text-[10px] text-text-muted">{requirementLabel(requirement)}</p>
+          <p className="mt-2 text-[11px] text-text-muted">{requirementLabel(requirement)}</p>
         )}
         {completionRate != null && (
-          <p className="mt-2 font-mono text-[10px] text-text-muted">
+          <p className="mt-2 text-[11px] text-text-muted">
             {completionRate < 0.1 && completionRate > 0
               ? "< 0,1 % des entrepreneurs l'ont obtenu"
               : `${completionRate.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} % des entrepreneurs l'ont obtenu`}
@@ -107,7 +107,7 @@ export function TitleCard({
       </div>
 
       {hasSupplyInfo && (
-        <div className="flex items-center justify-between border-t border-border pt-3 font-mono text-[11px]">
+        <div className="flex items-center justify-between border-t border-border pt-3 text-xs">
           <span className={cn("font-medium", isScarce ? "text-error" : "text-text-muted")}>
             {supply != null
               ? `${remainingSupply ?? 0} / ${supply} exemplaire${supply > 1 ? "s" : ""} restant${(remainingSupply ?? 0) > 1 ? "s" : ""}`
@@ -147,7 +147,7 @@ export function TitleCard({
         </div>
       )}
       {!interactive && owned && isActive && (
-        <span className="flex items-center justify-center gap-1.5 border border-border-strong bg-card-elevated py-2 font-mono text-[11px] font-medium text-gold">
+        <span className="flex items-center justify-center gap-1.5 rounded-md bg-card-elevated py-2 text-xs font-medium text-gold">
           <Check className="h-3.5 w-3.5" /> Titre actif
         </span>
       )}

@@ -18,34 +18,33 @@ const FEATURED_CHALLENGES = CHALLENGE_DEFINITIONS.filter((c) => FEATURED_IDS.inc
 export function ChallengesPreview() {
   return (
     <section id="defis" className="border-b border-border bg-bg-secondary">
-      <div className="mx-auto max-w-[1240px] px-4 py-24 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 lg:px-8">
         <Reveal as="div" className="mx-auto max-w-2xl text-center">
-          <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-gold">Le rythme</span>
-          <h2 className="mt-5 font-display text-4xl font-medium tracking-tight text-text-primary sm:text-5xl">
+          <h2 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
             Chaque mois, une nouvelle raison de progresser.
           </h2>
-          <p className="mt-5 text-sm leading-relaxed text-text-secondary">
+          <p className="mt-4 text-sm text-text-secondary">
             Des défis saisonniers, façon compétition d&apos;élite, qui récompensent la régularité, la
             croissance et les premières fois — jamais les métriques de vanité.
           </p>
         </Reveal>
 
-        <RevealGroup className="mt-14 grid grid-cols-1 border-t border-l border-border sm:grid-cols-2 lg:grid-cols-3">
+        <RevealGroup className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURED_CHALLENGES.map((c) => {
             const isComingSoon = c.type === "coming_soon";
             return (
               <RevealItem
                 key={c.id}
-                className={`border-r border-b border-border p-7 ${isComingSoon ? "opacity-60" : ""}`}
+                className={`rounded-lg border bg-card p-6 ${isComingSoon ? "opacity-60" : "border-border"}`}
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start justify-between">
                   <h3 className="text-sm font-semibold text-text-primary">{c.title}</h3>
                   <Badge variant={isComingSoon ? "neutral" : "gold"}>
-                    {isComingSoon ? "Bientôt" : "Actif"}
+                    {isComingSoon ? "Bientôt disponible" : "Actif"}
                   </Badge>
                 </div>
-                <p className="mt-2 text-xs leading-relaxed text-text-secondary">{c.description}</p>
-                {!isComingSoon && <ProgressBar percent={DEMO_PROGRESS[c.id]} className="mt-5" />}
+                <p className="mt-2 text-xs text-text-secondary">{c.description}</p>
+                {!isComingSoon && <ProgressBar percent={DEMO_PROGRESS[c.id]} className="mt-4" />}
               </RevealItem>
             );
           })}

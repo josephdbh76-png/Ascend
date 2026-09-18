@@ -31,14 +31,14 @@ export default async function AchievementsPage() {
   return (
     <div className="flex flex-col gap-10">
       <div>
-        <h1 className="font-display text-3xl font-medium tracking-tight text-text-primary">Accomplissements</h1>
-        <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Accomplissements</h1>
+        <p className="mt-1 text-sm text-text-secondary">
           Les résultats méritent d&apos;être reconnus. Voici tes trophées et accomplissements sur ASCEND.
         </p>
       </div>
 
       <section>
-        <h2 className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">Trophées</h2>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Trophées</h2>
         {(trophyRows?.length ?? 0) === 0 ? (
           <EmptyState icon={Trophy} title="Pas encore de trophée." description="Les trophées sont rares — ils récompensent le classement, la croissance et le prestige de saison." />
         ) : (
@@ -54,7 +54,7 @@ export default async function AchievementsPage() {
       </section>
 
       <section>
-        <h2 className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
           Accomplissements ({earned.length}/{catalog.length})
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

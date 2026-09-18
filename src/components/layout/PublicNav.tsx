@@ -35,23 +35,15 @@ export function PublicNav() {
         scrolled ? "border-border bg-bg-primary/95 backdrop-blur-md" : "border-transparent bg-bg-primary/70 backdrop-blur",
       )}
     >
-      <nav className="mx-auto flex h-16 max-w-[1240px] items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-baseline gap-2">
-          <span className="font-display text-lg font-medium tracking-tight text-text-primary">ASCEND</span>
-          <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-text-muted sm:inline">
-            Nº 001
-          </span>
+      <nav className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="text-base font-semibold tracking-tight text-text-primary">
+          ASCEND
         </Link>
 
         <div className="hidden items-center gap-8 lg:flex">
           {LINKS.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="group relative text-sm text-text-secondary hover:text-text-primary"
-            >
+            <a key={l.href} href={l.href} className="text-sm text-text-secondary hover:text-text-primary">
               {l.label}
-              <span className="absolute -bottom-1 left-0 h-px w-0 bg-gold transition-all duration-200 group-hover:w-full" />
             </a>
           ))}
         </div>
@@ -72,19 +64,19 @@ export function PublicNav() {
 
       {open && (
         <div className="border-t border-border bg-bg-primary px-4 pb-6 pt-3 lg:hidden">
-          <div className="flex flex-col divide-y divide-border">
+          <div className="flex flex-col gap-1">
             {LINKS.map((l) => (
               <a
                 key={l.href}
                 href={l.href}
                 onClick={() => setOpen(false)}
-                className="py-3 text-sm font-medium text-text-secondary"
+                className="rounded-md px-3 py-3 text-sm font-medium text-text-secondary"
               >
                 {l.label}
               </a>
             ))}
           </div>
-          <div className="mt-4 flex flex-col gap-2">
+          <div className="mt-3 flex flex-col gap-2">
             <Button href="/login" variant="secondary">
               Se connecter
             </Button>

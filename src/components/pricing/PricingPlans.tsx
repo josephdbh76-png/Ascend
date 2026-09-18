@@ -40,11 +40,11 @@ export function PricingPlans({
 
   return (
     <div className={className}>
-      <div className="mx-auto flex w-fit items-center gap-1 border border-border bg-card p-1">
+      <div className="mx-auto flex w-fit items-center gap-1 rounded-md border border-border bg-card p-1">
         <button
           onClick={() => setInterval("month")}
           className={cn(
-            "px-3.5 py-1.5 text-sm font-medium transition-colors",
+            "rounded-sm px-3.5 py-1.5 text-sm font-medium transition-colors",
             interval === "month" ? "bg-card-active text-gold" : "text-text-secondary hover:text-text-primary",
           )}
         >
@@ -53,7 +53,7 @@ export function PricingPlans({
         <button
           onClick={() => setInterval("year")}
           className={cn(
-            "flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium transition-colors",
+            "flex items-center gap-1.5 rounded-sm px-3.5 py-1.5 text-sm font-medium transition-colors",
             interval === "year" ? "bg-card-active text-gold" : "text-text-secondary hover:text-text-primary",
           )}
         >
@@ -79,17 +79,16 @@ export function PricingPlans({
             <div
               key={plan.tier}
               className={cn(
-                "relative flex flex-col border p-6 transition-colors duration-200",
+                "flex flex-col rounded-lg border p-6 transition-all duration-200 ease-out hover:-translate-y-1",
                 isCurrent
                   ? "border-gold/50 bg-gold/5"
                   : plan.highlighted
-                    ? "border-gold/40 bg-card"
-                    : "border-border bg-card hover:border-border-strong",
+                    ? "border-gold/40 bg-card hover:shadow-[0_16px_40px_rgba(245,196,81,0.15)]"
+                    : "border-border bg-card hover:border-border-strong hover:shadow-[0_12px_30px_rgba(0,0,0,0.15)]",
               )}
             >
-              {plan.highlighted && <div className="hairline-gold absolute inset-x-0 top-0" />}
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-semibold uppercase tracking-[0.15em] text-text-muted">{plan.name}</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">{plan.name}</span>
                 {isCurrent ? (
                   <Badge variant="gold">Actuel</Badge>
                 ) : (
@@ -97,10 +96,10 @@ export function PricingPlans({
                 )}
               </div>
 
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="font-display text-3xl font-medium text-text-primary">{formatCurrency(priceCents)}</span>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="text-3xl font-semibold text-text-primary">{formatCurrency(priceCents)}</span>
               </div>
-              <p className="mt-1 font-mono text-[11px] text-text-muted">
+              <p className="mt-1 text-xs text-text-muted">
                 {plan.tier === "free"
                   ? "Pour toujours"
                   : interval === "year"

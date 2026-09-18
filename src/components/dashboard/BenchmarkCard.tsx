@@ -29,27 +29,25 @@ export function BenchmarkCard({ stats }: { stats: BenchmarkStats }) {
   return (
     <Card className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between" elevated hover>
       <div className="flex items-start gap-3">
-        <Target className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold/10">
+          <Target className="h-4 w-4 text-gold" />
+        </div>
         <div>
-          <p className="text-sm leading-relaxed text-text-secondary">
-            Tu es devant{" "}
-            <span className="font-display text-lg font-medium text-gold">{revenuePercentile}%</span> des{" "}
+          <p className="text-sm text-text-secondary">
+            Tu es devant <span className="text-lg font-semibold text-gold">{revenuePercentile}%</span> des{" "}
             {useCategory ? `entreprises ${cohortLabel}` : cohortLabel} vérifiées
             {useCategory ? "" : " (toutes catégories)"}.
           </p>
           {growthPercentile != null && (
-            <p className="mt-1 font-mono text-xs text-text-muted">
-              Ta croissance dépasse {growthPercentile}% de tes pairs.
-            </p>
+            <p className="mt-1 text-xs text-text-muted">Ta croissance dépasse {growthPercentile}% de tes pairs.</p>
           )}
         </div>
       </div>
       <Link
         href="/app/analytics"
-        className="group inline-flex shrink-0 items-center gap-2 self-start text-sm font-medium text-text-secondary hover:text-text-primary sm:self-center"
+        className="inline-flex shrink-0 items-center gap-1.5 self-start text-sm font-medium text-gold hover:text-gold-light sm:self-center"
       >
-        Voir l&apos;analyse complète
-        <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+        Voir l&apos;analyse complète <ArrowRight className="h-3.5 w-3.5" />
       </Link>
     </Card>
   );

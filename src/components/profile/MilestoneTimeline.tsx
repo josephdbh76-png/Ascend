@@ -23,12 +23,12 @@ export function MilestoneTimeline({ achievements }: { achievements: EarnedAchiev
             <div className="flex flex-col items-center">
               <span
                 className={cn(
-                  "flex h-6 w-6 shrink-0 items-center justify-center border",
+                  "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
                   earnedAt
-                    ? "border-gold bg-gold text-[#0a0a0a]"
+                    ? "bg-gold text-[#0a0a0a]"
                     : isNext
-                      ? "border-gold/50 text-gold"
-                      : "border-border-strong text-text-muted",
+                      ? "border border-gold/50 text-gold"
+                      : "border border-border-strong text-text-muted",
                 )}
               >
                 {earnedAt ? <Check className="h-3.5 w-3.5" /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
@@ -39,17 +39,17 @@ export function MilestoneTimeline({ achievements }: { achievements: EarnedAchiev
             </div>
             <div className={cn("flex-1 pb-8", !earnedAt && !isNext && "opacity-50")}>
               <div className="flex items-baseline justify-between gap-3">
-                <span className={cn("font-display text-base font-medium", earnedAt ? "text-text-primary" : "text-text-secondary")}>
+                <span className={cn("text-sm font-semibold", earnedAt ? "text-text-primary" : "text-text-secondary")}>
                   {formatCurrency(milestone.threshold)} / mois
                 </span>
                 {earnedAt ? (
-                  <span className="font-mono text-[11px] text-text-muted">
+                  <span className="text-[11px] text-text-muted">
                     {new Date(earnedAt).toLocaleDateString("fr-FR", { month: "short", year: "numeric" })}
                   </span>
                 ) : isNext ? (
-                  <span className="font-mono text-[10px] uppercase tracking-wide text-gold">Prochain palier</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gold">Prochain palier</span>
                 ) : (
-                  <span className="font-mono text-[10px] uppercase tracking-wide text-text-muted">À venir</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">À venir</span>
                 )}
               </div>
               <p className="mt-0.5 text-xs text-text-muted">{milestone.name}</p>

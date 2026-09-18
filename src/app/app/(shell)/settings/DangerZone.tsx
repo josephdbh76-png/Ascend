@@ -21,7 +21,7 @@ export function DangerZone() {
   }
 
   return (
-    <div className="border border-error/30 bg-error/5 p-4">
+    <div className="rounded-md border border-error/30 bg-error/5 p-4">
       <div className="flex items-start gap-3">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-error" />
         <div>
@@ -44,7 +44,7 @@ export function DangerZone() {
         <input
           value={confirmText}
           onChange={(e) => setConfirmText(e.target.value)}
-          className="mt-3 w-full rounded-sm border border-border-strong bg-card px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-error/50"
+          className="mt-3 w-full rounded-md border border-border-strong bg-card px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-error/50"
         />
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>

@@ -55,7 +55,7 @@ export function AccentThemeForm({ initial, locked }: { initial: AccentTheme; loc
         })}
       </div>
       {locked && (
-        <div className="flex flex-col items-start gap-2 border border-border-strong bg-card-elevated p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col items-start gap-2 rounded-md border border-border-strong bg-card-elevated p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="flex items-center gap-1.5 text-xs text-text-secondary">
             <Lock className="h-3.5 w-3.5" /> Réservé aux abonnés Pro et Elite.
           </p>

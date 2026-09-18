@@ -30,7 +30,7 @@ export function Tabs({
     <div
       role="tablist"
       className={cn(
-        "flex w-full gap-1 overflow-x-auto border border-border bg-card p-1",
+        "flex w-full gap-1 overflow-x-auto rounded-md border border-border bg-card p-1",
         className,
       )}
     >
@@ -41,7 +41,7 @@ export function Tabs({
           aria-selected={active === item.value}
           onClick={() => select(item.value)}
           className={cn(
-            "shrink-0 px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+            "shrink-0 rounded-sm px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
             active === item.value
               ? "bg-card-active text-gold"
               : "text-text-secondary hover:text-text-primary",

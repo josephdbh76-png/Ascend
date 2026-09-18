@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Award } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { FrameCorners } from "@/components/ui/FrameCorners";
 
 export function AchievementUnlockModal({
   notificationId,
@@ -52,25 +51,24 @@ export function AchievementUnlockModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-            className="relative flex w-full max-w-sm flex-col items-center gap-4 border border-gold/30 bg-card-elevated p-8 text-center shadow-[0_0_60px_-15px_rgba(245,196,81,0.5)]"
+            className="relative flex w-full max-w-sm flex-col items-center gap-4 rounded-lg border border-gold/30 bg-card-elevated p-8 text-center shadow-[0_0_60px_-15px_rgba(245,196,81,0.5)]"
           >
-            <FrameCorners />
             <motion.div
               initial={{ scale: 0.6, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="flex h-20 w-20 items-center justify-center border border-gold/50 bg-gold/10 shadow-[0_0_40px_-8px_rgba(245,196,81,0.6)]"
+              className="flex h-20 w-20 items-center justify-center rounded-full border border-gold/50 bg-gold/10 shadow-[0_0_40px_-8px_rgba(245,196,81,0.6)]"
             >
               <Award className="h-9 w-9 text-gold" />
             </motion.div>
 
-            <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-gold">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">
               Accomplissement débloqué
             </span>
-            <h2 id="achievement-title" className="font-display text-2xl font-medium tracking-tight text-text-primary">
+            <h2 id="achievement-title" className="text-xl font-semibold uppercase tracking-tight text-text-primary">
               {achievementName}
             </h2>
-            <p className="text-sm leading-relaxed text-text-secondary">{achievementDescription}</p>
+            <p className="text-sm text-text-secondary">{achievementDescription}</p>
 
             <div className="mt-2 flex w-full flex-col gap-2 sm:flex-row">
               <Button variant="secondary" className="flex-1" onClick={close}>

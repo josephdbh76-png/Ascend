@@ -96,12 +96,12 @@ export function NotificationBell({
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
           <div
             className={cn(
-              "fixed z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] border border-border-strong bg-card-elevated shadow-2xl sm:absolute sm:mt-2",
+              "fixed z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-lg border border-border-strong bg-card-elevated shadow-2xl sm:absolute sm:mt-2",
               align === "left" ? "left-4 sm:left-0" : "right-4 sm:right-0",
             )}
           >
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-primary">Notifications</span>
+              <span className="text-sm font-semibold text-text-primary">Notifications</span>
             </div>
             <div className="max-h-96 overflow-y-auto">
               {items.length === 0 ? (
@@ -114,7 +114,7 @@ export function NotificationBell({
                   const href = notificationHref(n);
                   const content = (
                     <>
-                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center border border-border-strong">
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card">
                         <Icon className="h-4 w-4 text-gold" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -122,7 +122,7 @@ export function NotificationBell({
                         <p className="mt-0.5 whitespace-normal break-words text-xs text-text-secondary">
                           {n.body}
                         </p>
-                        <p className="mt-1 font-mono text-[10px] text-text-muted">{timeAgo(n.createdAt)}</p>
+                        <p className="mt-1 text-[11px] text-text-muted">{timeAgo(n.createdAt)}</p>
                       </div>
                     </>
                   );

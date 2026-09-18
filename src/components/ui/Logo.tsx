@@ -1,4 +1,8 @@
+"use client";
+
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 
 const SIZES = {
   sm: "text-lg",
@@ -8,9 +12,23 @@ const SIZES = {
 };
 
 export function Logo({ size = "md", className }: { size?: keyof typeof SIZES; className?: string }) {
+  const reduced = useReducedMotionSafe();
+
+  if (reduced) {
+    return <span className={cn("font-semibold tracking-tight text-gold", SIZES[size], className)}>ASCEND</span>;
+  }
+
   return (
-    <span className={cn("font-display font-medium tracking-tight text-text-primary", SIZES[size], className)}>
+    <motion.span
+      className={cn(
+        "inline-block bg-gradient-to-r from-text-primary via-gold to-text-primary bg-[length:200%_100%] bg-clip-text font-semibold tracking-tight text-transparent",
+        SIZES[size],
+        className,
+      )}
+      animate={{ backgroundPosition: ["0% 50%", "200% 50%"] }}
+      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+    >
       ASCEND
-    </span>
+    </motion.span>
   );
 }

@@ -31,28 +31,28 @@ export function AchievementCard({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 border bg-card p-5 transition-colors",
+        "flex flex-col gap-3 rounded-lg border bg-card p-5 transition-colors",
         earned ? RARITY_STYLES[rarity] : "border-border opacity-60",
       )}
     >
       <div className="flex items-center justify-between">
         <div
           className={cn(
-            "flex h-10 w-10 items-center justify-center border",
-            earned ? "border-gold/40 bg-gold/10" : "border-border-strong bg-card-elevated",
+            "flex h-10 w-10 items-center justify-center rounded-full",
+            earned ? "bg-gold/10" : "bg-card-elevated",
           )}
         >
           {earned ? <Award className="h-5 w-5 text-gold" /> : <Lock className="h-4 w-4 text-text-muted" />}
         </div>
-        <span className={cn("font-mono text-[10px] font-semibold uppercase tracking-wide", earned ? RARITY_STYLES[rarity].split(" ")[1] : "text-text-muted")}>
+        <span className={cn("text-[10px] font-semibold uppercase tracking-wide", earned ? RARITY_STYLES[rarity].split(" ")[1] : "text-text-muted")}>
           {RARITY_LABELS[rarity]}
         </span>
       </div>
       <div>
         <h3 className="text-sm font-semibold text-text-primary">{name}</h3>
-        <p className="mt-1 text-xs leading-relaxed text-text-secondary">{description}</p>
+        <p className="mt-1 text-xs text-text-secondary">{description}</p>
       </div>
-      {earned && earnedAt && <p className="font-mono text-[10px] text-text-muted">Débloqué {timeAgo(earnedAt)}</p>}
+      {earned && earnedAt && <p className="text-[11px] text-text-muted">Débloqué {timeAgo(earnedAt)}</p>}
     </div>
   );
 }

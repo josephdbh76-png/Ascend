@@ -54,14 +54,14 @@ export default async function SettingsPage() {
       </Suspense>
 
       <div>
-        <h1 className="font-display text-3xl font-medium tracking-tight text-text-primary">Réglages</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Réglages</h1>
         <p className="mt-1 text-sm text-text-secondary">Gère ton profil, ta confidentialité et tes connexions.</p>
       </div>
 
       {isAdmin && (
         <Card className="flex flex-col items-start gap-3 border-gold/30 bg-gold/5 p-6 sm:flex-row sm:items-center sm:justify-between" hover>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center border border-gold/30 bg-gold/10">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10">
               <ShieldCheck className="h-5 w-5 text-gold" />
             </div>
             <div>
@@ -76,12 +76,12 @@ export default async function SettingsPage() {
       )}
 
       <Card id="abonnement" className="scroll-mt-6 p-6" elevated>
-        <h2 className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">Abonnement</h2>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Abonnement</h2>
         <SubscriptionCard subscription={subscription} />
       </Card>
 
       <Card className="p-6" elevated>
-        <h2 className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">Profil</h2>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Profil</h2>
         <ProfileSettingsForm
           initial={{
             firstName: profile.firstName ?? "",
@@ -94,14 +94,14 @@ export default async function SettingsPage() {
       </Card>
 
       <Card id="personnalisation" className="scroll-mt-6 p-6" elevated>
-        <h2 className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
           Personnalisation du profil
         </h2>
         <AccentThemeForm initial={profile.accentTheme} locked={!hasProAccess(subscription.tier)} />
       </Card>
 
       <Card className="p-6" elevated>
-        <h2 className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">Activité</h2>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Activité</h2>
         <BusinessSettingsForm
           initial={{
             name: business?.name ?? "",
@@ -115,7 +115,7 @@ export default async function SettingsPage() {
       </Card>
 
       <Card className="p-6" elevated>
-        <h2 className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
           Confidentialité des revenus
         </h2>
         <PrivacySettingsForm
@@ -127,7 +127,7 @@ export default async function SettingsPage() {
       </Card>
 
       <Card className="p-6" elevated>
-        <h2 className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
           Comptes connectés
         </h2>
         <ConnectedAccounts
@@ -139,7 +139,7 @@ export default async function SettingsPage() {
       </Card>
 
       <Card className="p-6" elevated>
-        <h2 className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
           Compte
         </h2>
         <DangerZone />

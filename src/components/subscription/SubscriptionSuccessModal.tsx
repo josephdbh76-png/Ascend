@@ -43,16 +43,16 @@ export function SubscriptionSuccessModal({
           <Crown className="h-7 w-7 text-gold" />
         </div>
         <div>
-          <h2 className="font-display text-2xl font-medium text-text-primary">Bienvenue dans {content.label} !</h2>
+          <h2 className="text-xl font-semibold text-text-primary">Bienvenue dans {content.label} !</h2>
           {isTrial && (
-            <p className="mt-1.5 flex items-center justify-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-gold">
+            <p className="mt-1 flex items-center justify-center gap-1.5 text-xs text-gold">
               <Sparkles className="h-3.5 w-3.5" /> Ton essai gratuit de 14 jours a commencé.
             </p>
           )}
         </div>
         <ul className="flex flex-col gap-2 self-stretch text-left">
           {content.unlocks.map((u) => (
-            <li key={u} className="flex items-start gap-2 border border-border-strong bg-card-elevated p-3 text-sm text-text-secondary">
+            <li key={u} className="flex items-start gap-2 rounded-md bg-card-elevated p-3 text-sm text-text-secondary">
               <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" /> {u}
             </li>
           ))}

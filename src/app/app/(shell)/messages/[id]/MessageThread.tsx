@@ -90,9 +90,9 @@ export function MessageThread({
 
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto py-4">
         {firstContact && (
-          <div className="mx-auto mb-2 flex max-w-sm flex-col items-center gap-1.5 border border-gold/30 bg-gold/5 px-4 py-3 text-center">
+          <div className="mx-auto mb-2 flex max-w-sm flex-col items-center gap-1.5 rounded-md border border-gold/30 bg-gold/5 px-4 py-3 text-center">
             <Lock className="h-4 w-4 text-gold" />
-            <p className="text-xs leading-relaxed text-text-secondary">
+            <p className="text-xs text-text-secondary">
               Première prise de contact avec {thread.otherUser.firstName} : tu ne peux envoyer{" "}
               <span className="font-medium text-text-primary">qu&apos;un seul message</span> tant
               qu&apos;iel n&apos;a pas répondu ou accepté ta demande — sauf si vous vous suivez
@@ -106,7 +106,7 @@ export function MessageThread({
             <div key={m.id} className={cn("flex", isMine ? "justify-end" : "justify-start")}>
               <div
                 className={cn(
-                  "max-w-[75%] rounded-sm px-3.5 py-2 text-sm",
+                  "max-w-[75%] rounded-lg px-3.5 py-2 text-sm",
                   isMine ? "bg-gold text-[#0a0a0a]" : "bg-card-elevated text-text-primary",
                 )}
               >
@@ -119,7 +119,7 @@ export function MessageThread({
       </div>
 
       {canReplyToAccept && (
-        <div className="mb-3 flex items-center justify-between gap-3 border border-gold/30 bg-gold/5 px-4 py-3">
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-md border border-gold/30 bg-gold/5 px-4 py-3">
           <p className="text-xs text-text-secondary">
             {thread.otherUser.firstName} t&apos;a envoyé une demande de message.
           </p>
@@ -130,7 +130,7 @@ export function MessageThread({
       )}
 
       {awaitingReply ? (
-        <div className="flex items-center gap-2 border border-border-strong bg-card-elevated px-4 py-3 text-xs text-text-muted">
+        <div className="flex items-center gap-2 rounded-md border border-border-strong bg-card-elevated px-4 py-3 text-xs text-text-muted">
           <Lock className="h-3.5 w-3.5" />
           En attente d&apos;une réponse — tu ne peux envoyer qu&apos;un seul message tant que{" "}
           {thread.otherUser.firstName} n&apos;a pas répondu ou accepté.
@@ -147,7 +147,7 @@ export function MessageThread({
               value={body}
               onChange={(e) => setBody(e.target.value)}
               placeholder="Écris un message..."
-              className="w-full rounded-sm border border-border-strong bg-card-elevated px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40"
+              className="w-full rounded-md border border-border-strong bg-card-elevated px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40"
             />
             <Button type="submit" size="md" disabled={pending || !body.trim()} className="shrink-0">
               <Send className="h-4 w-4" />

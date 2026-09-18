@@ -50,7 +50,7 @@ export function AppMobileHeader({
   return (
     <>
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-bg-primary/95 px-4 backdrop-blur lg:hidden">
-        <Link href="/app/dashboard" className="font-display text-lg font-medium tracking-tight text-text-primary">
+        <Link href="/app/dashboard" className="text-base font-semibold tracking-tight text-text-primary">
           ASCEND
         </Link>
         <div className="flex items-center gap-1">
@@ -72,23 +72,23 @@ export function AppMobileHeader({
       {open && (
         <div className="fixed inset-0 z-50 bg-bg-primary lg:hidden">
           <div className="flex h-14 items-center justify-between border-b border-border px-4">
-            <span className="font-display text-lg font-medium tracking-tight text-text-primary">ASCEND</span>
+            <span className="text-base font-semibold tracking-tight text-text-primary">ASCEND</span>
             <button onClick={() => setOpen(false)} aria-label="Fermer le menu" className="rounded-md p-2 text-text-secondary">
               <X className="h-5 w-5" />
             </button>
           </div>
-          <nav className="flex flex-col divide-y divide-border p-4">
+          <nav className="flex flex-col gap-1 p-4">
             {menuLinks.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-3 py-3.5 text-sm font-medium text-text-secondary hover:text-text-primary"
+                className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium text-text-secondary hover:bg-card hover:text-text-primary"
               >
                 <item.icon className="h-4 w-4" />
                 {item.label}
                 {item.href === "/app/messages" && unreadMessageCount > 0 && (
-                  <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1.5 font-mono text-[10px] font-bold text-[#0a0a0a]">
+                  <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1.5 text-[10px] font-bold text-[#0a0a0a]">
                     {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
                   </span>
                 )}
@@ -96,7 +96,7 @@ export function AppMobileHeader({
             ))}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 py-3.5 text-left text-sm font-medium text-error"
+              className="mt-2 flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-medium text-error"
             >
               <LogOut className="h-4 w-4" />
               Se déconnecter
@@ -122,7 +122,7 @@ export function AppBottomNav({ username }: { username: string }) {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-2 font-mono text-[10px] font-medium uppercase tracking-wide",
+              "flex flex-1 flex-col items-center gap-1 py-2 text-[11px] font-medium",
               active ? "text-gold" : "text-text-muted",
             )}
           >

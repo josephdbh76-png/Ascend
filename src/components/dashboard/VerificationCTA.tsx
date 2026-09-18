@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 import { Link2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { FrameCorners } from "@/components/ui/FrameCorners";
 
 export function VerificationCTA({
   remainingFoundingSlots,
@@ -24,20 +23,19 @@ export function VerificationCTA({
     <motion.div
       whileHover={reduced ? undefined : { y: -2 }}
       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      className="relative flex flex-col items-start gap-4 border border-gold/30 bg-gold/[0.04] p-6 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col items-start gap-4 rounded-lg border border-gold/30 bg-gradient-to-br from-gold/[0.07] to-transparent p-6 shadow-[0_0_0_1px_rgba(245,196,81,0.05)] transition-shadow duration-200 hover:shadow-[0_12px_36px_rgba(245,196,81,0.12)] sm:flex-row sm:items-center sm:justify-between"
     >
-      <FrameCorners />
       <div>
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-gold" />
-          <h2 className="font-display text-lg font-medium text-text-primary">Commence maintenant à Ascend.</h2>
+          <h2 className="text-base font-semibold text-text-primary">Commence maintenant à Ascend.</h2>
         </div>
-        <p className="mt-1.5 text-sm leading-relaxed text-text-secondary">
+        <p className="mt-1 text-sm text-text-secondary">
           Connecte Stripe pour vérifier tes revenus, débloquer ton rang dans le classement et rejoindre
           les fondateurs déjà en compétition.
         </p>
         {scarce != null && (
-          <p className="mt-2 font-mono text-xs font-medium text-gold">
+          <p className="mt-2 text-xs font-medium text-gold">
             Plus que {scarce} place{scarce > 1 ? "s" : ""} sur {foundingSupply} pour devenir Membre
             Fondateur.
           </p>
