@@ -14,6 +14,8 @@ import {
   saveEmailTemplate,
   deleteEmailTemplate,
 } from "@/services/email-campaign.service";
+import { renderTransactionalEmailPreview } from "@/lib/transactionalEmailPreviews";
+import { getResend, resendFromAddress } from "@/lib/resend";
 import type { CampaignAudience, EmailTemplateRow } from "@/lib/emailCampaignDisplay";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { SubscriptionTier } from "@/types/database.types";
@@ -170,6 +172,36 @@ export async function saveEmailTemplateAction(name: string, subject: string, bod
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }
+}
+
+export async function getTransactionalEmailPreviewAction(
+  key: string,
+): Promise<ActionResult<{ subject: string; html: string }>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  const preview = renderTransactionalEmailPreview(key);
+  if (!preview) return { success: false, error: "Aperçu introuvable." };
+  return { success: true, data: preview };
+}
+
+export async function sendTransactionalEmailPreviewAction(key: string): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  const preview = renderTransactionalEmailPreview(key);
+  if (!preview) return { success: false, error: "Aperçu introuvable." };
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user?.email) return { success: false, error: "Impossible de trouver ton adresse email." };
+
+  try {
+    await getResend().emails.send({
+      from: resendFromAddress(),
+      to: userData.user.email,
+      subject: `[Aperçu] ${preview.subject}`,
+      html: preview.html,
+    });
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+  return { success: true, data: undefined };
 }
 
 export async function deleteEmailTemplateAction(id: string): Promise<ActionResult> {

@@ -3,12 +3,14 @@ import { redirect } from "next/navigation";
 import { isCurrentUserAdmin, listUsersForAdmin } from "@/services/admin.service";
 import { getPendingRevenueReviews } from "@/services/revenue.service";
 import { getCampaignHistory, listEmailTemplates } from "@/services/email-campaign.service";
+import { listTransactionalEmailPreviews } from "@/lib/transactionalEmailPreviews";
 import { createClient } from "@/lib/supabase/server";
 import { AdminUsersTable } from "./AdminUsersTable";
 import { TitleStripeSyncButton } from "./TitleStripeSyncButton";
 import { AnnualPriceSyncPanel } from "./AnnualPriceSyncPanel";
 import { RevenueReviewQueue } from "./RevenueReviewQueue";
 import { EmailCampaignPanel } from "./EmailCampaignPanel";
+import { TransactionalEmailPreviews } from "./TransactionalEmailPreviews";
 import { Card } from "@/components/ui/Card";
 
 export const metadata: Metadata = { title: "Administration" };
@@ -64,6 +66,16 @@ export default async function AdminPage() {
           </p>
         </div>
         <EmailCampaignPanel history={campaignHistory} templates={emailTemplates} />
+      </Card>
+
+      <Card className="flex flex-col gap-1 p-5" elevated>
+        <div className="mb-2">
+          <h2 className="text-sm font-semibold text-text-primary">Emails automatiques</h2>
+          <p className="text-xs text-text-secondary">
+            Ce que reçoit un membre dès qu&apos;un évènement se produit sur son compte — pas un historique, un aperçu de leur contenu actuel.
+          </p>
+        </div>
+        <TransactionalEmailPreviews items={listTransactionalEmailPreviews()} />
       </Card>
 
       <div>
