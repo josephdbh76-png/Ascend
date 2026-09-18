@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { isCurrentUserAdmin, listUsersForAdmin } from "@/services/admin.service";
 import { getPendingRevenueReviews } from "@/services/revenue.service";
-import { getCampaignHistory } from "@/services/email-campaign.service";
+import { getCampaignHistory, listEmailTemplates } from "@/services/email-campaign.service";
 import { createClient } from "@/lib/supabase/server";
 import { AdminUsersTable } from "./AdminUsersTable";
 import { TitleStripeSyncButton } from "./TitleStripeSyncButton";
@@ -21,10 +21,11 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (!(await isCurrentUserAdmin())) redirect("/app/dashboard");
 
-  const [users, pendingRevenueReviews, campaignHistory] = await Promise.all([
+  const [users, pendingRevenueReviews, campaignHistory, emailTemplates] = await Promise.all([
     listUsersForAdmin(),
     getPendingRevenueReviews(),
     getCampaignHistory(),
+    listEmailTemplates(),
   ]);
 
   return (
@@ -62,7 +63,7 @@ export default async function AdminPage() {
             Envoie un email à un segment de membres — un lien de désinscription est ajouté automatiquement, seuls les membres ayant donné leur consentement le reçoivent.
           </p>
         </div>
-        <EmailCampaignPanel history={campaignHistory} />
+        <EmailCampaignPanel history={campaignHistory} templates={emailTemplates} />
       </Card>
 
       <div>

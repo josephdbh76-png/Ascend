@@ -21,3 +21,36 @@ export interface CampaignHistoryRow {
   recipientCount: number;
   sentAt: string;
 }
+
+export interface EmailTemplateRow {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+}
+
+/**
+ * A handful of ready-to-edit starting points, always available regardless
+ * of what an admin has saved — shown first in the template picker, above
+ * anything saved to email_templates.
+ */
+export const STARTER_TEMPLATES: EmailTemplateRow[] = [
+  {
+    id: "starter-event",
+    name: "Annonce d'un événement",
+    subject: "Un nouvel événement ASCEND arrive",
+    body: "Bonjour,\n\nOn organise [nom de l'événement] le [date]. Voici ce qui t'attend :\n\n- [point clé 1]\n- [point clé 2]\n\nOn espère t'y voir.",
+  },
+  {
+    id: "starter-feature",
+    name: "Nouvelle fonctionnalité",
+    subject: "Nouveau sur ASCEND : [nom de la fonctionnalité]",
+    body: "Bonjour,\n\nOn vient de lancer [nom de la fonctionnalité] : [description en une phrase].\n\nVa y jeter un œil dans ton tableau de bord.",
+  },
+  {
+    id: "starter-newsletter",
+    name: "Point mensuel",
+    subject: "Ce mois-ci sur ASCEND",
+    body: "Bonjour,\n\nVoici ce qui s'est passé sur ASCEND ce mois-ci :\n\n- [chiffre ou temps fort 1]\n- [chiffre ou temps fort 2]\n\nMerci de faire partie de l'aventure.",
+  },
+];

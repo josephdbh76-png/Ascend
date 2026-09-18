@@ -10,6 +10,9 @@ import {
 import { toFriendlyAuthError } from "@/lib/errors";
 import { getAppUrl } from "@/lib/utils";
 import { isUsernameAvailable } from "@/services/profile.service";
+import { getResend, resendFromAddress } from "@/lib/resend";
+import { renderEmailHtml } from "@/lib/emailRender";
+import { welcomeEmailContent } from "@/lib/transactionalEmails";
 
 export type ActionResult<T = undefined> =
   | { success: true; data: T }
@@ -132,12 +135,39 @@ export async function completeOnboardingAction(): Promise<ActionResult> {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("onboarding_step, first_name, email_notifications_enabled")
+    .eq("id", userData.user.id)
+    .maybeSingle();
+  const alreadyDone = existingProfile?.onboarding_step === "done";
+
   const { error } = await supabase
     .from("profiles")
     .update({ onboarding_step: "done" })
     .eq("id", userData.user.id);
 
   if (error) return { success: false, error: toFriendlyAuthError(error.message) };
+
+  // Only the very first completion — re-running this action (it's callable
+  // more than once in the wizard's flow) must never re-send the welcome email.
+  if (!alreadyDone && userData.user.email && existingProfile?.email_notifications_enabled !== false) {
+    try {
+      const content = welcomeEmailContent(existingProfile?.first_name ?? null);
+      await getResend().emails.send({
+        from: resendFromAddress(),
+        to: userData.user.email,
+        subject: content.subject,
+        html: renderEmailHtml(content.body, {
+          ctaLabel: content.ctaLabel,
+          ctaUrl: content.ctaPath ? `${getAppUrl()}${content.ctaPath}` : undefined,
+        }),
+      });
+    } catch (err) {
+      console.error("Welcome email failed:", err);
+    }
+  }
+
   return { success: true, data: undefined };
 }
 

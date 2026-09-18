@@ -2,8 +2,9 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend, resendFromAddress } from "@/lib/resend";
+import { renderEmailHtml } from "@/lib/emailRender";
 import { getAppUrl } from "@/lib/utils";
-import type { CampaignAudience, CampaignHistoryRow } from "@/lib/emailCampaignDisplay";
+import type { CampaignAudience, CampaignHistoryRow, EmailTemplateRow } from "@/lib/emailCampaignDisplay";
 
 interface Recipient {
   id: string;
@@ -91,24 +92,6 @@ export async function getAudienceCount(audience: CampaignAudience): Promise<numb
   return recipients.length;
 }
 
-function renderCampaignHtml(body: string, unsubscribeUrl: string): string {
-  const paragraphs = body
-    .split("\n\n")
-    .map((p) => `<p style="margin:0 0 16px;color:#1a1a1a;font-size:15px;line-height:1.6;">${p.replace(/\n/g, "<br/>")}</p>`)
-    .join("");
-  return `
-    <div style="max-width:560px;margin:0 auto;padding:32px 24px;font-family:-apple-system,Helvetica,Arial,sans-serif;">
-      <p style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;color:#d6a84f;margin:0 0 24px;font-weight:600;">ASCEND</p>
-      ${paragraphs}
-      <hr style="border:none;border-top:1px solid #e5e5e5;margin:32px 0 16px;" />
-      <p style="font-size:12px;color:#888;margin:0;">
-        Tu reçois cet email car tu as accepté de recevoir des actualités d'ASCEND.
-        <a href="${unsubscribeUrl}" style="color:#888;">Se désinscrire</a>
-      </p>
-    </div>
-  `;
-}
-
 /** Sends a preview to a single admin-chosen address — never counted as a campaign, never requires marketing_consent. */
 export async function sendCampaignPreview(toEmail: string, subject: string, body: string) {
   const resend = getResend();
@@ -117,7 +100,7 @@ export async function sendCampaignPreview(toEmail: string, subject: string, body
     from: resendFromAddress(),
     to: toEmail,
     subject: `[Aperçu] ${subject}`,
-    html: renderCampaignHtml(body, unsubscribeUrl),
+    html: renderEmailHtml(body, { unsubscribeUrl }),
   });
 }
 
@@ -141,10 +124,9 @@ export async function sendCampaign(input: {
           from: resendFromAddress(),
           to: r.email,
           subject: input.subject,
-          html: renderCampaignHtml(
-            input.body,
-            `${appUrl}/api/email/unsubscribe?token=${r.unsubscribeToken}`,
-          ),
+          html: renderEmailHtml(input.body, {
+            unsubscribeUrl: `${appUrl}/api/email/unsubscribe?token=${r.unsubscribeToken}`,
+          }),
         }),
       ),
     );
@@ -177,6 +159,33 @@ export async function getCampaignHistory(): Promise<CampaignHistoryRow[]> {
     recipientCount: c.recipient_count,
     sentAt: c.sent_at,
   }));
+}
+
+export async function listEmailTemplates(): Promise<EmailTemplateRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("email_templates")
+    .select("id, name, subject, body")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function saveEmailTemplate(input: { name: string; subject: string; body: string; createdBy: string }): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("email_templates").insert({
+    name: input.name,
+    subject: input.subject,
+    body: input.body,
+    created_by: input.createdBy,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteEmailTemplate(id: string): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("email_templates").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 /** Public — reachable from an email client with no session. Returns true only if a real, matching token was found and cleared. */

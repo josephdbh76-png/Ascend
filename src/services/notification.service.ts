@@ -1,7 +1,48 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getResend, resendFromAddress } from "@/lib/resend";
+import { renderEmailHtml } from "@/lib/emailRender";
+import { transactionalEmailContent } from "@/lib/transactionalEmails";
+import { getAppUrl } from "@/lib/utils";
 import type { NotificationType } from "@/types/database.types";
+
+/**
+ * Best-effort — a failed email should never break the in-app notification
+ * it rides along with, so every failure is swallowed after being logged.
+ * Looks the recipient up by id regardless of which client created the
+ * notification, since both createNotification (self) and
+ * createNotificationForUser (someone else) need the same recipient
+ * lookup — their email and first name live on auth.users/profiles, not on
+ * the notification row itself.
+ */
+async function sendTransactionalEmail(userId: string, type: NotificationType, title: string, body: string) {
+  try {
+    const admin = createAdminClient();
+    const [{ data: authUser }, { data: profile }] = await Promise.all([
+      admin.auth.admin.getUserById(userId),
+      admin.from("profiles").select("first_name, email_notifications_enabled").eq("id", userId).maybeSingle(),
+    ]);
+    const email = authUser?.user?.email;
+    if (!email || profile?.email_notifications_enabled === false) return;
+
+    const content = transactionalEmailContent(type, { title, body, firstName: profile?.first_name ?? null });
+    if (!content) return;
+
+    const appUrl = getAppUrl();
+    await getResend().emails.send({
+      from: resendFromAddress(),
+      to: email,
+      subject: content.subject,
+      html: renderEmailHtml(content.body, {
+        ctaLabel: content.ctaLabel,
+        ctaUrl: content.ctaPath ? `${appUrl}${content.ctaPath}` : undefined,
+      }),
+    });
+  } catch (err) {
+    console.error("Transactional email failed:", err);
+  }
+}
 
 export interface Notification {
   id: string;
@@ -28,6 +69,7 @@ export async function createNotification(input: {
     body: input.body,
     metadata: input.metadata ?? {},
   });
+  await sendTransactionalEmail(input.userId, input.type, input.title, input.body);
 }
 
 /**
@@ -52,6 +94,7 @@ export async function createNotificationForUser(input: {
     body: input.body,
     metadata: input.metadata ?? {},
   });
+  await sendTransactionalEmail(input.userId, input.type, input.title, input.body);
 }
 
 export async function getNotifications(userId: string, limit = 20): Promise<Notification[]> {

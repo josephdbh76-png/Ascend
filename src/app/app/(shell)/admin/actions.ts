@@ -6,8 +6,15 @@ import { isCurrentUserAdmin, adminSetTier, adminSetIsAdmin } from "@/services/ad
 import { syncPurchasableTitleStripeProducts } from "@/services/title.service";
 import { approveRevenueDeclaration, rejectRevenueDeclaration } from "@/services/revenue.service";
 import { syncAnnualPrices, type AnnualPriceSyncResult } from "@/services/subscription.service";
-import { getAudienceCount, sendCampaign, sendCampaignPreview } from "@/services/email-campaign.service";
-import type { CampaignAudience } from "@/lib/emailCampaignDisplay";
+import {
+  getAudienceCount,
+  sendCampaign,
+  sendCampaignPreview,
+  listEmailTemplates,
+  saveEmailTemplate,
+  deleteEmailTemplate,
+} from "@/services/email-campaign.service";
+import type { CampaignAudience, EmailTemplateRow } from "@/lib/emailCampaignDisplay";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { SubscriptionTier } from "@/types/database.types";
 
@@ -135,6 +142,42 @@ export async function sendCampaignAction(
     });
     revalidatePath("/app/admin");
     return { success: true, data: result };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function listEmailTemplatesAction(): Promise<ActionResult<EmailTemplateRow[]>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    return { success: true, data: await listEmailTemplates() };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function saveEmailTemplateAction(name: string, subject: string, body: string): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  if (!name.trim() || !subject.trim() || !body.trim()) return { success: false, error: "Nom, sujet et message obligatoires." };
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  try {
+    await saveEmailTemplate({ name: name.trim(), subject: subject.trim(), body: body.trim(), createdBy: userData.user.id });
+    revalidatePath("/app/admin");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function deleteEmailTemplateAction(id: string): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    await deleteEmailTemplate(id);
+    revalidatePath("/app/admin");
+    return { success: true, data: undefined };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }

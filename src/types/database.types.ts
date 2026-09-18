@@ -61,6 +61,7 @@ export interface Database {
           has_seen_tutorial: boolean;
           marketing_consent: boolean;
           unsubscribe_token: string;
+          email_notifications_enabled: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -544,6 +545,25 @@ export interface Database {
           sent_by: string;
         };
         Update: Partial<Database["public"]["Tables"]["email_campaigns"]["Row"]>;
+        Relationships: [];
+      };
+      email_templates: {
+        Row: {
+          id: string;
+          name: string;
+          subject: string;
+          body: string;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["email_templates"]["Row"], "id">> & {
+          name: string;
+          subject: string;
+          body: string;
+          created_by: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_templates"]["Row"]>;
         Relationships: [];
       };
     };

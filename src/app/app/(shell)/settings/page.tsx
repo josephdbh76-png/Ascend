@@ -38,7 +38,7 @@ export default async function SettingsPage() {
         .eq("user_id", user.id)
         .maybeSingle(),
       supabase.from("privacy_settings").select("*").eq("user_id", user.id).maybeSingle(),
-      supabase.from("profiles").select("marketing_consent").eq("id", user.id).maybeSingle(),
+      supabase.from("profiles").select("marketing_consent, email_notifications_enabled").eq("id", user.id).maybeSingle(),
       supabase.from("revenue_sources").select("status").eq("user_id", user.id).eq("provider", "stripe").maybeSingle(),
       supabase
         .from("revenue_sources")
@@ -137,7 +137,10 @@ export default async function SettingsPage() {
 
       <Card className="p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Emails</h2>
-        <MarketingConsentToggle initial={marketing?.marketing_consent ?? false} />
+        <MarketingConsentToggle
+          initialMarketing={marketing?.marketing_consent ?? false}
+          initialTransactional={marketing?.email_notifications_enabled ?? true}
+        />
       </Card>
 
       <Card className="p-6" elevated>
