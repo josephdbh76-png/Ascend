@@ -1,8 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
-import { RefreshCw, Unlink, Link2, Crown } from "lucide-react";
+import { useState, useTransition } from "react";
+import { RefreshCw, Unlink, Link2, Crown, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";
@@ -15,11 +16,17 @@ export function ConnectedAccounts({
   status,
   isCofounder,
   declarations,
+  shopifyConnected,
+  shopifyStatus,
+  shopifyDomain,
 }: {
   connected: boolean;
   status: VerificationStatus;
   isCofounder?: boolean;
   declarations: RevenueDeclaration[];
+  shopifyConnected: boolean;
+  shopifyStatus: VerificationStatus;
+  shopifyDomain: string | null;
 }) {
   const [pending, startTransition] = useTransition();
   const toast = useToast();
@@ -87,14 +94,89 @@ export function ConnectedAccounts({
         </div>
       </div>
 
+      <ShopifyConnection connected={shopifyConnected} status={shopifyStatus} domain={shopifyDomain} />
+
       <ManualRevenueCard declarations={declarations} />
 
-      {(["Shopify", "PayPal", "Paddle"] as const).map((name) => (
+      {(["PayPal", "Paddle"] as const).map((name) => (
         <div key={name} className="flex items-center justify-between rounded-md border border-border bg-card p-4 opacity-60">
           <p className="text-sm font-medium text-text-secondary">{name}</p>
           <span className="text-xs font-medium uppercase tracking-wide text-text-muted">Bientôt disponible</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+function ShopifyConnection({
+  connected,
+  status,
+  domain,
+}: {
+  connected: boolean;
+  status: VerificationStatus;
+  domain: string | null;
+}) {
+  const [shop, setShop] = useState("");
+  const [pending, startTransition] = useTransition();
+  const toast = useToast();
+  const router = useRouter();
+
+  function sync() {
+    startTransition(async () => {
+      const res = await fetch("/api/shopify/sync", { method: "POST" });
+      const body = await res.json();
+      if (!res.ok) return toast.show(body.error ?? "La synchronisation a échoué.", "error");
+      if (body.isFirstVerification) return router.push("/app/verification");
+      toast.show(`${body.monthsSynced} mois de revenus synchronisés.`, "success");
+      router.refresh();
+    });
+  }
+
+  function disconnect() {
+    startTransition(async () => {
+      const res = await fetch("/api/shopify/disconnect", { method: "POST" });
+      if (!res.ok) return toast.show("Impossible de déconnecter Shopify.", "error");
+      toast.show("Shopify déconnecté.", "success");
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="text-sm font-medium text-text-primary">Shopify</p>
+        {connected ? (
+          <div className="mt-1">
+            <VerificationBadge status={status} />
+          </div>
+        ) : (
+          <p className="mt-1 text-xs text-text-muted">{domain ?? "Non connecté"}</p>
+        )}
+      </div>
+      {connected ? (
+        <div className="flex shrink-0 items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={sync} disabled={pending}>
+            <RefreshCw className="h-3.5 w-3.5" /> Resynchroniser
+          </Button>
+          <Button variant="danger" size="sm" onClick={disconnect} disabled={pending}>
+            <Unlink className="h-3.5 w-3.5" /> Déconnecter
+          </Button>
+        </div>
+      ) : (
+        <form action="/api/shopify/connect" method="GET" className="flex shrink-0 items-center gap-2">
+          <Input
+            name="shop"
+            value={shop}
+            onChange={(e) => setShop(e.target.value)}
+            placeholder="ma-boutique.myshopify.com"
+            className="h-9 w-48 text-xs"
+          />
+          <Button type="submit" size="sm" disabled={!shop.trim()}>
+            <ShoppingBag className="h-3.5 w-3.5" /> Connecter
+          </Button>
+        </form>
+      )}
     </div>
   );
 }

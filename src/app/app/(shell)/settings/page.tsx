@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { ShieldCheck, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profile.service";
-import { getVerificationStatus, getRevenueDeclarations } from "@/services/revenue.service";
+import { getVerificationStatus, getShopifyVerificationStatus, getRevenueDeclarations } from "@/services/revenue.service";
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
 import { isCurrentUserAdmin } from "@/services/admin.service";
 import { Card } from "@/components/ui/Card";
@@ -16,6 +16,7 @@ import { ConnectedAccounts } from "./ConnectedAccounts";
 import { DangerZone } from "./DangerZone";
 import { SubscriptionCard } from "./SubscriptionCard";
 import { CheckoutStatusHandler } from "./CheckoutStatusHandler";
+import { ShopifyStatusToast } from "@/components/settings/ShopifyStatusToast";
 
 export const metadata: Metadata = { title: "Réglages" };
 
@@ -29,7 +30,7 @@ export default async function SettingsPage() {
   const profile = await getProfile(user.id);
   if (!profile) return null;
 
-  const [{ data: business }, { data: privacy }, { data: source }, verificationStatus, subscription, isAdmin] =
+  const [{ data: business }, { data: privacy }, { data: source }, { data: shopifySource }, verificationStatus, shopifyStatus, subscription, isAdmin] =
     await Promise.all([
       supabase
         .from("businesses")
@@ -38,7 +39,14 @@ export default async function SettingsPage() {
         .maybeSingle(),
       supabase.from("privacy_settings").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("revenue_sources").select("status").eq("user_id", user.id).eq("provider", "stripe").maybeSingle(),
+      supabase
+        .from("revenue_sources")
+        .select("status, external_account_id")
+        .eq("user_id", user.id)
+        .eq("provider", "shopify")
+        .maybeSingle(),
       getVerificationStatus(user.id),
+      getShopifyVerificationStatus(user.id),
       getSubscription(user.id),
       isCurrentUserAdmin(),
     ]);
@@ -51,6 +59,9 @@ export default async function SettingsPage() {
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
       <Suspense fallback={null}>
         <CheckoutStatusHandler />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ShopifyStatusToast />
       </Suspense>
 
       <div>
@@ -135,6 +146,9 @@ export default async function SettingsPage() {
           status={verificationStatus}
           isCofounder={profile.isCofounder}
           declarations={declarations}
+          shopifyConnected={shopifySource?.status === "connected"}
+          shopifyStatus={shopifyStatus}
+          shopifyDomain={shopifySource?.external_account_id ?? null}
         />
       </Card>
 

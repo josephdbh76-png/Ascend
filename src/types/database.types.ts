@@ -127,6 +127,21 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["verifications"]["Row"]>;
         Relationships: [];
       };
+      provider_credentials: {
+        Row: {
+          id: string;
+          revenue_source_id: string;
+          access_token: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["provider_credentials"]["Row"], "id">> & {
+          revenue_source_id: string;
+          access_token: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["provider_credentials"]["Row"]>;
+        Relationships: [];
+      };
       revenue_snapshots: {
         Row: {
           id: string;

@@ -200,40 +200,20 @@ export function calculateMonthlyGrowth(current: number | null, previous: number 
   return calculateGrowth(current, previous);
 }
 
-export async function getVerificationStatus(userId: string): Promise<VerificationStatus> {
+/** Checks one processor's connection + verification status, or null if that processor isn't connected at all. */
+async function getProcessorVerificationStatus(
+  userId: string,
+  provider: "stripe" | "shopify",
+): Promise<VerificationStatus | null> {
   const supabase = await createClient();
   const { data: source } = await supabase
     .from("revenue_sources")
     .select("id, status")
     .eq("user_id", userId)
-    .eq("provider", "stripe")
+    .eq("provider", provider)
     .maybeSingle();
 
-  if (!source) {
-    const manual = await getManualRevenueSource(userId);
-    if (manual?.status !== "connected") return "unverified";
-
-    const { data: latestPeriodRow } = await supabase
-      .from("revenue_declarations")
-      .select("period")
-      .eq("user_id", userId)
-      .order("period", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (!latestPeriodRow) return "unverified";
-
-    const { data: declarations } = await supabase
-      .from("revenue_declarations")
-      .select("review_status")
-      .eq("user_id", userId)
-      .eq("period", latestPeriodRow.period);
-
-    const statuses = new Set((declarations ?? []).map((d) => d.review_status));
-    if (statuses.has("approved")) return "verified";
-    if (statuses.has("pending")) return "pending";
-    if (statuses.has("rejected")) return "rejected";
-    return "unverified";
-  }
+  if (!source) return null;
   if (source.status === "disconnected") return "disconnected";
 
   const { data: verification } = await supabase
@@ -243,6 +223,45 @@ export async function getVerificationStatus(userId: string): Promise<Verificatio
     .maybeSingle();
 
   return verification?.status ?? "unverified";
+}
+
+/** The Shopify connection's own status, independent of any other source — used to render its row in Réglages accurately even when Stripe (checked first) is what drives the account's overall verification status. */
+export async function getShopifyVerificationStatus(userId: string): Promise<VerificationStatus> {
+  return (await getProcessorVerificationStatus(userId, "shopify")) ?? "unverified";
+}
+
+export async function getVerificationStatus(userId: string): Promise<VerificationStatus> {
+  const supabase = await createClient();
+
+  const stripeStatus = await getProcessorVerificationStatus(userId, "stripe");
+  if (stripeStatus) return stripeStatus;
+
+  const shopifyStatus = await getProcessorVerificationStatus(userId, "shopify");
+  if (shopifyStatus) return shopifyStatus;
+
+  const manual = await getManualRevenueSource(userId);
+  if (manual?.status !== "connected") return "unverified";
+
+  const { data: latestPeriodRow } = await supabase
+    .from("revenue_declarations")
+    .select("period")
+    .eq("user_id", userId)
+    .order("period", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!latestPeriodRow) return "unverified";
+
+  const { data: declarations } = await supabase
+    .from("revenue_declarations")
+    .select("review_status")
+    .eq("user_id", userId)
+    .eq("period", latestPeriodRow.period);
+
+  const statuses = new Set((declarations ?? []).map((d) => d.review_status));
+  if (statuses.has("approved")) return "verified";
+  if (statuses.has("pending")) return "pending";
+  if (statuses.has("rejected")) return "rejected";
+  return "unverified";
 }
 
 export function nextRevenueMilestone(currentCents: number | null): {
