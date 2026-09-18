@@ -1,13 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  buildShopifyAuthorizeUrl,
-  exchangeShopifyCode,
-  fetchShopifyOrdersPage,
-  SHOPIFY_API_VERSION,
-  type ShopifyOrder,
-} from "@/lib/shopify";
+import { verifyShopifyToken, fetchShopifyOrdersPage, isValidShopDomain, SHOPIFY_API_VERSION, type ShopifyOrder } from "@/lib/shopify";
 import { upsertMonthlyRevenue, getCurrentRevenue, calculateMonthlyGrowth, nextRevenueMilestone } from "@/services/revenue.service";
 import { evaluateRevenueAchievements, evaluateRankAchievements } from "@/services/achievement.service";
 import { evaluateChallengeProgress } from "@/services/challenge.service";
@@ -17,10 +11,6 @@ import { evaluateEarnedTitles } from "@/services/title.service";
 import { getProfile } from "@/services/profile.service";
 
 const MONTHS_OF_HISTORY = 6;
-
-export function buildShopifyConnectUrl(shop: string, userId: string, appUrl: string): string {
-  return buildShopifyAuthorizeUrl(shop, userId, appUrl);
-}
 
 /** Reads a shop's stored access token — service role only, see the provider_credentials migration. */
 async function getShopifyAccessToken(revenueSourceId: string): Promise<string | null> {
@@ -33,8 +23,30 @@ async function getShopifyAccessToken(revenueSourceId: string): Promise<string | 
   return data?.access_token ?? null;
 }
 
-export async function handleShopifyOAuthCallback(shop: string, code: string, userId: string) {
-  const accessToken = await exchangeShopifyCode(shop, code);
+/**
+ * Shopify has no equivalent to Stripe Connect Standard, where a platform
+ * calls any connected account using its own secret key — every shop's API
+ * calls need that shop's own token. It also has no OAuth path that lets an
+ * arbitrary, unrelated merchant install a third-party app without either a
+ * Shopify Plus organization (Custom distribution) or a reviewed App Store
+ * listing (Public distribution) — neither fits ASCEND's members, who each
+ * run their own independent, unrelated store.
+ *
+ * The practical, review-free path Shopify does support: each member
+ * creates their own "custom app" from inside their own store's admin
+ * (Settings → Apps and sales channels → Develop apps) and generates an
+ * Admin API access token there, which they paste into ASCEND directly —
+ * this function verifies that token actually works before storing it.
+ */
+export async function connectShopifyWithToken(userId: string, shop: string, accessToken: string) {
+  if (!isValidShopDomain(shop)) {
+    throw new Error("Adresse de boutique invalide — elle doit ressembler à ma-boutique.myshopify.com.");
+  }
+
+  const tokenWorks = await verifyShopifyToken(shop, accessToken);
+  if (!tokenWorks) {
+    throw new Error("Ce jeton d'accès ne fonctionne pas pour cette boutique — vérifie qu'il a bien le droit de lire les commandes.");
+  }
 
   const supabase = await createClient();
   const admin = createAdminClient();

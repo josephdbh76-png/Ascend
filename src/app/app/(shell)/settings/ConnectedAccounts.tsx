@@ -3,11 +3,12 @@
 import { useState, useTransition } from "react";
 import { RefreshCw, Unlink, Link2, Crown, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Field, Input } from "@/components/ui/Input";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";
 import { ManualRevenueCard } from "./ManualRevenueCard";
+import { connectShopifyAction } from "./actions";
 import type { VerificationStatus } from "@/types/database.types";
 import type { RevenueDeclaration } from "@/services/revenue.service";
 
@@ -118,6 +119,8 @@ function ShopifyConnection({
   domain: string | null;
 }) {
   const [shop, setShop] = useState("");
+  const [token, setToken] = useState("");
+  const [showForm, setShowForm] = useState(false);
   const [pending, startTransition] = useTransition();
   const toast = useToast();
   const router = useRouter();
@@ -142,39 +145,80 @@ function ShopifyConnection({
     });
   }
 
+  function connect(e: React.FormEvent) {
+    e.preventDefault();
+    startTransition(async () => {
+      const result = await connectShopifyAction(shop, token);
+      if (!result.success) return toast.show(result.error, "error");
+      if (result.data.isFirstVerification) return router.push("/app/verification");
+      toast.show(`Shopify connecté — ${result.data.monthsSynced} mois de revenus synchronisés.`, "success");
+      router.refresh();
+    });
+  }
+
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="text-sm font-medium text-text-primary">Shopify</p>
-        {connected ? (
-          <div className="mt-1">
-            <VerificationBadge status={status} />
-          </div>
-        ) : (
-          <p className="mt-1 text-xs text-text-muted">{domain ?? "Non connecté"}</p>
-        )}
-      </div>
-      {connected ? (
-        <div className="flex shrink-0 items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={sync} disabled={pending}>
-            <RefreshCw className="h-3.5 w-3.5" /> Resynchroniser
-          </Button>
-          <Button variant="danger" size="sm" onClick={disconnect} disabled={pending}>
-            <Unlink className="h-3.5 w-3.5" /> Déconnecter
-          </Button>
+    <div className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-medium text-text-primary">Shopify</p>
+          {connected ? (
+            <div className="mt-1">
+              <VerificationBadge status={status} />
+            </div>
+          ) : (
+            <p className="mt-1 text-xs text-text-muted">{domain ?? "Non connecté"}</p>
+          )}
         </div>
-      ) : (
-        <form action="/api/shopify/connect" method="GET" className="flex shrink-0 items-center gap-2">
-          <Input
-            name="shop"
-            value={shop}
-            onChange={(e) => setShop(e.target.value)}
-            placeholder="ma-boutique.myshopify.com"
-            className="h-9 w-48 text-xs"
-          />
-          <Button type="submit" size="sm" disabled={!shop.trim()}>
+        {connected ? (
+          <div className="flex shrink-0 items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={sync} disabled={pending}>
+              <RefreshCw className="h-3.5 w-3.5" /> Resynchroniser
+            </Button>
+            <Button variant="danger" size="sm" onClick={disconnect} disabled={pending}>
+              <Unlink className="h-3.5 w-3.5" /> Déconnecter
+            </Button>
+          </div>
+        ) : !showForm ? (
+          <Button size="sm" onClick={() => setShowForm(true)} className="shrink-0">
             <ShoppingBag className="h-3.5 w-3.5" /> Connecter
           </Button>
+        ) : null}
+      </div>
+
+      {!connected && showForm && (
+        <form onSubmit={connect} className="flex flex-col gap-3 border-t border-border pt-3">
+          <p className="text-xs leading-relaxed text-text-muted">
+            Depuis ta boutique Shopify : Réglages → Apps et canaux de vente → Développer des apps → Créer une
+            app. Donne-lui la permission de lecture <span className="font-mono text-text-secondary">read_orders</span>,
+            installe-la, puis copie le jeton d&apos;accès API Admin généré ci-dessous.
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field label="Domaine de la boutique">
+              <Input
+                value={shop}
+                onChange={(e) => setShop(e.target.value)}
+                placeholder="ma-boutique.myshopify.com"
+                required
+              />
+            </Field>
+            <Field label="Jeton d'accès API Admin">
+              <Input
+                type="password"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="shpat_..."
+                required
+              />
+            </Field>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button type="submit" size="sm" disabled={pending || !shop.trim() || !token.trim()}>
+              <Link2 className="h-3.5 w-3.5" /> Vérifier et connecter
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)} disabled={pending}>
+              Annuler
+            </Button>
+          </div>
         </form>
       )}
     </div>

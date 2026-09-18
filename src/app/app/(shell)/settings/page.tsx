@@ -16,7 +16,6 @@ import { ConnectedAccounts } from "./ConnectedAccounts";
 import { DangerZone } from "./DangerZone";
 import { SubscriptionCard } from "./SubscriptionCard";
 import { CheckoutStatusHandler } from "./CheckoutStatusHandler";
-import { ShopifyStatusToast } from "@/components/settings/ShopifyStatusToast";
 
 export const metadata: Metadata = { title: "Réglages" };
 
@@ -59,9 +58,6 @@ export default async function SettingsPage() {
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
       <Suspense fallback={null}>
         <CheckoutStatusHandler />
-      </Suspense>
-      <Suspense fallback={null}>
-        <ShopifyStatusToast />
       </Suspense>
 
       <div>
