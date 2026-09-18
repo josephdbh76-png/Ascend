@@ -7,7 +7,7 @@ import { profileUpdateSchema, privacySettingsSchema } from "@/lib/validations";
 import { toFriendlyAuthError } from "@/lib/errors";
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
 import { verifyAndSaveSiret } from "@/services/siret.service";
-import { connectShopifyWithToken } from "@/services/shopify.service";
+import { connectShopifyWithCredentials } from "@/services/shopify.service";
 import { submitRevenueDeclaration, calculateMonthlyGrowth, getCurrentRevenue } from "@/services/revenue.service";
 import { evaluateChallengeProgress } from "@/services/challenge.service";
 import { ACCENT_THEMES } from "@/lib/constants";
@@ -91,14 +91,20 @@ export async function verifySiretAction(siret: string): Promise<ActionResult<{ l
 
 export async function connectShopifyAction(
   shop: string,
-  accessToken: string,
+  clientId: string,
+  clientSecret: string,
 ): Promise<ActionResult<{ isFirstVerification: boolean; monthsSynced: number }>> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
   try {
-    const { syncResult } = await connectShopifyWithToken(userData.user.id, shop.trim().toLowerCase(), accessToken.trim());
+    const { syncResult } = await connectShopifyWithCredentials(
+      userData.user.id,
+      shop.trim().toLowerCase(),
+      clientId.trim(),
+      clientSecret.trim(),
+    );
     if (!syncResult.success) return { success: false, error: syncResult.error };
     return {
       success: true,

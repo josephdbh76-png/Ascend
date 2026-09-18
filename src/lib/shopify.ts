@@ -13,18 +13,33 @@ export function isValidShopDomain(shop: string): boolean {
 }
 
 /**
- * A member generates this token themselves, from their own store's admin
- * (Settings → Apps and sales channels → Develop apps) — there is no
- * platform-level OAuth app involved (see the shopify.service.ts comment
- * for why). This does one lightweight authenticated call before ASCEND
- * ever stores the token, so a mistyped or under-scoped token fails with a
- * clear message immediately instead of silently at the next sync.
+ * Shopify's Dev Dashboard apps (the only install path available without a
+ * Shopify Plus organization or a full App Store review — see
+ * shopify.service.ts) don't hand out a long-lived Admin API token anymore.
+ * Instead, the app's client_id + client_secret are exchanged for a
+ * short-lived one (24h) whenever it's needed, via the OAuth "client
+ * credentials grant". This only succeeds when the app and the shop belong
+ * to the same Shopify organization — i.e. each ASCEND member creates their
+ * own such app for their own store, exactly like they'd create their own
+ * Stripe account.
  */
-export async function verifyShopifyToken(shop: string, accessToken: string): Promise<boolean> {
-  const res = await fetch(`https://${shop}/admin/api/${SHOPIFY_API_VERSION}/shop.json`, {
-    headers: { "X-Shopify-Access-Token": accessToken },
+export async function getShopifyAccessToken(
+  shop: string,
+  clientId: string,
+  clientSecret: string,
+): Promise<string | null> {
+  const res = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: clientId,
+      client_secret: clientSecret,
+    }),
   });
-  return res.ok;
+  if (!res.ok) return null;
+  const data = (await res.json()) as { access_token?: string };
+  return data.access_token ?? null;
 }
 
 export interface ShopifyOrder {

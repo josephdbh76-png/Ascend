@@ -131,13 +131,15 @@ export interface Database {
         Row: {
           id: string;
           revenue_source_id: string;
-          access_token: string;
+          client_id: string;
+          client_secret: string;
           created_at: string;
           updated_at: string;
         };
         Insert: Partial<Omit<Database["public"]["Tables"]["provider_credentials"]["Row"], "id">> & {
           revenue_source_id: string;
-          access_token: string;
+          client_id: string;
+          client_secret: string;
         };
         Update: Partial<Database["public"]["Tables"]["provider_credentials"]["Row"]>;
         Relationships: [];

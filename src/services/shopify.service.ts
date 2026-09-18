@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { verifyShopifyToken, fetchShopifyOrdersPage, isValidShopDomain, SHOPIFY_API_VERSION, type ShopifyOrder } from "@/lib/shopify";
+import { getShopifyAccessToken, fetchShopifyOrdersPage, isValidShopDomain, SHOPIFY_API_VERSION, type ShopifyOrder } from "@/lib/shopify";
 import { upsertMonthlyRevenue, getCurrentRevenue, calculateMonthlyGrowth, nextRevenueMilestone } from "@/services/revenue.service";
 import { evaluateRevenueAchievements, evaluateRankAchievements } from "@/services/achievement.service";
 import { evaluateChallengeProgress } from "@/services/challenge.service";
@@ -12,40 +12,45 @@ import { getProfile } from "@/services/profile.service";
 
 const MONTHS_OF_HISTORY = 6;
 
-/** Reads a shop's stored access token — service role only, see the provider_credentials migration. */
-async function getShopifyAccessToken(revenueSourceId: string): Promise<string | null> {
+/** Reads a shop's stored client credentials — service role only, see the provider_credentials migration. */
+async function getStoredShopifyCredentials(
+  revenueSourceId: string,
+): Promise<{ clientId: string; clientSecret: string } | null> {
   const admin = createAdminClient();
   const { data } = await admin
     .from("provider_credentials")
-    .select("access_token")
+    .select("client_id, client_secret")
     .eq("revenue_source_id", revenueSourceId)
     .maybeSingle();
-  return data?.access_token ?? null;
+  return data ? { clientId: data.client_id, clientSecret: data.client_secret } : null;
 }
 
 /**
  * Shopify has no equivalent to Stripe Connect Standard, where a platform
  * calls any connected account using its own secret key — every shop's API
- * calls need that shop's own token. It also has no OAuth path that lets an
+ * calls need their own credentials. It also has no OAuth path that lets an
  * arbitrary, unrelated merchant install a third-party app without either a
- * Shopify Plus organization (Custom distribution) or a reviewed App Store
- * listing (Public distribution) — neither fits ASCEND's members, who each
- * run their own independent, unrelated store.
+ * Shopify Plus organization or a reviewed App Store listing — neither fits
+ * ASCEND's members, who each run their own independent, unrelated store.
  *
  * The practical, review-free path Shopify does support: each member
- * creates their own "custom app" from inside their own store's admin
- * (Settings → Apps and sales channels → Develop apps) and generates an
- * Admin API access token there, which they paste into ASCEND directly —
- * this function verifies that token actually works before storing it.
+ * creates their own Dev Dashboard app, installs it on their own store (so
+ * it belongs to the same Shopify organization as that store), and pastes
+ * its client_id + client_secret into ASCEND — exactly like they'd create
+ * their own Stripe account rather than sharing one. This function mints a
+ * token from those credentials to confirm they actually work before
+ * storing anything.
  */
-export async function connectShopifyWithToken(userId: string, shop: string, accessToken: string) {
+export async function connectShopifyWithCredentials(userId: string, shop: string, clientId: string, clientSecret: string) {
   if (!isValidShopDomain(shop)) {
     throw new Error("Adresse de boutique invalide — elle doit ressembler à ma-boutique.myshopify.com.");
   }
 
-  const tokenWorks = await verifyShopifyToken(shop, accessToken);
-  if (!tokenWorks) {
-    throw new Error("Ce jeton d'accès ne fonctionne pas pour cette boutique — vérifie qu'il a bien le droit de lire les commandes.");
+  const token = await getShopifyAccessToken(shop, clientId, clientSecret);
+  if (!token) {
+    throw new Error(
+      "Impossible d'obtenir un accès avec ces identifiants — vérifie que l'app est bien installée sur cette boutique.",
+    );
   }
 
   const supabase = await createClient();
@@ -73,7 +78,7 @@ export async function connectShopifyWithToken(userId: string, shop: string, acce
 
   const { error: credentialError } = await admin
     .from("provider_credentials")
-    .upsert({ revenue_source_id: source.id, access_token: accessToken }, { onConflict: "revenue_source_id" });
+    .upsert({ revenue_source_id: source.id, client_id: clientId, client_secret: clientSecret }, { onConflict: "revenue_source_id" });
   if (credentialError) throw new Error(credentialError.message);
 
   await supabase.from("verifications").upsert(
@@ -117,9 +122,10 @@ export async function syncShopifyRevenue(userId: string, revenueSourceId: string
     .maybeSingle();
   const wasAlreadyVerified = verificationBefore?.status === "verified";
 
-  const accessToken = await getShopifyAccessToken(revenueSourceId);
+  const credentials = await getStoredShopifyCredentials(revenueSourceId);
+  const accessToken = credentials ? await getShopifyAccessToken(shop, credentials.clientId, credentials.clientSecret) : null;
   if (!accessToken) {
-    const message = "No stored Shopify access token for this connection.";
+    const message = "Impossible d'obtenir un accès Shopify — reconnecte ta boutique depuis les réglages.";
     await supabase
       .from("verifications")
       .update({ status: "error", error_message: message, last_checked_at: new Date().toISOString() })
@@ -268,7 +274,7 @@ export async function disconnectShopifySource(userId: string, revenueSourceId: s
     .update({ status: "disconnected", last_checked_at: new Date().toISOString() })
     .eq("revenue_source_id", revenueSourceId);
 
-  // The access token is a live credential against the member's real store —
-  // drop it immediately on disconnect rather than leaving it dormant.
+  // These credentials mint live access against the member's real store —
+  // drop them immediately on disconnect rather than leaving them dormant.
   await admin.from("provider_credentials").delete().eq("revenue_source_id", revenueSourceId);
 }

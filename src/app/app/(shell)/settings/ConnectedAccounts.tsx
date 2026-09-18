@@ -119,7 +119,8 @@ function ShopifyConnection({
   domain: string | null;
 }) {
   const [shop, setShop] = useState("");
-  const [token, setToken] = useState("");
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [pending, startTransition] = useTransition();
   const toast = useToast();
@@ -148,7 +149,7 @@ function ShopifyConnection({
   function connect(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
-      const result = await connectShopifyAction(shop, token);
+      const result = await connectShopifyAction(shop, clientId, clientSecret);
       if (!result.success) return toast.show(result.error, "error");
       if (result.data.isFirstVerification) return router.push("/app/verification");
       toast.show(`Shopify connecté — ${result.data.monthsSynced} mois de revenus synchronisés.`, "success");
@@ -188,31 +189,38 @@ function ShopifyConnection({
       {!connected && showForm && (
         <form onSubmit={connect} className="flex flex-col gap-3 border-t border-border pt-3">
           <p className="text-xs leading-relaxed text-text-muted">
-            Depuis ta boutique Shopify : Réglages → Apps et canaux de vente → Développer des apps → Créer une
-            app. Donne-lui la permission de lecture <span className="font-mono text-text-secondary">read_orders</span>,
-            installe-la, puis copie le jeton d&apos;accès API Admin généré ci-dessous.
+            Crée une app sur{" "}
+            <a href="https://dev.shopify.com" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">
+              dev.shopify.com
+            </a>
+            , installe-la sur ta boutique, active la permission{" "}
+            <span className="font-mono text-text-secondary">read_orders</span>, puis colle ici l&apos;ID client et le
+            Secret affichés dans Paramètres de l&apos;appli → Identifiants.
           </p>
+          <Field label="Domaine de la boutique">
+            <Input
+              value={shop}
+              onChange={(e) => setShop(e.target.value)}
+              placeholder="ma-boutique.myshopify.com"
+              required
+            />
+          </Field>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Domaine de la boutique">
-              <Input
-                value={shop}
-                onChange={(e) => setShop(e.target.value)}
-                placeholder="ma-boutique.myshopify.com"
-                required
-              />
+            <Field label="ID client">
+              <Input value={clientId} onChange={(e) => setClientId(e.target.value)} required />
             </Field>
-            <Field label="Jeton d'accès API Admin">
+            <Field label="Secret">
               <Input
                 type="password"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="shpat_..."
+                value={clientSecret}
+                onChange={(e) => setClientSecret(e.target.value)}
+                placeholder="shpss_..."
                 required
               />
             </Field>
           </div>
           <div className="flex items-center gap-2">
-            <Button type="submit" size="sm" disabled={pending || !shop.trim() || !token.trim()}>
+            <Button type="submit" size="sm" disabled={pending || !shop.trim() || !clientId.trim() || !clientSecret.trim()}>
               <Link2 className="h-3.5 w-3.5" /> Vérifier et connecter
             </Button>
             <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)} disabled={pending}>
