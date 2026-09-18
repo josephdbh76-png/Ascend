@@ -22,6 +22,8 @@ export async function createAccountAction(input: {
   email: string;
   password: string;
   username: string;
+  /** Explicit, unchecked-by-default opt-in — never assume consent just because someone is signing up. */
+  marketingConsent?: boolean;
   /** Honeypot — a real visitor never sees or fills this field (hidden via
    * CSS, not type="hidden" which some bots already skip). Any value here
    * means the submission is automated, so we reject without touching
@@ -62,6 +64,7 @@ export async function createAccountAction(input: {
     id: signUpData.user.id,
     username,
     onboarding_step: "business",
+    marketing_consent: input.marketingConsent === true,
   });
 
   if (profileError) {

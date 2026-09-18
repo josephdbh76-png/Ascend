@@ -29,7 +29,7 @@ export function SignupWizard() {
   const [error, setError] = useState<string | null>(null);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
-  const [account, setAccount] = useState({ email: "", password: "", username: "", website: "" });
+  const [account, setAccount] = useState({ email: "", password: "", username: "", website: "", marketingConsent: false });
   const [profile, setProfile] = useState<{
     firstName: string;
     lastName: string;
@@ -204,6 +204,15 @@ export function SignupWizard() {
                   autoComplete="off"
                 />
               </Field>
+              <label className="flex items-start gap-2.5 text-sm text-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={account.marketingConsent}
+                  onChange={(e) => setAccount({ ...account, marketingConsent: e.target.checked })}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-[#d6a84f]"
+                />
+                Je veux recevoir les actualités et opportunités d&apos;ASCEND par email (modifiable à tout moment dans les réglages)
+              </label>
               <Button type="submit" disabled={pending} className="mt-2">
                 Continuer <ArrowRight className="h-4 w-4" />
               </Button>
