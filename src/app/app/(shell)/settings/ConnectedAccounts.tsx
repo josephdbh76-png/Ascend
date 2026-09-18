@@ -188,15 +188,36 @@ function ShopifyConnection({
 
       {!connected && showForm && (
         <form onSubmit={connect} className="flex flex-col gap-3 border-t border-border pt-3">
-          <p className="text-xs leading-relaxed text-text-muted">
-            Crée une app sur{" "}
-            <a href="https://dev.shopify.com" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">
-              dev.shopify.com
-            </a>
-            , installe-la sur ta boutique, active la permission{" "}
-            <span className="font-mono text-text-secondary">read_orders</span>, puis colle ici l&apos;ID client et le
-            Secret affichés dans Paramètres de l&apos;appli → Identifiants.
-          </p>
+          <div className="rounded border border-border bg-card p-3 text-xs leading-relaxed text-text-muted">
+            <p className="font-medium text-text-secondary">Comment connecter ta boutique :</p>
+            <ol className="mt-1.5 list-decimal space-y-1 pl-4">
+              <li>
+                Sur{" "}
+                <a
+                  href="https://dev.shopify.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gold hover:underline"
+                >
+                  dev.shopify.com
+                </a>
+                , crée une app (nom libre, ex. « ASCEND »).
+              </li>
+              <li>
+                Onglet <span className="text-text-secondary">Versions</span> : dans le champ « Portées », tape{" "}
+                <span className="font-mono text-text-secondary">read_orders</span>, puis crée/publie la version.
+              </li>
+              <li>
+                Clique sur le nom de l&apos;app en haut du menu pour revenir à son accueil, puis{" "}
+                <span className="text-text-secondary">Installer l&apos;app</span> → sélectionne ta boutique →
+                Installer.
+              </li>
+              <li>
+                Onglet <span className="text-text-secondary">Paramètres de l&apos;appli</span> → section
+                Identifiants : copie l&apos;ID client et le Secret ci-dessous.
+              </li>
+            </ol>
+          </div>
           <Field label="Domaine de la boutique">
             <Input
               value={shop}
