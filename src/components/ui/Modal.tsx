@@ -10,12 +10,15 @@ export function Modal({
   title,
   children,
   className,
+  zIndexClassName = "z-50",
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
   children: ReactNode;
   className?: string;
+  /** Override when this modal must stack above another already-open one (e.g. sharing from within a celebration overlay). */
+  zIndexClassName?: string;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -27,7 +30,7 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className={cn("fixed inset-0 flex items-center justify-center p-4", zIndexClassName)}>
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-up"
         onClick={onClose}

@@ -71,7 +71,7 @@ export function AchievementUnlockModal({
             </h2>
             <p className="text-sm text-text-secondary">{achievementDescription}</p>
 
-            <ShareCardButton title={achievementName} name={`@${username}`} />
+            <ShareCardButton title={achievementName} name={`@${username}`} zIndexClassName="z-[110]" />
 
             <div className="mt-2 flex w-full flex-col gap-2 sm:flex-row">
               <Button variant="secondary" className="flex-1" onClick={close}>
