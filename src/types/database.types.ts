@@ -168,6 +168,29 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["revenue_snapshots"]["Row"]>;
         Relationships: [];
       };
+      revenue_source_snapshots: {
+        Row: {
+          id: string;
+          user_id: string;
+          revenue_source_id: string;
+          period: string;
+          amount_cents: number;
+          currency: string;
+          is_verified: boolean;
+          transaction_count: number | null;
+          customer_count: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["revenue_source_snapshots"]["Row"], "id">> & {
+          user_id: string;
+          revenue_source_id: string;
+          period: string;
+          amount_cents: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["revenue_source_snapshots"]["Row"]>;
+        Relationships: [];
+      };
       revenue_declarations: {
         Row: {
           id: string;

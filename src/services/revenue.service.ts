@@ -17,9 +17,75 @@ interface UpsertMonthlyRevenueInput {
   customerCount?: number | null;
 }
 
+/**
+ * revenue_snapshots (read by the leaderboard, dashboard, challenges and
+ * milestones) holds one blended row per user+period — the sum of every
+ * connected source's contribution for that month. Each source writes its
+ * own row into revenue_source_snapshots first (see upsertMonthlyRevenue /
+ * recomputeManualSnapshot); this folds all of a period's source rows into
+ * that single blended row, so a Stripe sync can never wipe out a manual
+ * declaration's figure for the same month, or vice versa.
+ */
+async function recomputeBlendedSnapshot(userId: string, period: string) {
+  const admin = createAdminClient();
+  const { data: sourceRows, error } = await admin
+    .from("revenue_source_snapshots")
+    .select("revenue_source_id, amount_cents, transaction_count, customer_count")
+    .eq("user_id", userId)
+    .eq("period", period);
+  if (error) throw new Error(error.message);
+
+  if (!sourceRows || sourceRows.length === 0) {
+    await admin.from("revenue_snapshots").delete().eq("user_id", userId).eq("period", period);
+    return;
+  }
+
+  const amountCents = sourceRows.reduce((sum, r) => sum + r.amount_cents, 0);
+  const transactionCounts = sourceRows.map((r) => r.transaction_count).filter((n): n is number => n != null);
+  const customerCounts = sourceRows.map((r) => r.customer_count).filter((n): n is number => n != null);
+
+  const { error: upsertError } = await admin.from("revenue_snapshots").upsert(
+    {
+      user_id: userId,
+      // Any contributing source satisfies the not-null FK — this row is a
+      // blend, not attributable to one source. Per-source figures live in
+      // revenue_source_snapshots.
+      revenue_source_id: sourceRows[0].revenue_source_id,
+      period,
+      amount_cents: amountCents,
+      currency: "EUR",
+      is_verified: true,
+      transaction_count: transactionCounts.length > 0 ? transactionCounts.reduce((a, b) => a + b, 0) : null,
+      customer_count: customerCounts.length > 0 ? customerCounts.reduce((a, b) => a + b, 0) : null,
+    },
+    { onConflict: "user_id,period" },
+  );
+  if (upsertError) throw new Error(upsertError.message);
+}
+
+/**
+ * Sets profiles.revenue_verified from the one true source of verified
+ * revenue (revenue_snapshots) instead of letting whichever
+ * source synced most recently decide it unilaterally — a Stripe or
+ * Shopify sync that legitimately finds zero charges must not erase a
+ * verified status earned through a different source (an approved manual
+ * declaration, or the other processor).
+ */
+export async function refreshRevenueVerifiedFlag(userId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  const { count, error } = await admin
+    .from("revenue_snapshots")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if (error) throw new Error(error.message);
+  const verified = (count ?? 0) > 0;
+  await admin.from("profiles").update({ revenue_verified: verified }).eq("id", userId);
+  return verified;
+}
+
 export async function upsertMonthlyRevenue(input: UpsertMonthlyRevenueInput) {
   const supabase = await createClient();
-  const { error } = await supabase.from("revenue_snapshots").upsert(
+  const { error } = await supabase.from("revenue_source_snapshots").upsert(
     {
       user_id: input.userId,
       revenue_source_id: input.revenueSourceId,
@@ -30,9 +96,10 @@ export async function upsertMonthlyRevenue(input: UpsertMonthlyRevenueInput) {
       transaction_count: input.transactionCount ?? null,
       customer_count: input.customerCount ?? null,
     },
-    { onConflict: "user_id,period" },
+    { onConflict: "revenue_source_id,period" },
   );
   if (error) throw new Error(error.message);
+  await recomputeBlendedSnapshot(input.userId, input.period);
 }
 
 /**
@@ -132,7 +199,7 @@ async function recomputeManualSnapshot(userId: string, period: string) {
   const sum = (approved ?? []).reduce((total, d) => total + d.amount_cents, 0);
 
   if (sum > 0) {
-    await admin.from("revenue_snapshots").upsert(
+    await admin.from("revenue_source_snapshots").upsert(
       {
         user_id: userId,
         revenue_source_id: source.id,
@@ -141,16 +208,13 @@ async function recomputeManualSnapshot(userId: string, period: string) {
         currency: "EUR",
         is_verified: true,
       },
-      { onConflict: "user_id,period" },
+      { onConflict: "revenue_source_id,period" },
     );
   } else {
-    await admin
-      .from("revenue_snapshots")
-      .delete()
-      .eq("user_id", userId)
-      .eq("period", period)
-      .eq("revenue_source_id", source.id);
+    await admin.from("revenue_source_snapshots").delete().eq("revenue_source_id", source.id).eq("period", period);
   }
+
+  await recomputeBlendedSnapshot(userId, period);
 }
 
 export async function getManualRevenueSource(userId: string) {
@@ -230,17 +294,11 @@ export async function getShopifyVerificationStatus(userId: string): Promise<Veri
   return (await getProcessorVerificationStatus(userId, "shopify")) ?? "unverified";
 }
 
-export async function getVerificationStatus(userId: string): Promise<VerificationStatus> {
+/** Null when manual revenue was never even attempted — mirrors getProcessorVerificationStatus's contract for the other two processors. */
+async function getManualVerificationStatus(userId: string): Promise<VerificationStatus | null> {
   const supabase = await createClient();
-
-  const stripeStatus = await getProcessorVerificationStatus(userId, "stripe");
-  if (stripeStatus) return stripeStatus;
-
-  const shopifyStatus = await getProcessorVerificationStatus(userId, "shopify");
-  if (shopifyStatus) return shopifyStatus;
-
   const manual = await getManualRevenueSource(userId);
-  if (manual?.status !== "connected") return "unverified";
+  if (manual?.status !== "connected") return null;
 
   const { data: latestPeriodRow } = await supabase
     .from("revenue_declarations")
@@ -262,6 +320,31 @@ export async function getVerificationStatus(userId: string): Promise<Verificatio
   if (statuses.has("pending")) return "pending";
   if (statuses.has("rejected")) return "rejected";
   return "unverified";
+}
+
+/**
+ * A member can connect Stripe, Shopify and manual declarations at the
+ * same time — this used to stop at whichever of the three was checked
+ * first and simply connected, so an empty (but connected) Stripe account
+ * hid a genuinely verified manual declaration entirely. Now checks all
+ * three and reports the best status found across them, since "verified"
+ * from any one source makes the account verified overall.
+ */
+const STATUS_PRIORITY: VerificationStatus[] = ["verified", "pending", "rejected", "disconnected", "unverified"];
+
+export async function getVerificationStatus(userId: string): Promise<VerificationStatus> {
+  const [stripeStatus, shopifyStatus, manualStatus] = await Promise.all([
+    getProcessorVerificationStatus(userId, "stripe"),
+    getProcessorVerificationStatus(userId, "shopify"),
+    getManualVerificationStatus(userId),
+  ]);
+
+  const statuses = [stripeStatus, shopifyStatus, manualStatus].filter(
+    (s): s is VerificationStatus => s != null,
+  );
+  if (statuses.length === 0) return "unverified";
+
+  return STATUS_PRIORITY.find((p) => statuses.includes(p)) ?? "unverified";
 }
 
 export function nextRevenueMilestone(currentCents: number | null): {
@@ -358,7 +441,7 @@ export async function approveRevenueDeclaration(declarationId: string, adminUser
   if (error || !declaration) throw new Error(error?.message ?? "Déclaration introuvable.");
 
   await recomputeManualSnapshot(declaration.user_id, declaration.period);
-  await admin.from("profiles").update({ revenue_verified: true }).eq("id", declaration.user_id);
+  await refreshRevenueVerifiedFlag(declaration.user_id);
 
   await createNotificationForUser({
     userId: declaration.user_id,
@@ -381,6 +464,7 @@ export async function rejectRevenueDeclaration(declarationId: string, adminUserI
   if (error || !declaration) throw new Error(error?.message ?? "Déclaration introuvable.");
 
   await recomputeManualSnapshot(declaration.user_id, declaration.period);
+  await refreshRevenueVerifiedFlag(declaration.user_id);
 
   await createNotificationForUser({
     userId: declaration.user_id,

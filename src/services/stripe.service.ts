@@ -1,7 +1,13 @@
 import "server-only";
 import { getStripe, isStripeTestKey } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
-import { upsertMonthlyRevenue, getCurrentRevenue, calculateMonthlyGrowth, nextRevenueMilestone } from "@/services/revenue.service";
+import {
+  upsertMonthlyRevenue,
+  getCurrentRevenue,
+  calculateMonthlyGrowth,
+  nextRevenueMilestone,
+  refreshRevenueVerifiedFlag,
+} from "@/services/revenue.service";
 import { evaluateRevenueAchievements, evaluateRankAchievements } from "@/services/achievement.service";
 import { evaluateChallengeProgress } from "@/services/challenge.service";
 import { createNotification } from "@/services/notification.service";
@@ -230,7 +236,7 @@ export async function syncStripeRevenue(
       .update({ last_synced_at: new Date().toISOString(), status: "connected" })
       .eq("id", revenueSourceId);
 
-    await supabase.from("profiles").update({ revenue_verified: hasVerifiableRevenue }).eq("id", userId);
+    await refreshRevenueVerifiedFlag(userId);
 
     if (!hasVerifiableRevenue) {
       return {
