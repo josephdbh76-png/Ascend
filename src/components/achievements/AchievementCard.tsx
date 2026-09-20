@@ -59,7 +59,7 @@ export function AchievementCard({
       {earned && earnedAt && (
         <div className="flex items-center justify-between">
           <p className="text-[11px] text-text-muted">Débloqué {timeAgo(earnedAt)}</p>
-          {shareName && <ShareCardButton title={name} name={shareName} />}
+          {shareName && <ShareCardButton title={name} name={shareName} rarity={rarity} />}
         </div>
       )}
     </div>

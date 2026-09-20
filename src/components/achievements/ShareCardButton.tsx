@@ -3,16 +3,19 @@
 import { useState } from "react";
 import { Share2 } from "lucide-react";
 import { ShareCardModal } from "@/components/achievements/ShareCardModal";
+import type { AchievementRarity } from "@/types/database.types";
 
 export function ShareCardButton({
   title,
   name,
   rank,
+  rarity,
   zIndexClassName,
 }: {
   title: string;
   name: string;
   rank?: string | null;
+  rarity?: AchievementRarity;
   zIndexClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -33,6 +36,7 @@ export function ShareCardButton({
         title={title}
         name={name}
         rank={rank}
+        rarity={rarity}
         zIndexClassName={zIndexClassName}
       />
     </>

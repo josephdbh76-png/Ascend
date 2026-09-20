@@ -34,6 +34,7 @@ import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { RankTransition } from "@/components/motion/RankTransition";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
 import { formatCurrency, formatPercent } from "@/lib/utils";
+import type { AchievementRarity } from "@/types/database.types";
 
 export const metadata: Metadata = { title: "Tableau de bord" };
 
@@ -109,13 +110,13 @@ export default async function DashboardPage() {
     remainingFoundingSlots = foundingTitle?.remaining_supply ?? null;
   }
 
-  let unlockedAchievement: { id: string; name: string; description: string } | null = null;
+  let unlockedAchievement: { id: string; name: string; description: string; rarity: AchievementRarity } | null = null;
   if (unreadAchievement) {
     const achievementId = unreadAchievement.metadata.achievement_id as string | undefined;
     if (achievementId) {
       const catalog = await getAllAchievementCatalog();
       const def = catalog.find((a) => a.id === achievementId);
-      if (def) unlockedAchievement = { id: def.id, name: def.name, description: def.description };
+      if (def) unlockedAchievement = { id: def.id, name: def.name, description: def.description, rarity: def.rarity };
     }
   }
 
@@ -134,6 +135,7 @@ export default async function DashboardPage() {
           notificationId={unreadAchievement!.id}
           achievementName={unlockedAchievement.name}
           achievementDescription={unlockedAchievement.description}
+          achievementRarity={unlockedAchievement.rarity}
           username={profile.username}
         />
       )}
