@@ -22,9 +22,9 @@ export function ShareCardButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-[11px] font-medium text-gold hover:text-gold-light"
+        className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold hover:border-gold/60 hover:bg-gold/20"
       >
-        <Share2 className="h-3 w-3" />
+        <Share2 className="h-3.5 w-3.5" />
         Partager
       </button>
       <ShareCardModal

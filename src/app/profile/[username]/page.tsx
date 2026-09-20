@@ -150,7 +150,14 @@ export default async function PublicProfilePage({
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {profile.achievements.map((a) => (
-              <AchievementCard key={a.id} name={a.name} description={a.description} rarity={a.rarity} earnedAt={a.earnedAt} />
+              <AchievementCard
+                key={a.id}
+                name={a.name}
+                description={a.description}
+                rarity={a.rarity}
+                earnedAt={a.earnedAt}
+                shareName={isOwner ? (profile.firstName ?? `@${profile.username}`) : undefined}
+              />
             ))}
           </div>
         )}
