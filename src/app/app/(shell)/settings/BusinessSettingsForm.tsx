@@ -94,7 +94,7 @@ export function BusinessSettingsForm({
           <form onSubmit={submitSiret} className="flex flex-col gap-3">
             <Field
               label="Numéro SIRET"
-              hint="Vérification gratuite et automatique auprès du registre officiel français. Affiche un badge « Entreprise vérifiée » sur ton profil."
+              hint="Vérification gratuite auprès du registre officiel français. Le prénom et le nom de ton profil doivent correspondre au dirigeant déclaré de l'entreprise."
             >
               <Input
                 value={siret}
