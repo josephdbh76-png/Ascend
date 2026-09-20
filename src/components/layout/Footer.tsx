@@ -12,15 +12,16 @@ export function Footer() {
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Produit</h4>
             <ul className="mt-3 space-y-2 text-sm text-text-secondary">
-              <li><a href="#produit" className="hover:text-text-primary">Fonctionnalités</a></li>
-              <li><a href="#classement" className="hover:text-text-primary">Classement</a></li>
-              <li><a href="#tarifs" className="hover:text-text-primary">Tarifs</a></li>
+              <li><Link href="/#produit" className="hover:text-text-primary">Fonctionnalités</Link></li>
+              <li><Link href="/#classement" className="hover:text-text-primary">Classement</Link></li>
+              <li><Link href="/#tarifs" className="hover:text-text-primary">Tarifs</Link></li>
+              <li><Link href="/verification" className="hover:text-text-primary">Comment on vérifie</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Entreprise</h4>
             <ul className="mt-3 space-y-2 text-sm text-text-secondary">
-              <li><a href="#faq" className="hover:text-text-primary">FAQ</a></li>
+              <li><Link href="/#faq" className="hover:text-text-primary">FAQ</Link></li>
               <li><Link href="/signup" className="hover:text-text-primary">Rejoindre ASCEND</Link></li>
             </ul>
           </div>

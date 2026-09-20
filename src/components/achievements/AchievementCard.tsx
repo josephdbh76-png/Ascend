@@ -1,5 +1,6 @@
 import { Award, Lock } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
+import { ShareCardButton } from "@/components/achievements/ShareCardButton";
 import type { AchievementRarity } from "@/types/database.types";
 
 const RARITY_STYLES: Record<AchievementRarity, string> = {
@@ -21,11 +22,14 @@ export function AchievementCard({
   description,
   rarity,
   earnedAt,
+  shareName,
 }: {
   name: string;
   description: string;
   rarity: AchievementRarity;
   earnedAt: string | null;
+  /** Display name to print on the shareable card — omit to hide the share button (e.g. on someone else's profile). */
+  shareName?: string;
 }) {
   const earned = !!earnedAt;
   return (
@@ -52,7 +56,12 @@ export function AchievementCard({
         <h3 className="text-sm font-semibold text-text-primary">{name}</h3>
         <p className="mt-1 text-xs text-text-secondary">{description}</p>
       </div>
-      {earned && earnedAt && <p className="text-[11px] text-text-muted">Débloqué {timeAgo(earnedAt)}</p>}
+      {earned && earnedAt && (
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] text-text-muted">Débloqué {timeAgo(earnedAt)}</p>
+          {shareName && <ShareCardButton title={name} name={shareName} />}
+        </div>
+      )}
     </div>
   );
 }

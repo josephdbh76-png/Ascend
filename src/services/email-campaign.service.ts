@@ -19,7 +19,7 @@ interface Recipient {
  * a join between the auth and public schemas through the query builder.
  * Paginates through every user once and keeps only the ones asked for.
  */
-async function getEmailsByUserIds(ids: Set<string>): Promise<Map<string, string>> {
+export async function getEmailsByUserIds(ids: Set<string>): Promise<Map<string, string>> {
   const admin = createAdminClient();
   const emailById = new Map<string, string>();
   let page = 1;

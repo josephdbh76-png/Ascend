@@ -14,6 +14,7 @@ import { getProfile } from "@/services/profile.service";
 import { getNotifications, getUnreadCount } from "@/services/notification.service";
 import { getUserTitles } from "@/services/title.service";
 import { getFollowCounts, isFollowing as checkIsFollowing } from "@/services/network.service";
+import { recordProfileView } from "@/services/profileView.service";
 import { getUnreadMessageCount } from "@/services/message.service";
 import { isCurrentUserAdmin } from "@/services/admin.service";
 import { formatCurrency, formatCurrencyRange } from "@/lib/utils";
@@ -64,6 +65,7 @@ export default async function PublicProfilePage({
     data: { user },
   } = await supabase.auth.getUser();
   const isOwner = user?.id === profile.userId;
+  if (user && !isOwner) await recordProfileView(profile.userId, user.id);
   const viewerProfile = user ? await getProfile(user.id) : null;
   const [notifications, unreadCount, viewerIsAdmin, viewerUnreadMessages] = viewerProfile
     ? await Promise.all([

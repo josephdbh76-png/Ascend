@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Award } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { ShareCardButton } from "@/components/achievements/ShareCardButton";
 
 export function AchievementUnlockModal({
   notificationId,
@@ -69,6 +70,8 @@ export function AchievementUnlockModal({
               {achievementName}
             </h2>
             <p className="text-sm text-text-secondary">{achievementDescription}</p>
+
+            <ShareCardButton title={achievementName} name={`@${username}`} />
 
             <div className="mt-2 flex w-full flex-col gap-2 sm:flex-row">
               <Button variant="secondary" className="flex-1" onClick={close}>

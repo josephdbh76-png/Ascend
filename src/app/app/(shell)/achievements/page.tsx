@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getAllAchievementCatalog, getUserAchievements } from "@/services/achievement.service";
+import { getProfile } from "@/services/profile.service";
 import { AchievementCard } from "@/components/achievements/AchievementCard";
 import { TrophyCard } from "@/components/achievements/TrophyCard";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -15,8 +16,13 @@ export default async function AchievementsPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [catalog, earned] = await Promise.all([getAllAchievementCatalog(), getUserAchievements(user.id)]);
+  const [catalog, earned, profile] = await Promise.all([
+    getAllAchievementCatalog(),
+    getUserAchievements(user.id),
+    getProfile(user.id),
+  ]);
   const earnedById = new Map(earned.map((e) => [e.id, e.earnedAt]));
+  const shareName = profile?.firstName ?? (profile?.username ? `@${profile.username}` : "Un fondateur ASCEND");
 
   const { data: trophyRows } = await supabase
     .from("user_trophies")
@@ -65,6 +71,7 @@ export default async function AchievementsPage() {
               description={a.description}
               rarity={a.rarity}
               earnedAt={earnedById.get(a.id) ?? null}
+              shareName={shareName}
             />
           ))}
         </div>

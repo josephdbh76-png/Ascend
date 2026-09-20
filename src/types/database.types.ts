@@ -566,6 +566,21 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["email_templates"]["Row"]>;
         Relationships: [];
       };
+      profile_views: {
+        Row: {
+          id: string;
+          viewed_user_id: string;
+          viewer_id: string;
+          viewed_on: string;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["profile_views"]["Row"], "id">> & {
+          viewed_user_id: string;
+          viewer_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["profile_views"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -597,6 +612,10 @@ export interface Database {
       get_benchmark_stats: {
         Args: { p_user_id: string };
         Returns: BenchmarkStatsRow[];
+      };
+      capture_leaderboard_snapshot: {
+        Args: { p_snapshot_date?: string };
+        Returns: undefined;
       };
     };
   };

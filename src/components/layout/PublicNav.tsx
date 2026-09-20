@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { href: "#produit", label: "Produit" },
-  { href: "#classement", label: "Classement" },
-  { href: "#recompenses", label: "Récompenses" },
-  { href: "#communaute", label: "Communauté" },
-  { href: "#tarifs", label: "Tarifs" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/#produit", label: "Produit" },
+  { href: "/#classement", label: "Classement" },
+  { href: "/#recompenses", label: "Récompenses" },
+  { href: "/#communaute", label: "Communauté" },
+  { href: "/#tarifs", label: "Tarifs" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 export function PublicNav() {

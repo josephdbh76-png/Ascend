@@ -1,4 +1,5 @@
-import { ShieldCheck, Lock, UserCog, Compass } from "lucide-react";
+import Link from "next/link";
+import { ShieldCheck, Lock, UserCog, Compass, ArrowRight } from "lucide-react";
 import { Reveal } from "@/components/motion/Reveal";
 
 const ITEMS = [
@@ -20,6 +21,12 @@ export function TrustStrip() {
             </div>
           ))}
         </div>
+        <Link
+          href="/verification"
+          className="mt-4 flex items-center justify-center gap-1 text-xs font-medium text-gold hover:text-gold-light sm:justify-start"
+        >
+          Comment on vérifie chaque profil <ArrowRight className="h-3 w-3" />
+        </Link>
       </Reveal>
     </section>
   );

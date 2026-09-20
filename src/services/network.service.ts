@@ -149,6 +149,17 @@ export async function getFollowCounts(userId: string): Promise<{ followers: numb
   return { followers: followers ?? 0, following: following ?? 0 };
 }
 
+export async function getRecentFollowerCount(userId: string, sinceDays: number): Promise<number> {
+  const supabase = await createClient();
+  const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString();
+  const { count } = await supabase
+    .from("follows")
+    .select("*", { count: "exact", head: true })
+    .eq("followee_id", userId)
+    .gte("created_at", since);
+  return count ?? 0;
+}
+
 export async function isFollowing(followerId: string, followeeId: string): Promise<boolean> {
   const supabase = await createClient();
   const { data } = await supabase

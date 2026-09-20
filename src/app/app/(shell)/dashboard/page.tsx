@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { ArrowRight, TrendingUp, Globe2, Flag as FlagIcon, Award, Users, ShoppingBag } from "lucide-react";
+import { ArrowRight, TrendingUp, Globe2, Flag as FlagIcon, Award, Users, ShoppingBag, Eye, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profile.service";
 import {
@@ -17,6 +17,8 @@ import { getBenchmarkStats } from "@/services/benchmark.service";
 import { getUserAchievements, getAllAchievementCatalog } from "@/services/achievement.service";
 import { getActiveChallengesWithProgress } from "@/services/challenge.service";
 import { getLatestUnreadOfType } from "@/services/notification.service";
+import { getProfileViewCount } from "@/services/profileView.service";
+import { getRecentFollowerCount } from "@/services/network.service";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -27,6 +29,7 @@ import { BenchmarkCard } from "@/components/dashboard/BenchmarkCard";
 import { StripeStatusToast } from "@/components/dashboard/StripeStatusToast";
 import { VerificationCTA } from "@/components/dashboard/VerificationCTA";
 import { AchievementUnlockGate } from "@/components/dashboard/AchievementUnlockGate";
+import { ActivationChecklist } from "@/components/dashboard/ActivationChecklist";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { RankTransition } from "@/components/motion/RankTransition";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
@@ -50,16 +53,27 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const [history, { current, previous }, verificationStatus, achievements, challenges, unreadAchievement, { count: memberCount }] =
-    await Promise.all([
-      getRevenueHistory(user.id, 12),
-      getCurrentRevenue(user.id),
-      getVerificationStatus(user.id),
-      getUserAchievements(user.id),
-      getActiveChallengesWithProgress(user.id),
-      getLatestUnreadOfType(user.id, "achievement_unlocked"),
-      supabase.from("profiles").select("*", { count: "exact", head: true }).eq("is_demo", false),
-    ]);
+  const [
+    history,
+    { current, previous },
+    verificationStatus,
+    achievements,
+    challenges,
+    unreadAchievement,
+    { count: memberCount },
+    profileViews,
+    recentFollowers,
+  ] = await Promise.all([
+    getRevenueHistory(user.id, 12),
+    getCurrentRevenue(user.id),
+    getVerificationStatus(user.id),
+    getUserAchievements(user.id),
+    getActiveChallengesWithProgress(user.id),
+    getLatestUnreadOfType(user.id, "achievement_unlocked"),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("is_demo", false),
+    getProfileViewCount(user.id, 7),
+    getRecentFollowerCount(user.id, 7),
+  ]);
 
   const growth = calculateMonthlyGrowth(current?.amountCents ?? null, previous?.amountCents ?? null);
   const isVerified = verificationStatus === "verified";
@@ -135,6 +149,15 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      <ActivationChecklist
+        items={[
+          { label: "Ajoute une bio et le nom de ton activité", done: !!profile.bio && !!business?.name, href: "/app/settings" },
+          { label: "Vérifie tes revenus", done: isVerified, href: "/app/settings" },
+          { label: "Ajoute tes compétences", done: profile.skills.length > 0, href: "/app/settings" },
+          { label: "Débloque ton premier accomplissement", done: achievements.length > 0, href: "/app/achievements" },
+        ]}
+      />
+
       {!isVerified && (
         <VerificationCTA remainingFoundingSlots={remainingFoundingSlots} foundingSupply={foundingSupply} />
       )}
@@ -173,6 +196,19 @@ export default async function DashboardPage() {
       </div>
 
       {benchmark && <BenchmarkCard stats={benchmark} />}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <StatCard
+          label="Vues de ton profil (7 jours)"
+          value={profileViews.toLocaleString("fr-FR")}
+          icon={Eye}
+        />
+        <StatCard
+          label="Nouveaux abonnés (7 jours)"
+          value={recentFollowers.toLocaleString("fr-FR")}
+          icon={UserPlus}
+        />
+      </div>
 
       {(current?.customerCount != null || avgBasketCents != null) && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
