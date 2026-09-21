@@ -22,6 +22,7 @@ export function Footer() {
             <h4 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Entreprise</h4>
             <ul className="mt-3 space-y-2 text-sm text-text-secondary">
               <li><Link href="/#faq" className="hover:text-text-primary">FAQ</Link></li>
+              <li><Link href="/changelog" className="hover:text-text-primary">Nouveautés</Link></li>
               <li><Link href="/signup" className="hover:text-text-primary">Rejoindre ASCEND</Link></li>
             </ul>
           </div>
