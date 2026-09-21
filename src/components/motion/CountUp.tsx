@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { motion, useInView, useMotionValue, useReducedMotion, useSpring } from "framer-motion";
+import { formatCurrency, formatPercent } from "@/lib/utils";
 
 export function CountUp({
   value,
@@ -53,4 +54,27 @@ export function CountUp({
       {format(0)}
     </motion.span>
   );
+}
+
+/**
+ * Server Components can't pass function props to Client Components — a
+ * plain function like formatCurrency isn't serializable across that
+ * boundary and throws at render time. These wrap CountUp with the
+ * formatter baked in client-side, so a Server Component only ever needs
+ * to pass a plain number through.
+ */
+export function CurrencyCountUp({ value, className }: { value: number; className?: string }) {
+  return <CountUp value={value} format={formatCurrency} className={className} />;
+}
+
+export function PercentCountUp({ value, decimals = 1, className }: { value: number; decimals?: number; className?: string }) {
+  return <CountUp value={value} format={formatPercent} decimals={decimals} className={className} />;
+}
+
+export function PlainCountUp({ value, className }: { value: number; className?: string }) {
+  return <CountUp value={value} format={(n) => n.toLocaleString("fr-FR")} className={className} />;
+}
+
+export function RankCountUp({ value, className }: { value: number; className?: string }) {
+  return <CountUp value={value} format={(n) => `#${n}`} className={className} />;
 }
