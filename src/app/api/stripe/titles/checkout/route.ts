@@ -55,6 +55,11 @@ export async function GET(request: NextRequest) {
       mode: "payment",
       customer: customerId,
       line_items: [{ price: title.stripePriceId, quantity: 1 }],
+      billing_address_collection: "required",
+      invoice_creation: { enabled: true },
+      custom_text: {
+        submit: { message: "Paiement sécurisé et chiffré par Stripe. Une facture te sera envoyée par email." },
+      },
       success_url: `${appUrl}/app/titles?purchase=success`,
       cancel_url: `${appUrl}/app/titles?purchase=cancelled`,
       client_reference_id: user.id,

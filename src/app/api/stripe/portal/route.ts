@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, getOrCreatePortalConfigurationId } from "@/lib/stripe";
 import { getAppUrl } from "@/lib/utils";
 
 export async function GET() {
@@ -31,9 +31,11 @@ export async function GET() {
 
   try {
     const stripe = getStripe();
+    const configuration = await getOrCreatePortalConfigurationId();
     const session = await stripe.billingPortal.sessions.create({
       customer: data.stripe_customer_id,
       return_url: settingsUrl.toString(),
+      configuration,
       locale: "fr",
     });
     return NextResponse.redirect(session.url);

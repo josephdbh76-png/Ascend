@@ -375,6 +375,11 @@ function PayPalConnection({
         <form onSubmit={connect} className="flex flex-col gap-3 border-t border-border pt-3">
           <div className="rounded border border-border bg-card p-3 text-xs leading-relaxed text-text-muted">
             <p className="font-medium text-text-secondary">Comment connecter ton compte :</p>
+            <p className="mt-1.5 rounded border border-gold/30 bg-gold/5 p-2 text-gold">
+              Nécessite un compte PayPal <span className="font-medium">Business</span> — un compte Personnel
+              n&apos;a pas accès aux identifiants API en mode Live. Si besoin, passe ton compte en Business
+              gratuitement depuis les paramètres PayPal avant de continuer.
+            </p>
             <ol className="mt-1.5 list-decimal space-y-1 pl-4">
               <li>
                 Sur{" "}
@@ -386,7 +391,7 @@ function PayPalConnection({
                 >
                   developer.paypal.com
                 </a>
-                , crée une app REST (compte Live, pas Sandbox).
+                , connecte-toi avec ce compte Business puis crée une app REST (compte Live, pas Sandbox).
               </li>
               <li>Copie l&apos;ID client et le Secret de cette app ci-dessous.</li>
             </ol>
