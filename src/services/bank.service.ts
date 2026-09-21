@@ -2,33 +2,31 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  getGoCardlessAccessToken,
-  listInstitutions,
-  createRequisition,
-  getRequisition,
+  listAspsps,
+  startAuthorization,
+  createSession,
   getAccountTransactions,
-  type Institution,
-} from "@/lib/gocardless";
+  type Aspsp,
+} from "@/lib/enableBanking";
 import { setSourceRevenueForPeriod, refreshRevenueVerifiedFlag } from "@/services/revenue.service";
 import { getAppUrl } from "@/lib/utils";
 
 const CONSENT_VALID_DAYS = 90;
 
-export async function listBankInstitutions(country: string): Promise<Institution[]> {
-  const token = await getGoCardlessAccessToken();
-  return listInstitutions(token, country);
+export async function listBankInstitutions(country: string): Promise<Aspsp[]> {
+  return listAspsps(country);
 }
 
 /**
  * Starts a PSD2 consent flow for one bank. Returns the link the member's
  * browser must be redirected to (their own bank's login/consent screen) —
  * ASCEND never sees their banking credentials, only what the bank later
- * hands back through GoCardless once they've approved access.
+ * hands back through the aggregator once they've approved access.
  */
 export async function initiateBankConnection(
   userId: string,
-  institutionId: string,
   institutionName: string,
+  institutionCountry: string,
 ): Promise<{ link: string }> {
   const supabase = await createClient();
 
@@ -49,17 +47,16 @@ export async function initiateBankConnection(
     .single();
   if (error || !source) throw new Error(error?.message ?? "Impossible d'enregistrer la connexion bancaire.");
 
-  const token = await getGoCardlessAccessToken();
   const redirectUrl = `${getAppUrl()}/api/bank/callback?source_id=${source.id}`;
-  const requisition = await createRequisition(token, institutionId, redirectUrl, source.id);
+  const { url, authorizationId } = await startAuthorization(institutionName, institutionCountry, redirectUrl, source.id, userId);
 
   const { error: connectionError } = await supabase.from("bank_connections").upsert(
     {
       user_id: userId,
       revenue_source_id: source.id,
-      requisition_id: requisition.id,
-      institution_id: institutionId,
+      authorization_id: authorizationId,
       institution_name: institutionName,
+      institution_country: institutionCountry,
     },
     { onConflict: "revenue_source_id" },
   );
@@ -70,46 +67,42 @@ export async function initiateBankConnection(
     { onConflict: "revenue_source_id" },
   );
 
-  return { link: requisition.link };
+  return { link: url };
 }
 
 /**
- * Called from the callback route once the member has finished
- * authenticating with their bank — picks up the now-authorized account
- * ids and pulls the first batch of transactions.
+ * Called from the callback route once the member has approved access
+ * with their bank — exchanges the one-time code for a session and pulls
+ * the first batch of transactions.
  */
-export async function finalizeBankConnection(sourceId: string): Promise<{ userId: string }> {
+export async function finalizeBankConnection(sourceId: string, code: string): Promise<{ userId: string }> {
   const admin = createAdminClient();
   const { data: connection, error } = await admin
     .from("bank_connections")
-    .select("id, requisition_id, user_id")
+    .select("id, user_id")
     .eq("revenue_source_id", sourceId)
     .maybeSingle();
   if (error || !connection) throw new Error("Connexion bancaire introuvable.");
 
-  const token = await getGoCardlessAccessToken();
-  const requisition = await getRequisition(token, connection.requisition_id);
+  const { sessionId, accounts } = await createSession(code);
+  const accountIds = accounts.map((a) => a.uid);
 
   await admin
     .from("bank_connections")
     .update({
-      account_ids: requisition.accounts,
+      session_id: sessionId,
+      account_ids: accountIds,
       expires_at: new Date(Date.now() + CONSENT_VALID_DAYS * 24 * 60 * 60 * 1000).toISOString(),
     })
     .eq("revenue_source_id", sourceId);
 
   await admin.from("revenue_sources").update({ last_synced_at: new Date().toISOString() }).eq("id", sourceId);
 
-  if (requisition.accounts.length > 0) {
+  if (accountIds.length > 0) {
     await syncBankTransactions(connection.user_id, sourceId);
   }
 
   return { userId: connection.user_id };
-}
-
-function periodKeyFromDateString(dateStr: string): string {
-  const d = new Date(dateStr);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString().slice(0, 10);
 }
 
 /**
@@ -134,23 +127,21 @@ export async function syncBankTransactions(
   }
 
   try {
-    const token = await getGoCardlessAccessToken();
-
-    for (const accountId of connection.account_ids) {
-      const transactions = await getAccountTransactions(token, accountId);
-      const credits = transactions.filter((t) => parseFloat(t.transactionAmount.amount) > 0);
+    for (const accountUid of connection.account_ids) {
+      const transactions = await getAccountTransactions(accountUid);
+      const credits = transactions.filter((t) => t.credit_debit_indicator === "CRDT");
       if (credits.length === 0) continue;
 
       const rows = credits.map((t) => ({
         user_id: userId,
         revenue_source_id: revenueSourceId,
-        external_id: t.transactionId ?? t.internalTransactionId ?? `${accountId}-${t.bookingDate}-${t.transactionAmount.amount}`,
-        account_id: accountId,
-        booking_date: t.bookingDate,
-        amount_cents: Math.round(parseFloat(t.transactionAmount.amount) * 100),
-        currency: t.transactionAmount.currency,
-        counterparty: t.debtorName ?? t.creditorName ?? null,
-        description: t.remittanceInformationUnstructured ?? null,
+        external_id: t.transaction_id ?? t.entry_reference ?? `${accountUid}-${t.booking_date}-${t.transaction_amount.amount}`,
+        account_id: accountUid,
+        booking_date: t.booking_date ?? t.transaction_date ?? new Date().toISOString().slice(0, 10),
+        amount_cents: Math.round(parseFloat(t.transaction_amount.amount) * 100),
+        currency: t.transaction_amount.currency,
+        counterparty: t.debtor?.name ?? t.creditor?.name ?? null,
+        description: t.remittance_information?.join(" ") ?? null,
       }));
 
       const { error } = await admin
@@ -220,8 +211,9 @@ export async function setTransactionRevenueTag(userId: string, transactionId: st
     .single();
   if (error || !txn) throw new Error(error?.message ?? "Transaction introuvable.");
 
-  const period = periodKeyFromDateString(txn.booking_date);
-  const periodStart = period;
+  const period = new Date(Date.UTC(new Date(txn.booking_date).getUTCFullYear(), new Date(txn.booking_date).getUTCMonth(), 1))
+    .toISOString()
+    .slice(0, 10);
   const periodEnd = new Date(new Date(period).setUTCMonth(new Date(period).getUTCMonth() + 1)).toISOString().slice(0, 10);
 
   const admin = createAdminClient();
@@ -230,7 +222,7 @@ export async function setTransactionRevenueTag(userId: string, transactionId: st
     .select("amount_cents")
     .eq("revenue_source_id", txn.revenue_source_id)
     .eq("is_revenue", true)
-    .gte("booking_date", periodStart)
+    .gte("booking_date", period)
     .lt("booking_date", periodEnd);
 
   const amountCents = (tagged ?? []).reduce((sum, t) => sum + t.amount_cents, 0);

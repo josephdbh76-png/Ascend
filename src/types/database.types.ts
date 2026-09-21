@@ -627,9 +627,10 @@ export interface Database {
           id: string;
           user_id: string;
           revenue_source_id: string;
-          requisition_id: string;
-          institution_id: string;
+          authorization_id: string;
+          session_id: string | null;
           institution_name: string;
+          institution_country: string;
           account_ids: string[];
           expires_at: string | null;
           created_at: string;
@@ -638,9 +639,9 @@ export interface Database {
         Insert: Partial<Omit<Database["public"]["Tables"]["bank_connections"]["Row"], "id">> & {
           user_id: string;
           revenue_source_id: string;
-          requisition_id: string;
-          institution_id: string;
+          authorization_id: string;
           institution_name: string;
+          institution_country: string;
         };
         Update: Partial<Database["public"]["Tables"]["bank_connections"]["Row"]>;
         Relationships: [];

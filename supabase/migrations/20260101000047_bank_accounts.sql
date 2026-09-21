@@ -1,5 +1,6 @@
 -- Bank account verification via a PSD2 account-information aggregator
--- (GoCardless Bank Account Data) — the first of what should become a
+-- (Enable Banking — GoCardless Bank Account Data stopped accepting new
+-- signups before this shipped) — the first of what should become a
 -- general "connect an app" model, alongside Stripe/Shopify/manual.
 --
 -- Unlike Stripe/Shopify, a bank account mixes personal transfers,
@@ -12,17 +13,19 @@ alter table revenue_sources drop constraint revenue_sources_provider_check;
 alter table revenue_sources add constraint revenue_sources_provider_check
   check (provider in ('stripe', 'shopify', 'paypal', 'paddle', 'manual', 'bank'));
 
--- One row per bank connection. requisition_id is the aggregator's id for
--- the PSD2 consent session; account_ids fills in once the member finishes
--- authenticating with their bank. expires_at tracks the ~90-day PSD2
--- re-consent window (a European rule, not aggregator-specific).
+-- One row per bank connection. authorization_id is the aggregator's id
+-- for the initial PSD2 redirect; session_id is issued once the member
+-- finishes authenticating with their bank and account_ids fills in at
+-- the same time. expires_at tracks the ~90-day PSD2 re-consent window
+-- (a European rule, not aggregator-specific).
 create table bank_connections (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles (id) on delete cascade,
   revenue_source_id uuid not null references revenue_sources (id) on delete cascade,
-  requisition_id text not null,
-  institution_id text not null,
+  authorization_id text not null,
+  session_id text,
   institution_name text not null,
+  institution_country text not null,
   account_ids text[] not null default '{}',
   expires_at timestamptz,
   created_at timestamptz not null default now(),

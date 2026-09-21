@@ -17,7 +17,7 @@ import {
   disconnectBankSource,
   type BankTransactionRow,
 } from "@/services/bank.service";
-import type { Institution } from "@/lib/gocardless";
+import type { Aspsp } from "@/lib/enableBanking";
 import { submitRevenueDeclaration, calculateMonthlyGrowth, getCurrentRevenue } from "@/services/revenue.service";
 import { evaluateChallengeProgress } from "@/services/challenge.service";
 import { ACCENT_THEMES } from "@/lib/constants";
@@ -125,7 +125,7 @@ export async function connectShopifyAction(
   }
 }
 
-export async function listBankInstitutionsAction(country: string): Promise<ActionResult<Institution[]>> {
+export async function listBankInstitutionsAction(country: string): Promise<ActionResult<Aspsp[]>> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
@@ -137,13 +137,13 @@ export async function listBankInstitutionsAction(country: string): Promise<Actio
   }
 }
 
-export async function connectBankAction(institutionId: string, institutionName: string): Promise<ActionResult<{ link: string }>> {
+export async function connectBankAction(institutionName: string, institutionCountry: string): Promise<ActionResult<{ link: string }>> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
   try {
-    const result = await initiateBankConnection(userData.user.id, institutionId, institutionName);
+    const result = await initiateBankConnection(userData.user.id, institutionName, institutionCountry);
     return { success: true, data: result };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Impossible de connecter ce compte bancaire." };

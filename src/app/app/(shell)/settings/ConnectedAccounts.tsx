@@ -118,7 +118,7 @@ export function ConnectedAccounts({
       <BankConnection
         connected={bankConnected}
         status={bankStatus}
-        institutionName={bankInstitutionName}
+        connectedInstitutionName={bankInstitutionName}
         revenueSourceId={bankRevenueSourceId}
       />
 
@@ -282,17 +282,17 @@ function ShopifyConnection({
 function BankConnection({
   connected,
   status,
-  institutionName,
+  connectedInstitutionName,
   revenueSourceId,
 }: {
   connected: boolean;
   status: VerificationStatus;
-  institutionName: string | null;
+  connectedInstitutionName: string | null;
   revenueSourceId: string | null;
 }) {
   const [country, setCountry] = useState("FR");
-  const [institutions, setInstitutions] = useState<{ id: string; name: string }[]>([]);
-  const [institutionId, setInstitutionId] = useState("");
+  const [institutions, setInstitutions] = useState<{ name: string; country: string }[]>([]);
+  const [institutionName, setInstitutionName] = useState("");
   const [showPicker, setShowPicker] = useState(false);
   const [loadingInstitutions, setLoadingInstitutions] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -307,8 +307,8 @@ function BankConnection({
       const result = await listBankInstitutionsAction(country);
       if (cancelled) return;
       if (result.success) {
-        setInstitutions(result.data.map((i) => ({ id: i.id, name: i.name })));
-        setInstitutionId(result.data[0]?.id ?? "");
+        setInstitutions(result.data.map((i) => ({ name: i.name, country: i.country })));
+        setInstitutionName(result.data[0]?.name ?? "");
       } else {
         toast.show(result.error, "error");
       }
@@ -322,10 +322,10 @@ function BankConnection({
   }, [showPicker, country]);
 
   function connect() {
-    const institution = institutions.find((i) => i.id === institutionId);
+    const institution = institutions.find((i) => i.name === institutionName);
     if (!institution) return;
     startTransition(async () => {
-      const result = await connectBankAction(institution.id, institution.name);
+      const result = await connectBankAction(institution.name, institution.country);
       if (!result.success) return toast.show(result.error, "error");
       window.location.href = result.data.link;
     });
@@ -361,7 +361,7 @@ function BankConnection({
               <VerificationBadge status={status} />
             </div>
           ) : (
-            <p className="mt-1 text-xs text-text-muted">{institutionName ?? "Non connecté"}</p>
+            <p className="mt-1 text-xs text-text-muted">{connectedInstitutionName ?? "Non connecté"}</p>
           )}
         </div>
         {connected ? (
@@ -401,10 +401,10 @@ function BankConnection({
               </Select>
             </Field>
             <Field label="Banque">
-              <Select value={institutionId} onChange={(e) => setInstitutionId(e.target.value)} disabled={loadingInstitutions}>
+              <Select value={institutionName} onChange={(e) => setInstitutionName(e.target.value)} disabled={loadingInstitutions}>
                 {loadingInstitutions && <option>Chargement...</option>}
                 {institutions.map((i) => (
-                  <option key={i.id} value={i.id}>
+                  <option key={i.name} value={i.name}>
                     {i.name}
                   </option>
                 ))}
@@ -412,7 +412,7 @@ function BankConnection({
             </Field>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" onClick={connect} disabled={pending || !institutionId}>
+            <Button size="sm" onClick={connect} disabled={pending || !institutionName}>
               <Link2 className="h-3.5 w-3.5" /> Continuer vers ma banque
             </Button>
             <Button type="button" variant="ghost" size="sm" onClick={() => setShowPicker(false)} disabled={pending}>
