@@ -622,6 +622,20 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["referrals"]["Row"]>;
         Relationships: [];
       };
+      rate_limit_attempts: {
+        Row: {
+          id: string;
+          identifier: string;
+          action: string;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["rate_limit_attempts"]["Row"], "id">> & {
+          identifier: string;
+          action: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["rate_limit_attempts"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

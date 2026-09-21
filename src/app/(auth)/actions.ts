@@ -14,6 +14,7 @@ import { resolveReferrerId, recordReferral } from "@/services/referral.service";
 import { getResend, resendFromAddress } from "@/lib/resend";
 import { renderEmailHtml } from "@/lib/emailRender";
 import { welcomeEmailContent } from "@/lib/transactionalEmails";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 export type ActionResult<T = undefined> =
   | { success: true; data: T }
@@ -35,6 +36,12 @@ export async function createAccountAction(input: {
 }): Promise<ActionResult<{ needsEmailConfirmation: boolean }>> {
   if (input.website) {
     return { success: false, error: "Une erreur est survenue. Réessaie." };
+  }
+
+  const ip = await getClientIp();
+  const { allowed } = await checkRateLimit(ip, "signup", { maxAttempts: 8, windowMinutes: 60 });
+  if (!allowed) {
+    return { success: false, error: "Trop de tentatives d'inscription. Réessaie dans quelques minutes." };
   }
 
   const parsed = signupAccountSchema.safeParse(input);
@@ -193,6 +200,18 @@ export async function loginAction(input: {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
   }
 
+  // Two independent limits: by IP (catches a single source hammering many
+  // accounts) and by email (catches one targeted account being brute-forced
+  // from many different IPs) — either one tripping blocks the attempt.
+  const ip = await getClientIp();
+  const [byIp, byEmail] = await Promise.all([
+    checkRateLimit(ip, "login", { maxAttempts: 15, windowMinutes: 15 }),
+    checkRateLimit(`email:${parsed.data.email.toLowerCase()}`, "login", { maxAttempts: 6, windowMinutes: 15 }),
+  ]);
+  if (!byIp.allowed || !byEmail.allowed) {
+    return { success: false, error: "Trop de tentatives. Réessaie dans quelques minutes." };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
 
@@ -204,6 +223,12 @@ export async function loginAction(input: {
 }
 
 export async function requestPasswordResetAction(email: string): Promise<ActionResult> {
+  const ip = await getClientIp();
+  const { allowed } = await checkRateLimit(ip, "password_reset", { maxAttempts: 6, windowMinutes: 15 });
+  if (!allowed) {
+    return { success: false, error: "Trop de tentatives. Réessaie dans quelques minutes." };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${getAppUrl()}/reset-password/confirm`,
