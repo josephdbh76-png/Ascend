@@ -298,7 +298,7 @@ export function calculateMonthlyGrowth(current: number | null, previous: number 
 /** Checks one processor's connection + verification status, or null if that processor isn't connected at all. */
 async function getProcessorVerificationStatus(
   userId: string,
-  provider: "stripe" | "shopify" | "bank",
+  provider: "stripe" | "shopify" | "bank" | "paypal" | "lemonsqueezy",
 ): Promise<VerificationStatus | null> {
   const supabase = await createClient();
   const { data: source } = await supabase
@@ -328,6 +328,16 @@ export async function getShopifyVerificationStatus(userId: string): Promise<Veri
 /** The bank connection's own status — see getShopifyVerificationStatus. */
 export async function getBankVerificationStatus(userId: string): Promise<VerificationStatus> {
   return (await getProcessorVerificationStatus(userId, "bank")) ?? "unverified";
+}
+
+/** See getShopifyVerificationStatus. */
+export async function getPayPalVerificationStatus(userId: string): Promise<VerificationStatus> {
+  return (await getProcessorVerificationStatus(userId, "paypal")) ?? "unverified";
+}
+
+/** See getShopifyVerificationStatus. */
+export async function getLemonSqueezyVerificationStatus(userId: string): Promise<VerificationStatus> {
+  return (await getProcessorVerificationStatus(userId, "lemonsqueezy")) ?? "unverified";
 }
 
 /** Null when manual revenue was never even attempted — mirrors getProcessorVerificationStatus's contract for the other two processors. */
@@ -369,14 +379,16 @@ async function getManualVerificationStatus(userId: string): Promise<Verification
 const STATUS_PRIORITY: VerificationStatus[] = ["verified", "pending", "rejected", "disconnected", "unverified"];
 
 export async function getVerificationStatus(userId: string): Promise<VerificationStatus> {
-  const [stripeStatus, shopifyStatus, bankStatus, manualStatus] = await Promise.all([
+  const [stripeStatus, shopifyStatus, bankStatus, paypalStatus, lemonSqueezyStatus, manualStatus] = await Promise.all([
     getProcessorVerificationStatus(userId, "stripe"),
     getProcessorVerificationStatus(userId, "shopify"),
     getProcessorVerificationStatus(userId, "bank"),
+    getProcessorVerificationStatus(userId, "paypal"),
+    getProcessorVerificationStatus(userId, "lemonsqueezy"),
     getManualVerificationStatus(userId),
   ]);
 
-  const statuses = [stripeStatus, shopifyStatus, bankStatus, manualStatus].filter(
+  const statuses = [stripeStatus, shopifyStatus, bankStatus, paypalStatus, lemonSqueezyStatus, manualStatus].filter(
     (s): s is VerificationStatus => s != null,
   );
   if (statuses.length === 0) return "unverified";

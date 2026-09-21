@@ -8,6 +8,8 @@ import { toFriendlyAuthError } from "@/lib/errors";
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
 import { verifyAndSaveSiret } from "@/services/siret.service";
 import { connectShopifyWithCredentials } from "@/services/shopify.service";
+import { connectPayPalWithCredentials } from "@/services/paypal.service";
+import { connectLemonSqueezyWithKey } from "@/services/lemonsqueezy.service";
 import {
   listBankInstitutions,
   initiateBankConnection,
@@ -122,6 +124,39 @@ export async function connectShopifyAction(
     };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Impossible de connecter Shopify." };
+  }
+}
+
+export async function connectPayPalAction(
+  clientId: string,
+  clientSecret: string,
+): Promise<ActionResult<{ isFirstVerification: boolean; monthsSynced: number }>> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  try {
+    const { syncResult } = await connectPayPalWithCredentials(userData.user.id, clientId.trim(), clientSecret.trim());
+    if (!syncResult.success) return { success: false, error: syncResult.error };
+    return { success: true, data: { isFirstVerification: syncResult.isFirstVerification, monthsSynced: syncResult.monthsSynced } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Impossible de connecter PayPal." };
+  }
+}
+
+export async function connectLemonSqueezyAction(
+  apiKey: string,
+): Promise<ActionResult<{ isFirstVerification: boolean; monthsSynced: number }>> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  try {
+    const { syncResult } = await connectLemonSqueezyWithKey(userData.user.id, apiKey.trim());
+    if (!syncResult.success) return { success: false, error: syncResult.error };
+    return { success: true, data: { isFirstVerification: syncResult.isFirstVerification, monthsSynced: syncResult.monthsSynced } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Impossible de connecter Lemon Squeezy." };
   }
 }
 

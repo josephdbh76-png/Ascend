@@ -137,7 +137,7 @@ export function SecuritySettings() {
 
   if (factor) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-md border border-success/30 bg-success/5 p-4">
+      <div className="flex flex-col items-start gap-3 rounded-md border border-success/30 bg-success/5 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2.5 text-sm text-success">
           <ShieldCheck className="h-4 w-4 shrink-0" />
           Double authentification activée
@@ -150,7 +150,7 @@ export function SecuritySettings() {
   }
 
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-xs text-text-secondary">
         Protège ton compte avec un code à usage unique en plus de ton mot de passe.
       </p>

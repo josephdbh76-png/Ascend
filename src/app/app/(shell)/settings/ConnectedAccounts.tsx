@@ -1,14 +1,22 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { RefreshCw, Unlink, Link2, Crown, ShoppingBag, Landmark, ListChecks } from "lucide-react";
+import { RefreshCw, Unlink, Link2, Crown, ShoppingBag, Landmark, ListChecks, Wallet, Citrus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select } from "@/components/ui/Input";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";
 import { ManualRevenueCard } from "./ManualRevenueCard";
-import { connectShopifyAction, listBankInstitutionsAction, connectBankAction, syncBankAction, disconnectBankAction } from "./actions";
+import {
+  connectShopifyAction,
+  connectPayPalAction,
+  connectLemonSqueezyAction,
+  listBankInstitutionsAction,
+  connectBankAction,
+  syncBankAction,
+  disconnectBankAction,
+} from "./actions";
 import type { VerificationStatus } from "@/types/database.types";
 import type { RevenueDeclaration } from "@/services/revenue.service";
 
@@ -34,6 +42,10 @@ export function ConnectedAccounts({
   bankStatus,
   bankInstitutionName,
   bankRevenueSourceId,
+  paypalConnected,
+  paypalStatus,
+  lemonSqueezyConnected,
+  lemonSqueezyStatus,
 }: {
   connected: boolean;
   status: VerificationStatus;
@@ -46,6 +58,10 @@ export function ConnectedAccounts({
   bankStatus: VerificationStatus;
   bankInstitutionName: string | null;
   bankRevenueSourceId: string | null;
+  paypalConnected: boolean;
+  paypalStatus: VerificationStatus;
+  lemonSqueezyConnected: boolean;
+  lemonSqueezyStatus: VerificationStatus;
 }) {
   const [pending, startTransition] = useTransition();
   const toast = useToast();
@@ -122,14 +138,16 @@ export function ConnectedAccounts({
         revenueSourceId={bankRevenueSourceId}
       />
 
+      <PayPalConnection connected={paypalConnected} status={paypalStatus} />
+
+      <LemonSqueezyConnection connected={lemonSqueezyConnected} status={lemonSqueezyStatus} />
+
       <ManualRevenueCard declarations={declarations} />
 
-      {(["PayPal", "Paddle"] as const).map((name) => (
-        <div key={name} className="flex items-center justify-between rounded-md border border-border bg-card p-4 opacity-60">
-          <p className="text-sm font-medium text-text-secondary">{name}</p>
-          <span className="text-xs font-medium uppercase tracking-wide text-text-muted">Bientôt disponible</span>
-        </div>
-      ))}
+      <div className="flex flex-col items-start gap-1 rounded-md border border-border bg-card p-4 opacity-60 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <p className="text-sm font-medium text-text-secondary">Paddle</p>
+        <span className="text-xs font-medium uppercase tracking-wide text-text-muted">Bientôt disponible</span>
+      </div>
     </div>
   );
 }
@@ -267,6 +285,224 @@ function ShopifyConnection({
           </div>
           <div className="flex items-center gap-2">
             <Button type="submit" size="sm" disabled={pending || !shop.trim() || !clientId.trim() || !clientSecret.trim()}>
+              <Link2 className="h-3.5 w-3.5" /> Vérifier et connecter
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)} disabled={pending}>
+              Annuler
+            </Button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function PayPalConnection({
+  connected,
+  status,
+}: {
+  connected: boolean;
+  status: VerificationStatus;
+}) {
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const toast = useToast();
+  const router = useRouter();
+
+  function sync() {
+    startTransition(async () => {
+      const res = await fetch("/api/paypal/sync", { method: "POST" });
+      const body = await res.json();
+      if (!res.ok) return toast.show(body.error ?? "La synchronisation a échoué.", "error");
+      if (body.isFirstVerification) return router.push("/app/verification");
+      toast.show(`${body.monthsSynced} mois de revenus synchronisés.`, "success");
+      router.refresh();
+    });
+  }
+
+  function disconnect() {
+    startTransition(async () => {
+      const res = await fetch("/api/paypal/disconnect", { method: "POST" });
+      if (!res.ok) return toast.show("Impossible de déconnecter PayPal.", "error");
+      toast.show("PayPal déconnecté.", "success");
+      router.refresh();
+    });
+  }
+
+  function connect(e: React.FormEvent) {
+    e.preventDefault();
+    startTransition(async () => {
+      const result = await connectPayPalAction(clientId, clientSecret);
+      if (!result.success) return toast.show(result.error, "error");
+      if (result.data.isFirstVerification) return router.push("/app/verification");
+      toast.show(`PayPal connecté — ${result.data.monthsSynced} mois de revenus synchronisés.`, "success");
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-medium text-text-primary">PayPal</p>
+          {connected ? (
+            <div className="mt-1">
+              <VerificationBadge status={status} />
+            </div>
+          ) : (
+            <p className="mt-1 text-xs text-text-muted">Non connecté</p>
+          )}
+        </div>
+        {connected ? (
+          <div className="flex shrink-0 items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={sync} disabled={pending}>
+              <RefreshCw className="h-3.5 w-3.5" /> Resynchroniser
+            </Button>
+            <Button variant="danger" size="sm" onClick={disconnect} disabled={pending}>
+              <Unlink className="h-3.5 w-3.5" /> Déconnecter
+            </Button>
+          </div>
+        ) : !showForm ? (
+          <Button size="sm" onClick={() => setShowForm(true)} className="shrink-0">
+            <Wallet className="h-3.5 w-3.5" /> Connecter
+          </Button>
+        ) : null}
+      </div>
+
+      {!connected && showForm && (
+        <form onSubmit={connect} className="flex flex-col gap-3 border-t border-border pt-3">
+          <div className="rounded border border-border bg-card p-3 text-xs leading-relaxed text-text-muted">
+            <p className="font-medium text-text-secondary">Comment connecter ton compte :</p>
+            <ol className="mt-1.5 list-decimal space-y-1 pl-4">
+              <li>
+                Sur{" "}
+                <a
+                  href="https://developer.paypal.com/dashboard/applications/live"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gold hover:underline"
+                >
+                  developer.paypal.com
+                </a>
+                , crée une app REST (compte Live, pas Sandbox).
+              </li>
+              <li>Copie l&apos;ID client et le Secret de cette app ci-dessous.</li>
+            </ol>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field label="ID client">
+              <Input value={clientId} onChange={(e) => setClientId(e.target.value)} required />
+            </Field>
+            <Field label="Secret">
+              <Input type="password" value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} required />
+            </Field>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button type="submit" size="sm" disabled={pending || !clientId.trim() || !clientSecret.trim()}>
+              <Link2 className="h-3.5 w-3.5" /> Vérifier et connecter
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)} disabled={pending}>
+              Annuler
+            </Button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function LemonSqueezyConnection({
+  connected,
+  status,
+}: {
+  connected: boolean;
+  status: VerificationStatus;
+}) {
+  const [apiKey, setApiKey] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const toast = useToast();
+  const router = useRouter();
+
+  function sync() {
+    startTransition(async () => {
+      const res = await fetch("/api/lemonsqueezy/sync", { method: "POST" });
+      const body = await res.json();
+      if (!res.ok) return toast.show(body.error ?? "La synchronisation a échoué.", "error");
+      if (body.isFirstVerification) return router.push("/app/verification");
+      toast.show(`${body.monthsSynced} mois de revenus synchronisés.`, "success");
+      router.refresh();
+    });
+  }
+
+  function disconnect() {
+    startTransition(async () => {
+      const res = await fetch("/api/lemonsqueezy/disconnect", { method: "POST" });
+      if (!res.ok) return toast.show("Impossible de déconnecter Lemon Squeezy.", "error");
+      toast.show("Lemon Squeezy déconnecté.", "success");
+      router.refresh();
+    });
+  }
+
+  function connect(e: React.FormEvent) {
+    e.preventDefault();
+    startTransition(async () => {
+      const result = await connectLemonSqueezyAction(apiKey);
+      if (!result.success) return toast.show(result.error, "error");
+      if (result.data.isFirstVerification) return router.push("/app/verification");
+      toast.show(`Lemon Squeezy connecté — ${result.data.monthsSynced} mois de revenus synchronisés.`, "success");
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-medium text-text-primary">Lemon Squeezy</p>
+          {connected ? (
+            <div className="mt-1">
+              <VerificationBadge status={status} />
+            </div>
+          ) : (
+            <p className="mt-1 text-xs text-text-muted">Non connecté</p>
+          )}
+        </div>
+        {connected ? (
+          <div className="flex shrink-0 items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={sync} disabled={pending}>
+              <RefreshCw className="h-3.5 w-3.5" /> Resynchroniser
+            </Button>
+            <Button variant="danger" size="sm" onClick={disconnect} disabled={pending}>
+              <Unlink className="h-3.5 w-3.5" /> Déconnecter
+            </Button>
+          </div>
+        ) : !showForm ? (
+          <Button size="sm" onClick={() => setShowForm(true)} className="shrink-0">
+            <Citrus className="h-3.5 w-3.5" /> Connecter
+          </Button>
+        ) : null}
+      </div>
+
+      {!connected && showForm && (
+        <form onSubmit={connect} className="flex flex-col gap-3 border-t border-border pt-3">
+          <div className="rounded border border-border bg-card p-3 text-xs leading-relaxed text-text-muted">
+            <p className="font-medium text-text-secondary">Comment connecter ta boutique :</p>
+            <ol className="mt-1.5 list-decimal space-y-1 pl-4">
+              <li>
+                Dans ton compte Lemon Squeezy, va dans{" "}
+                <span className="text-text-secondary">Réglages → API</span>.
+              </li>
+              <li>Crée une clé API et copie-la ci-dessous.</li>
+            </ol>
+          </div>
+          <Field label="Clé API">
+            <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="eyJ..." required />
+          </Field>
+          <div className="flex items-center gap-2">
+            <Button type="submit" size="sm" disabled={pending || !apiKey.trim()}>
               <Link2 className="h-3.5 w-3.5" /> Vérifier et connecter
             </Button>
             <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)} disabled={pending}>

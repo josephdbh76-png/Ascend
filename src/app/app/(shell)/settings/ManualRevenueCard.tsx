@@ -59,7 +59,7 @@ export function ManualRevenueCard({ declarations }: { declarations: RevenueDecla
 
   return (
     <div id="revenus" className="scroll-mt-6 rounded-md border border-border-strong bg-card-elevated p-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-text-primary">Déclaration manuelle</p>
           <p className="mt-1 text-xs text-text-muted">

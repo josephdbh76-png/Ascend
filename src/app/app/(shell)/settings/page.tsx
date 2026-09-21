@@ -7,6 +7,8 @@ import {
   getVerificationStatus,
   getShopifyVerificationStatus,
   getBankVerificationStatus,
+  getPayPalVerificationStatus,
+  getLemonSqueezyVerificationStatus,
   getRevenueDeclarations,
 } from "@/services/revenue.service";
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
@@ -46,9 +48,13 @@ export default async function SettingsPage() {
     { data: source },
     { data: shopifySource },
     { data: bankSource },
+    { data: paypalSource },
+    { data: lemonSqueezySource },
     verificationStatus,
     shopifyStatus,
     bankStatus,
+    paypalStatus,
+    lemonSqueezyStatus,
     subscription,
     isAdmin,
     referralStats,
@@ -73,9 +79,13 @@ export default async function SettingsPage() {
       .eq("user_id", user.id)
       .eq("provider", "bank")
       .maybeSingle(),
+    supabase.from("revenue_sources").select("status").eq("user_id", user.id).eq("provider", "paypal").maybeSingle(),
+    supabase.from("revenue_sources").select("status").eq("user_id", user.id).eq("provider", "lemonsqueezy").maybeSingle(),
     getVerificationStatus(user.id),
     getShopifyVerificationStatus(user.id),
     getBankVerificationStatus(user.id),
+    getPayPalVerificationStatus(user.id),
+    getLemonSqueezyVerificationStatus(user.id),
     getSubscription(user.id),
     isCurrentUserAdmin(),
     getReferralStats(user.id),
@@ -198,6 +208,10 @@ export default async function SettingsPage() {
           bankStatus={bankStatus}
           bankInstitutionName={bankSource?.external_account_id ?? null}
           bankRevenueSourceId={bankSource?.id ?? null}
+          paypalConnected={paypalSource?.status === "connected"}
+          paypalStatus={paypalStatus}
+          lemonSqueezyConnected={lemonSqueezySource?.status === "connected"}
+          lemonSqueezyStatus={lemonSqueezyStatus}
         />
       </Card>
 

@@ -57,7 +57,7 @@ export function AchievementCard({
         <p className="mt-1 text-xs text-text-secondary">{description}</p>
       </div>
       {earned && earnedAt && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col items-start gap-2">
           <p className="text-[11px] text-text-muted">Débloqué {timeAgo(earnedAt)}</p>
           {shareName && <ShareCardButton title={name} name={shareName} rarity={rarity} />}
         </div>
