@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CreditCard, ShoppingBag, FileCheck2, UserCheck, ShieldCheck, EyeOff } from "lucide-react";
+import { CreditCard, ShoppingBag, FileCheck2, UserCheck, ShieldCheck, EyeOff, Landmark } from "lucide-react";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/Button";
@@ -22,6 +22,12 @@ const METHODS = [
     title: "Shopify",
     description:
       "Même principe pour les boutiques Shopify : le chiffre d'affaires est calculé à partir des commandes réelles de ta boutique, récupérées directement via l'API de ta boutique.",
+  },
+  {
+    icon: Landmark,
+    title: "Compte bancaire",
+    description:
+      "Connecte ton compte bancaire via un agrégateur agréé (accès en lecture seule, tes identifiants bancaires ne sont jamais vus par ASCEND) et indique toi-même quels virements entrants sont ton revenu professionnel — le reste (virements personnels, remboursements) n'est jamais compté.",
   },
   {
     icon: FileCheck2,

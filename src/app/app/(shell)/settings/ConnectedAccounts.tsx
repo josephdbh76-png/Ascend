@@ -1,16 +1,26 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { RefreshCw, Unlink, Link2, Crown, ShoppingBag } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { RefreshCw, Unlink, Link2, Crown, ShoppingBag, Landmark, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Field, Input } from "@/components/ui/Input";
+import { Field, Input, Select } from "@/components/ui/Input";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";
 import { ManualRevenueCard } from "./ManualRevenueCard";
-import { connectShopifyAction } from "./actions";
+import { connectShopifyAction, listBankInstitutionsAction, connectBankAction, syncBankAction, disconnectBankAction } from "./actions";
 import type { VerificationStatus } from "@/types/database.types";
 import type { RevenueDeclaration } from "@/services/revenue.service";
+
+const BANK_COUNTRIES = [
+  { value: "FR", label: "France" },
+  { value: "DE", label: "Allemagne" },
+  { value: "ES", label: "Espagne" },
+  { value: "IT", label: "Italie" },
+  { value: "NL", label: "Pays-Bas" },
+  { value: "BE", label: "Belgique" },
+  { value: "GB", label: "Royaume-Uni" },
+];
 
 export function ConnectedAccounts({
   connected,
@@ -20,6 +30,10 @@ export function ConnectedAccounts({
   shopifyConnected,
   shopifyStatus,
   shopifyDomain,
+  bankConnected,
+  bankStatus,
+  bankInstitutionName,
+  bankRevenueSourceId,
 }: {
   connected: boolean;
   status: VerificationStatus;
@@ -28,6 +42,10 @@ export function ConnectedAccounts({
   shopifyConnected: boolean;
   shopifyStatus: VerificationStatus;
   shopifyDomain: string | null;
+  bankConnected: boolean;
+  bankStatus: VerificationStatus;
+  bankInstitutionName: string | null;
+  bankRevenueSourceId: string | null;
 }) {
   const [pending, startTransition] = useTransition();
   const toast = useToast();
@@ -96,6 +114,13 @@ export function ConnectedAccounts({
       </div>
 
       <ShopifyConnection connected={shopifyConnected} status={shopifyStatus} domain={shopifyDomain} />
+
+      <BankConnection
+        connected={bankConnected}
+        status={bankStatus}
+        institutionName={bankInstitutionName}
+        revenueSourceId={bankRevenueSourceId}
+      />
 
       <ManualRevenueCard declarations={declarations} />
 
@@ -249,6 +274,152 @@ function ShopifyConnection({
             </Button>
           </div>
         </form>
+      )}
+    </div>
+  );
+}
+
+function BankConnection({
+  connected,
+  status,
+  institutionName,
+  revenueSourceId,
+}: {
+  connected: boolean;
+  status: VerificationStatus;
+  institutionName: string | null;
+  revenueSourceId: string | null;
+}) {
+  const [country, setCountry] = useState("FR");
+  const [institutions, setInstitutions] = useState<{ id: string; name: string }[]>([]);
+  const [institutionId, setInstitutionId] = useState("");
+  const [showPicker, setShowPicker] = useState(false);
+  const [loadingInstitutions, setLoadingInstitutions] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const toast = useToast();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!showPicker) return;
+    let cancelled = false;
+    async function load() {
+      setLoadingInstitutions(true);
+      const result = await listBankInstitutionsAction(country);
+      if (cancelled) return;
+      if (result.success) {
+        setInstitutions(result.data.map((i) => ({ id: i.id, name: i.name })));
+        setInstitutionId(result.data[0]?.id ?? "");
+      } else {
+        toast.show(result.error, "error");
+      }
+      setLoadingInstitutions(false);
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPicker, country]);
+
+  function connect() {
+    const institution = institutions.find((i) => i.id === institutionId);
+    if (!institution) return;
+    startTransition(async () => {
+      const result = await connectBankAction(institution.id, institution.name);
+      if (!result.success) return toast.show(result.error, "error");
+      window.location.href = result.data.link;
+    });
+  }
+
+  function sync() {
+    if (!revenueSourceId) return;
+    startTransition(async () => {
+      const result = await syncBankAction(revenueSourceId);
+      if (!result.success) return toast.show(result.error, "error");
+      toast.show("Transactions synchronisées.", "success");
+      router.refresh();
+    });
+  }
+
+  function disconnect() {
+    if (!revenueSourceId) return;
+    startTransition(async () => {
+      const result = await disconnectBankAction(revenueSourceId);
+      if (!result.success) return toast.show(result.error, "error");
+      toast.show("Compte bancaire déconnecté.", "success");
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-medium text-text-primary">Compte bancaire</p>
+          {connected ? (
+            <div className="mt-1">
+              <VerificationBadge status={status} />
+            </div>
+          ) : (
+            <p className="mt-1 text-xs text-text-muted">{institutionName ?? "Non connecté"}</p>
+          )}
+        </div>
+        {connected ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button href="/app/settings/transactions" variant="secondary" size="sm">
+              <ListChecks className="h-3.5 w-3.5" /> Mes transactions
+            </Button>
+            <Button variant="secondary" size="sm" onClick={sync} disabled={pending}>
+              <RefreshCw className="h-3.5 w-3.5" /> Resynchroniser
+            </Button>
+            <Button variant="danger" size="sm" onClick={disconnect} disabled={pending}>
+              <Unlink className="h-3.5 w-3.5" /> Déconnecter
+            </Button>
+          </div>
+        ) : !showPicker ? (
+          <Button size="sm" onClick={() => setShowPicker(true)} className="shrink-0">
+            <Landmark className="h-3.5 w-3.5" /> Connecter
+          </Button>
+        ) : null}
+      </div>
+
+      {!connected && showPicker && (
+        <div className="flex flex-col gap-3 border-t border-border pt-3">
+          <p className="text-xs text-text-muted">
+            Tu seras redirigé·e vers ta banque pour approuver l&apos;accès (lecture seule) — ASCEND ne voit
+            jamais tes identifiants bancaires. Ensuite, tu choisis toi-même quelles transactions comptent
+            comme du revenu.
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field label="Pays">
+              <Select value={country} onChange={(e) => setCountry(e.target.value)}>
+                {BANK_COUNTRIES.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Banque">
+              <Select value={institutionId} onChange={(e) => setInstitutionId(e.target.value)} disabled={loadingInstitutions}>
+                {loadingInstitutions && <option>Chargement...</option>}
+                {institutions.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={connect} disabled={pending || !institutionId}>
+              <Link2 className="h-3.5 w-3.5" /> Continuer vers ma banque
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setShowPicker(false)} disabled={pending}>
+              Annuler
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );

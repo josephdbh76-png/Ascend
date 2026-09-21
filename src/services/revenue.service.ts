@@ -188,6 +188,44 @@ export async function getRevenueDeclarations(userId: string, period: string): Pr
  * revenue_snapshots (what the dashboard, milestones and challenges read)
  * never counts a pending or rejected claim.
  */
+/**
+ * The shared "set this source's total for this period, or clear it if
+ * there's nothing" primitive — unlike upsertMonthlyRevenue (Stripe/Shopify,
+ * which only ever call it for periods that had real activity), this is for
+ * sources whose total for a period can legitimately drop to exactly zero
+ * after the fact: a rejected manual declaration, or a member un-tagging
+ * the last bank transaction they'd marked as revenue for that month.
+ */
+export async function setSourceRevenueForPeriod(
+  userId: string,
+  revenueSourceId: string,
+  period: string,
+  amountCents: number,
+  extra?: { transactionCount?: number | null; customerCount?: number | null },
+): Promise<void> {
+  const admin = createAdminClient();
+
+  if (amountCents > 0) {
+    await admin.from("revenue_source_snapshots").upsert(
+      {
+        user_id: userId,
+        revenue_source_id: revenueSourceId,
+        period,
+        amount_cents: amountCents,
+        currency: "EUR",
+        is_verified: true,
+        transaction_count: extra?.transactionCount ?? null,
+        customer_count: extra?.customerCount ?? null,
+      },
+      { onConflict: "revenue_source_id,period" },
+    );
+  } else {
+    await admin.from("revenue_source_snapshots").delete().eq("revenue_source_id", revenueSourceId).eq("period", period);
+  }
+
+  await recomputeBlendedSnapshot(userId, period);
+}
+
 async function recomputeManualSnapshot(userId: string, period: string) {
   const admin = createAdminClient();
 
@@ -207,23 +245,7 @@ async function recomputeManualSnapshot(userId: string, period: string) {
     .eq("review_status", "approved");
   const sum = (approved ?? []).reduce((total, d) => total + d.amount_cents, 0);
 
-  if (sum > 0) {
-    await admin.from("revenue_source_snapshots").upsert(
-      {
-        user_id: userId,
-        revenue_source_id: source.id,
-        period,
-        amount_cents: sum,
-        currency: "EUR",
-        is_verified: true,
-      },
-      { onConflict: "revenue_source_id,period" },
-    );
-  } else {
-    await admin.from("revenue_source_snapshots").delete().eq("revenue_source_id", source.id).eq("period", period);
-  }
-
-  await recomputeBlendedSnapshot(userId, period);
+  await setSourceRevenueForPeriod(userId, source.id, period, sum);
 }
 
 export async function getManualRevenueSource(userId: string) {
@@ -276,7 +298,7 @@ export function calculateMonthlyGrowth(current: number | null, previous: number 
 /** Checks one processor's connection + verification status, or null if that processor isn't connected at all. */
 async function getProcessorVerificationStatus(
   userId: string,
-  provider: "stripe" | "shopify",
+  provider: "stripe" | "shopify" | "bank",
 ): Promise<VerificationStatus | null> {
   const supabase = await createClient();
   const { data: source } = await supabase
@@ -301,6 +323,11 @@ async function getProcessorVerificationStatus(
 /** The Shopify connection's own status, independent of any other source — used to render its row in Réglages accurately even when Stripe (checked first) is what drives the account's overall verification status. */
 export async function getShopifyVerificationStatus(userId: string): Promise<VerificationStatus> {
   return (await getProcessorVerificationStatus(userId, "shopify")) ?? "unverified";
+}
+
+/** The bank connection's own status — see getShopifyVerificationStatus. */
+export async function getBankVerificationStatus(userId: string): Promise<VerificationStatus> {
+  return (await getProcessorVerificationStatus(userId, "bank")) ?? "unverified";
 }
 
 /** Null when manual revenue was never even attempted — mirrors getProcessorVerificationStatus's contract for the other two processors. */
@@ -342,13 +369,14 @@ async function getManualVerificationStatus(userId: string): Promise<Verification
 const STATUS_PRIORITY: VerificationStatus[] = ["verified", "pending", "rejected", "disconnected", "unverified"];
 
 export async function getVerificationStatus(userId: string): Promise<VerificationStatus> {
-  const [stripeStatus, shopifyStatus, manualStatus] = await Promise.all([
+  const [stripeStatus, shopifyStatus, bankStatus, manualStatus] = await Promise.all([
     getProcessorVerificationStatus(userId, "stripe"),
     getProcessorVerificationStatus(userId, "shopify"),
+    getProcessorVerificationStatus(userId, "bank"),
     getManualVerificationStatus(userId),
   ]);
 
-  const statuses = [stripeStatus, shopifyStatus, manualStatus].filter(
+  const statuses = [stripeStatus, shopifyStatus, bankStatus, manualStatus].filter(
     (s): s is VerificationStatus => s != null,
   );
   if (statuses.length === 0) return "unverified";

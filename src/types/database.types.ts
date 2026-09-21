@@ -4,7 +4,7 @@
 
 export type OnboardingStep = "profile" | "business" | "bio" | "revenue" | "done";
 export type RevenueVisibility = "exact" | "range" | "private";
-export type SourceProvider = "stripe" | "shopify" | "paypal" | "paddle" | "manual";
+export type SourceProvider = "stripe" | "shopify" | "paypal" | "paddle" | "manual" | "bank";
 export type SourceStatus = "connected" | "disconnected" | "error";
 export type VerificationStatus = "unverified" | "verified" | "pending" | "rejected" | "error" | "disconnected";
 export type RevenueReviewStatus = "pending" | "approved" | "rejected";
@@ -620,6 +620,55 @@ export interface Database {
           referred_id: string;
         };
         Update: Partial<Database["public"]["Tables"]["referrals"]["Row"]>;
+        Relationships: [];
+      };
+      bank_connections: {
+        Row: {
+          id: string;
+          user_id: string;
+          revenue_source_id: string;
+          requisition_id: string;
+          institution_id: string;
+          institution_name: string;
+          account_ids: string[];
+          expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["bank_connections"]["Row"], "id">> & {
+          user_id: string;
+          revenue_source_id: string;
+          requisition_id: string;
+          institution_id: string;
+          institution_name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["bank_connections"]["Row"]>;
+        Relationships: [];
+      };
+      bank_transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          revenue_source_id: string;
+          external_id: string;
+          account_id: string;
+          booking_date: string;
+          amount_cents: number;
+          currency: string;
+          counterparty: string | null;
+          description: string | null;
+          is_revenue: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["bank_transactions"]["Row"], "id">> & {
+          user_id: string;
+          revenue_source_id: string;
+          external_id: string;
+          account_id: string;
+          booking_date: string;
+          amount_cents: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["bank_transactions"]["Row"]>;
         Relationships: [];
       };
       rate_limit_attempts: {

@@ -3,7 +3,12 @@ import { Suspense } from "react";
 import { ShieldCheck, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profile.service";
-import { getVerificationStatus, getShopifyVerificationStatus, getRevenueDeclarations } from "@/services/revenue.service";
+import {
+  getVerificationStatus,
+  getShopifyVerificationStatus,
+  getBankVerificationStatus,
+  getRevenueDeclarations,
+} from "@/services/revenue.service";
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
 import { isCurrentUserAdmin } from "@/services/admin.service";
 import { getReferralStats, referralLink } from "@/services/referral.service";
@@ -34,28 +39,47 @@ export default async function SettingsPage() {
   const profile = await getProfile(user.id);
   if (!profile) return null;
 
-  const [{ data: business }, { data: privacy }, { data: marketing }, { data: source }, { data: shopifySource }, verificationStatus, shopifyStatus, subscription, isAdmin, referralStats] =
-    await Promise.all([
-      supabase
-        .from("businesses")
-        .select("name, category, website, siret, legal_name")
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      supabase.from("privacy_settings").select("*").eq("user_id", user.id).maybeSingle(),
-      supabase.from("profiles").select("marketing_consent, email_notifications_enabled").eq("id", user.id).maybeSingle(),
-      supabase.from("revenue_sources").select("status").eq("user_id", user.id).eq("provider", "stripe").maybeSingle(),
-      supabase
-        .from("revenue_sources")
-        .select("status, external_account_id")
-        .eq("user_id", user.id)
-        .eq("provider", "shopify")
-        .maybeSingle(),
-      getVerificationStatus(user.id),
-      getShopifyVerificationStatus(user.id),
-      getSubscription(user.id),
-      isCurrentUserAdmin(),
-      getReferralStats(user.id),
-    ]);
+  const [
+    { data: business },
+    { data: privacy },
+    { data: marketing },
+    { data: source },
+    { data: shopifySource },
+    { data: bankSource },
+    verificationStatus,
+    shopifyStatus,
+    bankStatus,
+    subscription,
+    isAdmin,
+    referralStats,
+  ] = await Promise.all([
+    supabase
+      .from("businesses")
+      .select("name, category, website, siret, legal_name")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase.from("privacy_settings").select("*").eq("user_id", user.id).maybeSingle(),
+    supabase.from("profiles").select("marketing_consent, email_notifications_enabled").eq("id", user.id).maybeSingle(),
+    supabase.from("revenue_sources").select("status").eq("user_id", user.id).eq("provider", "stripe").maybeSingle(),
+    supabase
+      .from("revenue_sources")
+      .select("status, external_account_id")
+      .eq("user_id", user.id)
+      .eq("provider", "shopify")
+      .maybeSingle(),
+    supabase
+      .from("revenue_sources")
+      .select("id, status, external_account_id")
+      .eq("user_id", user.id)
+      .eq("provider", "bank")
+      .maybeSingle(),
+    getVerificationStatus(user.id),
+    getShopifyVerificationStatus(user.id),
+    getBankVerificationStatus(user.id),
+    getSubscription(user.id),
+    isCurrentUserAdmin(),
+    getReferralStats(user.id),
+  ]);
 
   const now = new Date();
   const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
@@ -158,7 +182,7 @@ export default async function SettingsPage() {
         />
       </Card>
 
-      <Card className="p-6" elevated>
+      <Card id="comptes-connectes" className="scroll-mt-6 p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
           Comptes connectés
         </h2>
@@ -170,6 +194,10 @@ export default async function SettingsPage() {
           shopifyConnected={shopifySource?.status === "connected"}
           shopifyStatus={shopifyStatus}
           shopifyDomain={shopifySource?.external_account_id ?? null}
+          bankConnected={bankSource?.status === "connected"}
+          bankStatus={bankStatus}
+          bankInstitutionName={bankSource?.external_account_id ?? null}
+          bankRevenueSourceId={bankSource?.id ?? null}
         />
       </Card>
 

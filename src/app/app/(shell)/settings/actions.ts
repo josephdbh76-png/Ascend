@@ -8,6 +8,16 @@ import { toFriendlyAuthError } from "@/lib/errors";
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
 import { verifyAndSaveSiret } from "@/services/siret.service";
 import { connectShopifyWithCredentials } from "@/services/shopify.service";
+import {
+  listBankInstitutions,
+  initiateBankConnection,
+  syncBankTransactions,
+  listBankTransactions,
+  setTransactionRevenueTag,
+  disconnectBankSource,
+  type BankTransactionRow,
+} from "@/services/bank.service";
+import type { Institution } from "@/lib/gocardless";
 import { submitRevenueDeclaration, calculateMonthlyGrowth, getCurrentRevenue } from "@/services/revenue.service";
 import { evaluateChallengeProgress } from "@/services/challenge.service";
 import { ACCENT_THEMES } from "@/lib/constants";
@@ -113,6 +123,75 @@ export async function connectShopifyAction(
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Impossible de connecter Shopify." };
   }
+}
+
+export async function listBankInstitutionsAction(country: string): Promise<ActionResult<Institution[]>> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  try {
+    return { success: true, data: await listBankInstitutions(country) };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function connectBankAction(institutionId: string, institutionName: string): Promise<ActionResult<{ link: string }>> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  try {
+    const result = await initiateBankConnection(userData.user.id, institutionId, institutionName);
+    return { success: true, data: result };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Impossible de connecter ce compte bancaire." };
+  }
+}
+
+export async function syncBankAction(revenueSourceId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  const result = await syncBankTransactions(userData.user.id, revenueSourceId);
+  if (!result.success) return { success: false, error: result.error };
+  return { success: true, data: undefined };
+}
+
+export async function listBankTransactionsAction(revenueSourceId: string): Promise<ActionResult<BankTransactionRow[]>> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  try {
+    return { success: true, data: await listBankTransactions(userData.user.id, revenueSourceId) };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function setTransactionRevenueTagAction(transactionId: string, isRevenue: boolean): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  try {
+    await setTransactionRevenueTag(userData.user.id, transactionId, isRevenue);
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function disconnectBankAction(revenueSourceId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  await disconnectBankSource(userData.user.id, revenueSourceId);
+  return { success: true, data: undefined };
 }
 
 const MAX_PROOF_BYTES = 5 * 1024 * 1024;
@@ -267,6 +346,8 @@ export async function exportMyDataAction(): Promise<ActionResult<Record<string, 
     revenueSnapshots,
     revenueSourceSnapshots,
     revenueDeclarations,
+    bankConnections,
+    bankTransactions,
     achievements,
     trophies,
     titles,
@@ -281,6 +362,11 @@ export async function exportMyDataAction(): Promise<ActionResult<Record<string, 
     supabase.from("revenue_snapshots").select("period, amount_cents, currency, is_verified, transaction_count, customer_count").eq("user_id", userId),
     supabase.from("revenue_source_snapshots").select("revenue_source_id, period, amount_cents, currency, transaction_count, customer_count").eq("user_id", userId),
     supabase.from("revenue_declarations").select("period, label, amount_cents, review_status, created_at").eq("user_id", userId),
+    supabase.from("bank_connections").select("institution_name, account_ids, expires_at, created_at").eq("user_id", userId),
+    supabase
+      .from("bank_transactions")
+      .select("booking_date, amount_cents, currency, counterparty, description, is_revenue")
+      .eq("user_id", userId),
     supabase.from("user_achievements").select("achievement_id, earned_at").eq("user_id", userId),
     supabase.from("user_trophies").select("trophy_id, earned_at").eq("user_id", userId),
     supabase.from("user_titles").select("title_id, is_active, acquired_at").eq("user_id", userId),
@@ -301,6 +387,8 @@ export async function exportMyDataAction(): Promise<ActionResult<Record<string, 
       revenueSnapshots: revenueSnapshots.data,
       revenueSourceSnapshots: revenueSourceSnapshots.data,
       revenueDeclarations: revenueDeclarations.data,
+      bankConnections: bankConnections.data,
+      bankTransactions: bankTransactions.data,
       achievements: achievements.data,
       trophies: trophies.data,
       titles: titles.data,

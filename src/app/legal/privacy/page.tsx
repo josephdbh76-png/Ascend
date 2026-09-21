@@ -31,12 +31,16 @@ export default function PrivacyPolicyPage() {
         profil) ; informations d&apos;activité (nom et catégorie de ton business, compétences déclarées,
         numéro SIRET si tu fais vérifier ton entreprise) ; données de revenus, lorsque tu connectes une
         source (Stripe, Shopify) — nous ne stockons que des montants mensuels agrégés, jamais le détail de
-        tes transactions individuelles — ou lorsque tu déclares un revenu manuellement avec un justificatif ;
-        contenus que tu publies (messages, opportunités, candidatures et leurs pièces jointes éventuelles) ;
-        tes préférences d&apos;email (actualités/notifications, modifiables à tout moment depuis Réglages) ;
-        et, si tu y consens via la bannière de cookies, des données d&apos;usage anonymisées à des fins
-        d&apos;analyse. Nous ne collectons que ce qui est nécessaire au fonctionnement décrit ci-dessous —
-        aucune donnée n&apos;est demandée « au cas où ».
+        tes transactions individuelles — ou lorsque tu déclares un revenu manuellement avec un justificatif.
+        Si tu connectes un compte bancaire, c&apos;est différent : nous stockons le détail de tes virements
+        entrants (date, montant, contrepartie) le temps que tu indiques toi-même lesquels sont ton revenu
+        professionnel — jamais tes virements sortants, ton solde, ni tes identifiants bancaires, auxquels
+        ASCEND n&apos;a jamais accès. Nous stockons aussi les contenus que tu publies (messages,
+        opportunités, candidatures et leurs pièces jointes éventuelles) et tes préférences d&apos;email
+        (actualités/notifications, modifiables à tout moment depuis Réglages), et, si tu y consens via la
+        bannière de cookies, des données d&apos;usage anonymisées à des fins d&apos;analyse. Nous ne
+        collectons que ce qui est nécessaire au fonctionnement décrit ci-dessous — aucune donnée n&apos;est
+        demandée « au cas où ».
       </p>
 
       <h2 className="text-base font-semibold text-text-primary">Pourquoi nous les utilisons</h2>
@@ -52,8 +56,10 @@ export default function PrivacyPolicyPage() {
       <p>
         ASCEND fait appel à des sous-traitants pour opérer le service : Supabase (hébergement des données
         et authentification), Vercel (hébergement de l&apos;application), Stripe et Shopify (paiements et
-        lecture de tes revenus, si tu connectes l&apos;un de ces moyens de vérification), Resend (envoi des
-        emails transactionnels et, si tu y consens, des campagnes) et, uniquement si tu acceptes les cookies
+        lecture de tes revenus, si tu connectes l&apos;un de ces moyens de vérification), GoCardless Bank
+        Account Data (agrégateur bancaire agréé, uniquement si tu connectes un compte bancaire — c&apos;est
+        lui qui parle à ta banque, jamais ASCEND directement), Resend (envoi des emails transactionnels et,
+        si tu y consens, des campagnes) et, uniquement si tu acceptes les cookies
         d&apos;analyse, PostHog — hébergé dans l&apos;Union européenne — pour une mesure d&apos;audience
         anonymisée. Certains de ces prestataires peuvent traiter des données en dehors de l&apos;Union
         européenne, dans le cadre de garanties contractuelles appropriées (clauses contractuelles types).
