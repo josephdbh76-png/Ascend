@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getPublicProfileByUsername } from "@/services/profile.service";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
@@ -64,6 +64,12 @@ export default async function PublicProfilePage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (user) {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal && aal.currentLevel !== aal.nextLevel) redirect("/mfa-challenge");
+  }
+
   const isOwner = user?.id === profile.userId;
   if (user && !isOwner) await recordProfileView(profile.userId, user.id);
   const viewerProfile = user ? await getProfile(user.id) : null;

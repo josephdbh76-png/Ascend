@@ -13,6 +13,12 @@ export default async function ShellLayout({ children }: { children: React.ReactN
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // A verified TOTP factor means this session must reach aal2 before
+  // touching anything under /app — currentLevel !== nextLevel is exactly
+  // "signed in with a password, second factor still pending".
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal && aal.currentLevel !== aal.nextLevel) redirect("/mfa-challenge");
+
   const profile = await getProfile(user.id);
   if (!profile) redirect("/login");
 

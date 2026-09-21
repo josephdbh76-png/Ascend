@@ -19,6 +19,7 @@ import { DangerZone } from "./DangerZone";
 import { ExportDataButton } from "./ExportDataButton";
 import { SubscriptionCard } from "./SubscriptionCard";
 import { ReferralCard } from "./ReferralCard";
+import { SecuritySettings } from "./SecuritySettings";
 import { CheckoutStatusHandler } from "./CheckoutStatusHandler";
 
 export const metadata: Metadata = { title: "Réglages" };
@@ -170,6 +171,13 @@ export default async function SettingsPage() {
           shopifyStatus={shopifyStatus}
           shopifyDomain={shopifySource?.external_account_id ?? null}
         />
+      </Card>
+
+      <Card className="p-6" elevated>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
+          Sécurité
+        </h2>
+        <SecuritySettings />
       </Card>
 
       <Card className="p-6" elevated>
