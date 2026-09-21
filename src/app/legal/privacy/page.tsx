@@ -56,9 +56,9 @@ export default function PrivacyPolicyPage() {
       <p>
         ASCEND fait appel à des sous-traitants pour opérer le service : Supabase (hébergement des données
         et authentification), Vercel (hébergement de l&apos;application), Stripe et Shopify (paiements et
-        lecture de tes revenus, si tu connectes l&apos;un de ces moyens de vérification), GoCardless Bank
-        Account Data (agrégateur bancaire agréé, uniquement si tu connectes un compte bancaire — c&apos;est
-        lui qui parle à ta banque, jamais ASCEND directement), Resend (envoi des emails transactionnels et,
+        lecture de tes revenus, si tu connectes l&apos;un de ces moyens de vérification), Enable Banking
+        (agrégateur bancaire agréé, uniquement si tu connectes un compte bancaire — c&apos;est lui qui parle
+        à ta banque, jamais ASCEND directement), Resend (envoi des emails transactionnels et,
         si tu y consens, des campagnes) et, uniquement si tu acceptes les cookies
         d&apos;analyse, PostHog — hébergé dans l&apos;Union européenne — pour une mesure d&apos;audience
         anonymisée. Certains de ces prestataires peuvent traiter des données en dehors de l&apos;Union
