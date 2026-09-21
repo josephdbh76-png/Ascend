@@ -1,6 +1,7 @@
 import { AppSidebar } from "./AppSidebar";
 import { AppMobileHeader, AppBottomNav } from "./AppMobileNav";
 import { AppDataRefresher } from "./AppDataRefresher";
+import { InstallPrompt } from "./InstallPrompt";
 import type { NotificationItem } from "./NotificationBell";
 
 export function AppShell({
@@ -46,6 +47,7 @@ export function AppShell({
       </main>
 
       <AppBottomNav username={username} />
+      <InstallPrompt />
     </div>
   );
 }
