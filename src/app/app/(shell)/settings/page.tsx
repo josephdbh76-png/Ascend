@@ -6,6 +6,7 @@ import { getProfile } from "@/services/profile.service";
 import { getVerificationStatus, getShopifyVerificationStatus, getRevenueDeclarations } from "@/services/revenue.service";
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
 import { isCurrentUserAdmin } from "@/services/admin.service";
+import { getReferralStats, referralLink } from "@/services/referral.service";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ProfileSettingsForm } from "./ProfileSettingsForm";
@@ -17,6 +18,7 @@ import { ConnectedAccounts } from "./ConnectedAccounts";
 import { DangerZone } from "./DangerZone";
 import { ExportDataButton } from "./ExportDataButton";
 import { SubscriptionCard } from "./SubscriptionCard";
+import { ReferralCard } from "./ReferralCard";
 import { CheckoutStatusHandler } from "./CheckoutStatusHandler";
 
 export const metadata: Metadata = { title: "Réglages" };
@@ -31,7 +33,7 @@ export default async function SettingsPage() {
   const profile = await getProfile(user.id);
   if (!profile) return null;
 
-  const [{ data: business }, { data: privacy }, { data: marketing }, { data: source }, { data: shopifySource }, verificationStatus, shopifyStatus, subscription, isAdmin] =
+  const [{ data: business }, { data: privacy }, { data: marketing }, { data: source }, { data: shopifySource }, verificationStatus, shopifyStatus, subscription, isAdmin, referralStats] =
     await Promise.all([
       supabase
         .from("businesses")
@@ -51,6 +53,7 @@ export default async function SettingsPage() {
       getShopifyVerificationStatus(user.id),
       getSubscription(user.id),
       isCurrentUserAdmin(),
+      getReferralStats(user.id),
     ]);
 
   const now = new Date();
@@ -88,6 +91,16 @@ export default async function SettingsPage() {
       <Card id="abonnement" className="scroll-mt-6 p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Abonnement</h2>
         <SubscriptionCard subscription={subscription} />
+      </Card>
+
+      <Card className="p-6" elevated>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Parrainage</h2>
+        <ReferralCard
+          link={referralLink(profile.username)}
+          referredCount={referralStats.referredCount}
+          rewardedCount={referralStats.rewardedCount}
+          proCreditUntil={referralStats.proCreditUntil}
+        />
       </Card>
 
       <Card className="p-6" elevated>

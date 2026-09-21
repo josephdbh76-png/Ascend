@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotificationForUser } from "@/services/notification.service";
+import { rewardReferrerIfEligible } from "@/services/referral.service";
 import { calculateGrowth } from "@/lib/utils";
 import type { RevenuePoint } from "@/types";
 import type { VerificationStatus, RevenueReviewStatus } from "@/types/database.types";
@@ -73,13 +74,21 @@ async function recomputeBlendedSnapshot(userId: string, period: string) {
  */
 export async function refreshRevenueVerifiedFlag(userId: string): Promise<boolean> {
   const admin = createAdminClient();
-  const { count, error } = await admin
-    .from("revenue_snapshots")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId);
+  const [{ count, error }, { data: before }] = await Promise.all([
+    admin.from("revenue_snapshots").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    admin.from("profiles").select("revenue_verified").eq("id", userId).maybeSingle(),
+  ]);
   if (error) throw new Error(error.message);
   const verified = (count ?? 0) > 0;
   await admin.from("profiles").update({ revenue_verified: verified }).eq("id", userId);
+
+  // Only the false → true transition counts as "just got verified" —
+  // re-syncing an already-verified account (or losing verification)
+  // must never re-trigger or re-grant a referral reward.
+  if (verified && before?.revenue_verified === false) {
+    await rewardReferrerIfEligible(userId);
+  }
+
   return verified;
 }
 

@@ -64,6 +64,13 @@ export function transactionalEmailContent(
         ctaLabel: "Voir mes réglages",
         ctaPath: "/app/settings#revenus",
       };
+    case "referral_rewarded":
+      return {
+        subject: params.title,
+        body: `${greeting}\n\n${params.body}`,
+        ctaLabel: "Voir mes réglages",
+        ctaPath: "/app/settings#parrainage",
+      };
     default:
       return null;
   }

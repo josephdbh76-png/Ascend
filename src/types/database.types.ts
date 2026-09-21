@@ -22,7 +22,8 @@ export type NotificationType =
   | "new_message"
   | "new_application"
   | "application_status_changed"
-  | "revenue_review_completed";
+  | "revenue_review_completed"
+  | "referral_rewarded";
 export type TitleRarity = "common" | "rare" | "epic" | "legendary" | "exclusive";
 export type TitleType = "earned" | "purchasable";
 export type SubscriptionTier = "free" | "pro" | "elite";
@@ -62,6 +63,8 @@ export interface Database {
           marketing_consent: boolean;
           unsubscribe_token: string;
           email_notifications_enabled: boolean;
+          referred_by: string | null;
+          pro_credit_until: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -602,6 +605,21 @@ export interface Database {
           viewer_id: string;
         };
         Update: Partial<Database["public"]["Tables"]["profile_views"]["Row"]>;
+        Relationships: [];
+      };
+      referrals: {
+        Row: {
+          id: string;
+          referrer_id: string;
+          referred_id: string;
+          rewarded_at: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["referrals"]["Row"], "id">> & {
+          referrer_id: string;
+          referred_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["referrals"]["Row"]>;
         Relationships: [];
       };
     };

@@ -6,15 +6,23 @@ import type { SubscriptionTier } from "@/types/database.types";
 
 export async function getSubscription(userId: string): Promise<SubscriptionInfo> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .select("tier, status, current_period_end, stripe_customer_id, billing_interval, trial_used, trial_ends_at")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const [{ data, error }, { data: profile }] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select("tier, status, current_period_end, stripe_customer_id, billing_interval, trial_used, trial_ends_at")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase.from("profiles").select("pro_credit_until").eq("id", userId).maybeSingle(),
+  ]);
   if (error) throw new Error(error.message);
 
+  const tier = data?.tier ?? "free";
+  const hasActiveReferralCredit = !!profile?.pro_credit_until && new Date(profile.pro_credit_until) > new Date();
+
   return {
-    tier: data?.tier ?? "free",
+    // A referral credit only ever upgrades a free tier — it never
+    // downgrades or otherwise interferes with a real Elite subscription.
+    tier: tier === "free" && hasActiveReferralCredit ? "pro" : tier,
     status: data?.status ?? "active",
     currentPeriodEnd: data?.current_period_end ?? null,
     hasStripeCustomer: data?.stripe_customer_id != null,

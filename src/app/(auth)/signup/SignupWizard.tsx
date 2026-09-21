@@ -24,6 +24,7 @@ export function SignupWizard() {
   const plan = searchParams.get("plan");
   const interval = searchParams.get("interval") === "year" ? "year" : "month";
   const trial = searchParams.get("trial") === "1";
+  const ref = searchParams.get("ref");
   const [step, setStep] = useState(0);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +56,7 @@ export function SignupWizard() {
     setError(null);
     track("signup_started");
     startTransition(async () => {
-      const result = await createAccountAction(account);
+      const result = await createAccountAction({ ...account, referredBy: ref });
       if (!result.success) return setError(result.error);
       if (result.data.needsEmailConfirmation) {
         setNeedsConfirmation(true);
@@ -153,6 +154,9 @@ export function SignupWizard() {
               <div>
                 <h1 className="text-xl font-semibold text-text-primary">Crée ton compte</h1>
                 <p className="mt-1 text-sm text-text-secondary">Gratuit pendant la bêta. Aucune carte bancaire.</p>
+                {ref && (
+                  <p className="mt-2 text-xs text-gold">Invité(e) par @{ref}</p>
+                )}
               </div>
               {/* Honeypot — invisible to real visitors, bots fill every field they can find. */}
               <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden="true">

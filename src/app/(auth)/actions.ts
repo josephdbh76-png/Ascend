@@ -10,6 +10,7 @@ import {
 import { toFriendlyAuthError } from "@/lib/errors";
 import { getAppUrl } from "@/lib/utils";
 import { isUsernameAvailable } from "@/services/profile.service";
+import { resolveReferrerId, recordReferral } from "@/services/referral.service";
 import { getResend, resendFromAddress } from "@/lib/resend";
 import { renderEmailHtml } from "@/lib/emailRender";
 import { welcomeEmailContent } from "@/lib/transactionalEmails";
@@ -29,6 +30,8 @@ export async function createAccountAction(input: {
    * means the submission is automated, so we reject without touching
    * Supabase Auth at all. */
   website?: string;
+  /** Referrer's username from ?ref=, if this signup came through a referral link. */
+  referredBy?: string | null;
 }): Promise<ActionResult<{ needsEmailConfirmation: boolean }>> {
   if (input.website) {
     return { success: false, error: "Une erreur est survenue. Réessaie." };
@@ -60,15 +63,22 @@ export async function createAccountAction(input: {
     return { success: false, error: toFriendlyAuthError(signUpError?.message) };
   }
 
+  const referrerId = input.referredBy ? await resolveReferrerId(input.referredBy, signUpData.user.id) : null;
+
   const { error: profileError } = await supabase.from("profiles").insert({
     id: signUpData.user.id,
     username,
     onboarding_step: "business",
     marketing_consent: input.marketingConsent === true,
+    referred_by: referrerId,
   });
 
   if (profileError) {
     return { success: false, error: toFriendlyAuthError(profileError.message) };
+  }
+
+  if (referrerId) {
+    await recordReferral(referrerId, signUpData.user.id);
   }
 
   return { success: true, data: { needsEmailConfirmation: !signUpData.session } };
