@@ -32,6 +32,7 @@ import { AchievementUnlockGate } from "@/components/dashboard/AchievementUnlockG
 import { ActivationChecklist } from "@/components/dashboard/ActivationChecklist";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { RankTransition } from "@/components/motion/RankTransition";
+import { CountUp } from "@/components/motion/CountUp";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import type { AchievementRarity } from "@/types/database.types";
@@ -167,14 +168,14 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Revenus mensuels"
-          value={current ? formatCurrency(current.amountCents) : "—"}
+          value={current ? <CountUp value={current.amountCents} format={formatCurrency} /> : "—"}
           icon={TrendingUp}
           trend={previous ? `${formatCurrency(previous.amountCents)} le mois dernier` : undefined}
           accent
         />
         <StatCard
           label="Croissance"
-          value={growth != null ? formatPercent(growth) : "—"}
+          value={growth != null ? <CountUp value={growth} format={formatPercent} decimals={1} /> : "—"}
           trendPositive={growth != null ? growth >= 0 : undefined}
         />
         <StatCard
@@ -192,7 +193,7 @@ export default async function DashboardPage() {
         />
         <StatCard
           label={profile.country ? `Classement ${profile.country}` : "Classement pays"}
-          value={countryRank ? `#${countryRank.rank}` : "—"}
+          value={countryRank ? <CountUp value={countryRank.rank} format={(n) => `#${n}`} /> : "—"}
           icon={FlagIcon}
         />
       </div>
@@ -202,12 +203,12 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard
           label="Vues de ton profil (7 jours)"
-          value={profileViews.toLocaleString("fr-FR")}
+          value={<CountUp value={profileViews} format={(n) => n.toLocaleString("fr-FR")} />}
           icon={Eye}
         />
         <StatCard
           label="Nouveaux abonnés (7 jours)"
-          value={recentFollowers.toLocaleString("fr-FR")}
+          value={<CountUp value={recentFollowers} format={(n) => n.toLocaleString("fr-FR")} />}
           icon={UserPlus}
         />
       </div>
@@ -216,12 +217,18 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <StatCard
             label="Clients ce mois-ci"
-            value={current?.customerCount != null ? current.customerCount.toLocaleString("fr-FR") : "—"}
+            value={
+              current?.customerCount != null ? (
+                <CountUp value={current.customerCount} format={(n) => n.toLocaleString("fr-FR")} />
+              ) : (
+                "—"
+              )
+            }
             icon={Users}
           />
           <StatCard
             label="Panier moyen"
-            value={avgBasketCents != null ? formatCurrency(avgBasketCents) : "—"}
+            value={avgBasketCents != null ? <CountUp value={avgBasketCents} format={formatCurrency} /> : "—"}
             icon={ShoppingBag}
             trend={
               current?.transactionCount != null

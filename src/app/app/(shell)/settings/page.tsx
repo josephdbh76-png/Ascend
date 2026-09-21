@@ -15,6 +15,7 @@ import { MarketingConsentToggle } from "./MarketingConsentToggle";
 import { AccentThemeForm } from "./AccentThemeForm";
 import { ConnectedAccounts } from "./ConnectedAccounts";
 import { DangerZone } from "./DangerZone";
+import { ExportDataButton } from "./ExportDataButton";
 import { SubscriptionCard } from "./SubscriptionCard";
 import { CheckoutStatusHandler } from "./CheckoutStatusHandler";
 
@@ -162,7 +163,10 @@ export default async function SettingsPage() {
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
           Compte
         </h2>
-        <DangerZone />
+        <div className="flex flex-col gap-4">
+          <ExportDataButton />
+          <DangerZone />
+        </div>
       </Card>
     </div>
   );

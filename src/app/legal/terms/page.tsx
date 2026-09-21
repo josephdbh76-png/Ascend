@@ -51,7 +51,10 @@ export default function TermsPage() {
       <h2 className="text-base font-semibold text-text-primary">Droit applicable</h2>
       <p>
         Ces conditions sont régies par le droit français. Pour toute question, contacte{" "}
-        <span className="text-text-primary">[email de contact à renseigner]</span>.
+        <a href="mailto:joseph.dbh76@gmail.com" className="text-text-primary underline hover:text-gold">
+          joseph.dbh76@gmail.com
+        </a>
+        .
       </p>
     </LegalPage>
   );

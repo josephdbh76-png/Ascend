@@ -1,8 +1,11 @@
 import { cn } from "@/lib/utils";
 import type { InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes, ReactNode } from "react";
 
+// text-base (16px) below sm: iOS Safari auto-zooms the page on focus for
+// any input under 16px, which is jarring on a form — shrinks back to
+// text-sm once there's enough width that zooming was never a risk.
 const fieldBase =
-  "w-full rounded-md border border-border-strong bg-card-elevated px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40 transition-colors";
+  "w-full rounded-md border border-border-strong bg-card-elevated px-3.5 py-2.5 text-base sm:text-sm text-text-primary placeholder:text-text-muted focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40 transition-colors";
 
 export function Field({
   label,

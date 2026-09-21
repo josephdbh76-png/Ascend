@@ -34,7 +34,13 @@ export function initAnalytics() {
   if (!key) return;
 
   posthog.init(key, {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
+    // EU by default — ASCEND targets French/European users, and PostHog's
+    // EU region keeps analytics data in the EU rather than requiring an
+    // international-transfer justification for a US region. Only
+    // meaningful if the PostHog *project* was itself created under
+    // eu.posthog.com — the API host can't move a project's data between
+    // regions after the fact.
+    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
     person_profiles: "identified_only",
     capture_pageview: false, // handled manually so client-side route changes are tracked too
   });

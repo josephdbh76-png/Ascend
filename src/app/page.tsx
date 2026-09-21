@@ -1,5 +1,6 @@
 import { PublicNav } from "@/components/layout/PublicNav";
 import { Footer } from "@/components/layout/Footer";
+import { LandingStructuredData } from "@/components/landing/LandingStructuredData";
 import { Hero } from "@/components/landing/Hero";
 import { TrustStrip } from "@/components/landing/TrustStrip";
 import { Problem } from "@/components/landing/Problem";
@@ -18,6 +19,7 @@ import { FinalCTA } from "@/components/landing/FinalCTA";
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-bg-primary">
+      <LandingStructuredData />
       <PublicNav />
       <main>
         <Hero />

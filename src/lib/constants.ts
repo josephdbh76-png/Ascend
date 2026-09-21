@@ -154,3 +154,35 @@ export const CURRENT_SEASON = {
   startsAt: "2026-09-01T00:00:00.000Z",
   endsAt: "2026-11-30T23:59:59.000Z",
 };
+
+/** Shared by the landing page's FAQ accordion and its FAQPage JSON-LD — one list, so the structured data can never drift from what's actually shown. */
+export const FAQ_ITEMS = [
+  {
+    q: "ASCEND est-il gratuit ?",
+    a: "Oui. Le compte Gratuit donne accès au profil, à la vérification, au classement, aux accomplissements et aux défis, sans carte bancaire. Pro et Elite débloquent des avantages supplémentaires.",
+  },
+  {
+    q: "Comment fonctionne la vérification des revenus ?",
+    a: "Connecte Stripe et ASCEND récupère tes vraies données de transaction côté serveur — vérifié automatiquement, instantanément. Pas de Stripe ? Déclare tes revenus manuellement avec une preuve (facture, export comptable...) : un administrateur la vérifie avant qu'elle ne compte comme un revenu vérifié.",
+  },
+  {
+    q: "Puis-je masquer mes revenus exacts ?",
+    a: "Oui. Dans les Réglages, choisis d'afficher ton revenu exact, une fourchette de 10 000 €, ou de le garder entièrement privé. Ton classement peut rester visible sans exposer le montant.",
+  },
+  {
+    q: "Mes données financières sont-elles en sécurité ?",
+    a: "Tes données de revenus sont protégées par une sécurité au niveau de la base de données — toi seul peux accéder à tes connexions et chiffres bruts. Les pages publiques ne montrent que ce que tes réglages de confidentialité autorisent.",
+  },
+  {
+    q: "Que se passe-t-il après la bêta ?",
+    a: "Les fonctionnalités du compte Gratuit resteront gratuites pour toujours. Pro et Elite sont déjà disponibles dès aujourd'hui, résiliables à tout moment depuis les Réglages.",
+  },
+  {
+    q: "Puis-je essayer Elite gratuitement ?",
+    a: "Oui, si tu n'as jamais eu d'abonnement payant : 14 jours d'essai gratuit, carte bancaire requise à l'inscription. Tu peux annuler à tout moment pendant l'essai depuis les Réglages ; sinon, la facturation démarre automatiquement à la fin des 14 jours.",
+  },
+  {
+    q: "Y a-t-il une réduction pour un engagement annuel ?",
+    a: "Oui. L'abonnement annuel Pro équivaut à 2 mois offerts, et l'abonnement annuel Elite à 3 mois offerts par rapport au tarif mensuel.",
+  },
+] as const;

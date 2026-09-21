@@ -243,6 +243,73 @@ export async function updateAccentThemeAction(theme: AccentTheme): Promise<Actio
   return { success: true, data: undefined };
 }
 
+/**
+ * A real fulfillment of the "droit à la portabilité" the privacy policy
+ * already promises — everything here comes through the caller's own
+ * RLS-scoped client, so it's structurally impossible to return another
+ * member's row. Deliberately excludes provider_credentials (Stripe/
+ * Shopify secrets) even though it's owner-readable in principle — a data
+ * export a member downloads to their own machine is the wrong place for
+ * a live API secret to end up.
+ */
+export async function exportMyDataAction(): Promise<ActionResult<Record<string, unknown>>> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+  const userId = userData.user.id;
+
+  const [
+    profile,
+    business,
+    privacySettings,
+    subscription,
+    revenueSources,
+    revenueSnapshots,
+    revenueSourceSnapshots,
+    revenueDeclarations,
+    achievements,
+    trophies,
+    titles,
+    followers,
+    following,
+  ] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+    supabase.from("businesses").select("*").eq("user_id", userId).maybeSingle(),
+    supabase.from("privacy_settings").select("*").eq("user_id", userId).maybeSingle(),
+    supabase.from("subscriptions").select("*").eq("user_id", userId).maybeSingle(),
+    supabase.from("revenue_sources").select("id, provider, status, is_test_mode, connected_at, last_synced_at").eq("user_id", userId),
+    supabase.from("revenue_snapshots").select("period, amount_cents, currency, is_verified, transaction_count, customer_count").eq("user_id", userId),
+    supabase.from("revenue_source_snapshots").select("revenue_source_id, period, amount_cents, currency, transaction_count, customer_count").eq("user_id", userId),
+    supabase.from("revenue_declarations").select("period, label, amount_cents, review_status, created_at").eq("user_id", userId),
+    supabase.from("user_achievements").select("achievement_id, earned_at").eq("user_id", userId),
+    supabase.from("user_trophies").select("trophy_id, earned_at").eq("user_id", userId),
+    supabase.from("user_titles").select("title_id, is_active, acquired_at").eq("user_id", userId),
+    supabase.from("follows").select("follower_id, created_at").eq("followee_id", userId),
+    supabase.from("follows").select("followee_id, created_at").eq("follower_id", userId),
+  ]);
+
+  return {
+    success: true,
+    data: {
+      exportedAt: new Date().toISOString(),
+      account: { id: userId, email: userData.user.email },
+      profile: profile.data,
+      business: business.data,
+      privacySettings: privacySettings.data,
+      subscription: subscription.data,
+      revenueSources: revenueSources.data,
+      revenueSnapshots: revenueSnapshots.data,
+      revenueSourceSnapshots: revenueSourceSnapshots.data,
+      revenueDeclarations: revenueDeclarations.data,
+      achievements: achievements.data,
+      trophies: trophies.data,
+      titles: titles.data,
+      followers: followers.data,
+      following: following.data,
+    },
+  };
+}
+
 export async function deleteAccountAction(): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
