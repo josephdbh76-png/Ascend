@@ -686,6 +686,53 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["rate_limit_attempts"]["Row"]>;
         Relationships: [];
       };
+      influencers: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          code: string;
+          stripe_coupon_id: string;
+          stripe_promotion_code_id: string;
+          commission_rate: number;
+          status: "active" | "inactive";
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["influencers"]["Row"], "id">> & {
+          name: string;
+          email: string;
+          code: string;
+          stripe_coupon_id: string;
+          stripe_promotion_code_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["influencers"]["Row"]>;
+        Relationships: [];
+      };
+      influencer_commissions: {
+        Row: {
+          id: string;
+          influencer_id: string;
+          user_id: string;
+          stripe_subscription_id: string;
+          stripe_checkout_session_id: string;
+          amount_cents: number;
+          currency: string;
+          status: "pending" | "paid";
+          paid_at: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["influencer_commissions"]["Row"], "id">> & {
+          influencer_id: string;
+          user_id: string;
+          stripe_subscription_id: string;
+          stripe_checkout_session_id: string;
+          amount_cents: number;
+          currency: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["influencer_commissions"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

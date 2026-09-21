@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
       mode: "subscription",
       customer: customerId,
       line_items: [{ price: priceIdForTier(tier, interval), quantity: 1 }],
+      allow_promotion_codes: true,
       success_url: `${appUrl}/app/settings?checkout=success&tier=${tier}${grantTrial ? "&trial=1" : ""}`,
       cancel_url: `${appUrl}/app/settings?checkout=cancelled`,
       client_reference_id: user.id,

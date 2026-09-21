@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { getStripe, tierForPriceId, intervalForPriceId } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { grantPurchasedTitle } from "@/services/title.service";
+import { recordInfluencerCommissionIfApplicable } from "@/services/influencer.service";
 
 export async function POST(request: NextRequest) {
   const signature = request.headers.get("stripe-signature");
@@ -28,8 +29,11 @@ export async function POST(request: NextRequest) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode === "subscription" && typeof session.subscription === "string") {
-          const subscription = await stripe.subscriptions.retrieve(session.subscription);
+          const subscription = await stripe.subscriptions.retrieve(session.subscription, {
+            expand: ["discounts"],
+          });
           await syncSubscriptionFromStripe(subscription);
+          await recordInfluencerCommissionIfApplicable(session, subscription);
         } else if (session.mode === "payment" && session.metadata?.kind === "title_purchase") {
           const { user_id: userId, title_id: titleId } = session.metadata;
           if (userId && titleId) await grantPurchasedTitle(userId, titleId);

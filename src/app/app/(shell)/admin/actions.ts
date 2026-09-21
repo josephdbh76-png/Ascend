@@ -16,6 +16,14 @@ import {
 } from "@/services/email-campaign.service";
 import { renderTransactionalEmailPreview } from "@/lib/transactionalEmailPreviews";
 import { getResend, resendFromAddress } from "@/lib/resend";
+import {
+  createInfluencer,
+  setInfluencerStatus,
+  markCommissionPaid,
+  listCommissionsForInfluencer,
+  type InfluencerRow,
+  type InfluencerCommissionRow,
+} from "@/services/influencer.service";
 import type { CampaignAudience, EmailTemplateRow } from "@/lib/emailCampaignDisplay";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { SubscriptionTier } from "@/types/database.types";
@@ -208,6 +216,50 @@ export async function deleteEmailTemplateAction(id: string): Promise<ActionResul
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   try {
     await deleteEmailTemplate(id);
+    revalidatePath("/app/admin");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function createInfluencerAction(name: string, email: string, code: string): Promise<ActionResult<InfluencerRow>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  if (!name.trim() || !email.trim() || !code.trim()) return { success: false, error: "Nom, email et code obligatoires." };
+
+  try {
+    const influencer = await createInfluencer(name, email, code);
+    revalidatePath("/app/admin");
+    return { success: true, data: influencer };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function setInfluencerStatusAction(influencerId: string, status: "active" | "inactive"): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    await setInfluencerStatus(influencerId, status);
+    revalidatePath("/app/admin");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function listInfluencerCommissionsAction(influencerId: string): Promise<ActionResult<InfluencerCommissionRow[]>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    return { success: true, data: await listCommissionsForInfluencer(influencerId) };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function markCommissionPaidAction(commissionId: string): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    await markCommissionPaid(commissionId);
     revalidatePath("/app/admin");
     return { success: true, data: undefined };
   } catch (err) {

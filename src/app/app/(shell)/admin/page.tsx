@@ -4,6 +4,7 @@ import { isCurrentUserAdmin, listUsersForAdmin } from "@/services/admin.service"
 import { getPendingRevenueReviews } from "@/services/revenue.service";
 import { getCampaignHistory, listEmailTemplates } from "@/services/email-campaign.service";
 import { listTransactionalEmailPreviews } from "@/lib/transactionalEmailPreviews";
+import { listInfluencers } from "@/services/influencer.service";
 import { createClient } from "@/lib/supabase/server";
 import { AdminUsersTable } from "./AdminUsersTable";
 import { TitleStripeSyncButton } from "./TitleStripeSyncButton";
@@ -11,6 +12,7 @@ import { AnnualPriceSyncPanel } from "./AnnualPriceSyncPanel";
 import { RevenueReviewQueue } from "./RevenueReviewQueue";
 import { EmailCampaignPanel } from "./EmailCampaignPanel";
 import { TransactionalEmailPreviews } from "./TransactionalEmailPreviews";
+import { InfluencerProgramPanel } from "./InfluencerProgramPanel";
 import { Card } from "@/components/ui/Card";
 
 export const metadata: Metadata = { title: "Administration" };
@@ -23,11 +25,12 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (!(await isCurrentUserAdmin())) redirect("/app/dashboard");
 
-  const [users, pendingRevenueReviews, campaignHistory, emailTemplates] = await Promise.all([
+  const [users, pendingRevenueReviews, campaignHistory, emailTemplates, influencers] = await Promise.all([
     listUsersForAdmin(),
     getPendingRevenueReviews(),
     getCampaignHistory(),
     listEmailTemplates(),
+    listInfluencers(),
   ]);
 
   return (
@@ -66,6 +69,17 @@ export default async function AdminPage() {
           </p>
         </div>
         <EmailCampaignPanel history={campaignHistory} templates={emailTemplates} />
+      </Card>
+
+      <Card className="flex flex-col gap-3 p-5" elevated>
+        <div>
+          <h2 className="text-sm font-semibold text-text-primary">Programme d&apos;influenceurs</h2>
+          <p className="text-xs text-text-secondary">
+            Crée un code de réduction pour un influenceur — son audience paie -10% tant qu&apos;elle reste
+            abonnée, et tu suis ici la commission qu&apos;il te reste à lui verser.
+          </p>
+        </div>
+        <InfluencerProgramPanel influencers={influencers} />
       </Card>
 
       <Card className="flex flex-col gap-1 p-5" elevated>
