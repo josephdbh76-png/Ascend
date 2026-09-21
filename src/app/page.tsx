@@ -21,7 +21,7 @@ export default function LandingPage() {
     <div className="flex min-h-screen flex-col bg-bg-primary">
       <LandingStructuredData />
       <PublicNav />
-      <main>
+      <main id="main-content">
         <Hero />
         <TrustStrip />
         <Problem />

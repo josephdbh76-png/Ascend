@@ -192,7 +192,7 @@ export default async function PublicProfilePage({
   return (
     <div className="flex min-h-screen flex-col bg-bg-primary">
       <PublicNav />
-      {body}
+      <main id="main-content">{body}</main>
     </div>
   );
 }

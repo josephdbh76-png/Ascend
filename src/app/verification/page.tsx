@@ -41,7 +41,7 @@ export default function VerificationInfoPage() {
   return (
     <div className="flex min-h-screen flex-col bg-bg-primary">
       <PublicNav />
-      <main>
+      <main id="main-content">
         <section className="border-b border-border">
           <Reveal as="div" className="mx-auto max-w-2xl px-4 py-20 text-center sm:px-6 lg:px-8">
             <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-gold/10">

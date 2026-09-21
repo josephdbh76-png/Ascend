@@ -63,6 +63,7 @@ export function AppSidebar({
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 active ? "bg-card-elevated text-gold" : "text-text-secondary hover:bg-card hover:text-text-primary",
@@ -83,6 +84,7 @@ export function AppSidebar({
       <div className="border-t border-border px-3 py-3">
         <Link
           href="/app/settings"
+          aria-current={pathname.startsWith("/app/settings") ? "page" : undefined}
           className={cn(
             "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
             pathname.startsWith("/app/settings")

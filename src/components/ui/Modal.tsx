@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 export function Modal({
   open,
@@ -20,12 +21,16 @@ export function Modal({
   /** Override when this modal must stack above another already-open one (e.g. sharing from within a celebration overlay). */
   zIndexClassName?: string;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  useFocusTrap(dialogRef, open);
 
   if (!open) return null;
 
@@ -37,11 +42,13 @@ export function Modal({
         aria-hidden
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? "modal-title" : undefined}
+        tabIndex={-1}
         className={cn(
-          "relative w-full max-w-md rounded-lg border border-border-strong bg-card-elevated p-6 shadow-2xl animate-fade-up",
+          "relative w-full max-w-md rounded-lg border border-border-strong bg-card-elevated p-6 shadow-2xl animate-fade-up focus:outline-none",
           className,
         )}
       >

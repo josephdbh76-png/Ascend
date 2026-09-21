@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Award } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ShareCardButton } from "@/components/achievements/ShareCardButton";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 import type { AchievementRarity } from "@/types/database.types";
 
 const RARITY_COLORS: Record<AchievementRarity, string> = {
@@ -88,11 +89,24 @@ export function AchievementUnlockModal({
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const accent = RARITY_COLORS[achievementRarity];
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, open);
 
   function close() {
     setOpen(false);
     onDismiss(notificationId);
   }
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      onDismiss(notificationId);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onDismiss, notificationId]);
 
   function viewProfile() {
     close();
@@ -111,14 +125,16 @@ export function AchievementUnlockModal({
             onClick={close}
           />
           <motion.div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="achievement-title"
+            tabIndex={-1}
             initial={{ opacity: 0, scale: 0.9, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-            className="relative flex w-full max-w-sm flex-col items-center gap-4 overflow-visible rounded-lg border bg-card-elevated p-8 text-center shadow-[0_0_60px_-15px_rgba(245,196,81,0.5)]"
+            className="relative flex w-full max-w-sm flex-col items-center gap-4 overflow-visible rounded-lg border bg-card-elevated p-8 text-center shadow-[0_0_60px_-15px_rgba(245,196,81,0.5)] focus:outline-none"
             style={{ borderColor: `${accent}4d` }}
           >
             <ConfettiBurst accent={accent} />
