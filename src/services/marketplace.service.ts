@@ -34,7 +34,13 @@ export async function getSellerAccountStatus(userId: string): Promise<SellerAcco
     .select("payouts_enabled")
     .eq("user_id", userId)
     .maybeSingle();
-  return { connected: !!data, payoutsEnabled: data?.payouts_enabled ?? false };
+  if (!data) return { connected: false, payoutsEnabled: false };
+  if (data.payouts_enabled) return { connected: true, payoutsEnabled: true };
+
+  // Still pending — Stripe may have finished reviewing since the last
+  // check, so re-check live rather than show a stale "pending" forever.
+  const payoutsEnabled = await refreshSellerAccountStatus(userId);
+  return { connected: true, payoutsEnabled };
 }
 
 /**
@@ -83,11 +89,16 @@ export async function startSellerOnboarding(userId: string, email: string): Prom
   return link.url;
 }
 
-/** Called from the onboarding return route to sync the real payouts_enabled flag. */
-export async function refreshSellerAccountStatus(userId: string): Promise<void> {
+/**
+ * Syncs the real payouts_enabled flag from Stripe. Called right after
+ * onboarding, and opportunistically by getSellerAccountStatus while a
+ * seller is still pending — Stripe's review can finish minutes to days
+ * later, with nothing to push that update to us in the meantime.
+ */
+export async function refreshSellerAccountStatus(userId: string): Promise<boolean> {
   const admin = createAdminClient();
   const { data } = await admin.from("seller_accounts").select("stripe_account_id").eq("user_id", userId).maybeSingle();
-  if (!data) return;
+  if (!data) return false;
 
   const stripe = getStripe();
   const account = await stripe.accounts.retrieve(data.stripe_account_id);
@@ -95,6 +106,7 @@ export async function refreshSellerAccountStatus(userId: string): Promise<void> 
     .from("seller_accounts")
     .update({ payouts_enabled: account.payouts_enabled, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
+  return account.payouts_enabled;
 }
 
 export interface TradeableOwnedTitle {
