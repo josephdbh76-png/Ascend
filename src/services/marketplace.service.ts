@@ -57,8 +57,10 @@ export async function startSellerOnboarding(userId: string, email: string): Prom
 
   let accountId = existing?.stripe_account_id;
   if (!accountId) {
+    const { data: profile } = await supabase.from("profiles").select("country").eq("id", userId).maybeSingle();
     const account = await stripe.accounts.create({
       type: "express",
+      country: profile?.country || "FR",
       email,
       capabilities: { transfers: { requested: true } },
     });

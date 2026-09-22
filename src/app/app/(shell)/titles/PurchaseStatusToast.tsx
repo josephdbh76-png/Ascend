@@ -20,6 +20,10 @@ export function PurchaseStatusToast() {
   useEffect(() => {
     const error = searchParams.get("purchase_error");
     const purchase = searchParams.get("purchase");
+    const sellerError = searchParams.get("seller_error");
+    const sellerOnboarding = searchParams.get("seller_onboarding");
+    const marketplaceError = searchParams.get("marketplace_error");
+    const marketplacePurchase = searchParams.get("marketplace_purchase");
 
     if (error) {
       toast.show(ERROR_MESSAGES[error] ?? "Achat impossible pour le moment.", "error");
@@ -28,6 +32,20 @@ export function PurchaseStatusToast() {
       toast.show("Paiement confirmé — ton titre arrive dans quelques secondes.", "success");
       router.replace(pathname);
     } else if (purchase === "cancelled") {
+      router.replace(pathname);
+    } else if (sellerError) {
+      toast.show(`Configuration du compte vendeur impossible : ${sellerError}`, "error");
+      router.replace(pathname);
+    } else if (sellerOnboarding === "done") {
+      toast.show("Compte vendeur configuré.", "success");
+      router.replace(pathname);
+    } else if (marketplaceError) {
+      toast.show(`Achat impossible : ${marketplaceError}`, "error");
+      router.replace(pathname);
+    } else if (marketplacePurchase === "success") {
+      toast.show("Achat confirmé — le titre arrive sur ton profil dans quelques secondes.", "success");
+      router.replace(pathname);
+    } else if (marketplacePurchase === "cancelled") {
       router.replace(pathname);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
