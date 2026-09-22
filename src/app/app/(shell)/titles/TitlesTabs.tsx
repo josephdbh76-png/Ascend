@@ -4,23 +4,36 @@ import { useState } from "react";
 import { Tabs } from "@/components/ui/Tabs";
 import { TitleCard } from "@/components/titles/TitleCard";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { MarketplaceTab } from "./MarketplaceTab";
 import { Gem } from "lucide-react";
 import type { TitleRow, EarnedTitle } from "@/types";
+import type { SellerAccountStatus, TradeableOwnedTitle, MarketplaceListing } from "@/services/marketplace.service";
 
 const TABS = [
   { value: "owned", label: "Obtenus" },
   { value: "available", label: "À débloquer" },
   { value: "exclusive", label: "Exclusifs" },
+  { value: "market", label: "Marché" },
 ];
 
 export function TitlesTabs({
   catalog,
   owned,
   completionRates,
+  sellerStatus,
+  tradeableTitles,
+  myListings,
+  activeListings,
+  recentSales,
 }: {
   catalog: TitleRow[];
   owned: EarnedTitle[];
   completionRates?: Record<string, number>;
+  sellerStatus: SellerAccountStatus;
+  tradeableTitles: TradeableOwnedTitle[];
+  myListings: MarketplaceListing[];
+  activeListings: MarketplaceListing[];
+  recentSales: MarketplaceListing[];
 }) {
   const [tab, setTab] = useState("owned");
   const ownedIds = new Set(owned.map((o) => o.id));
@@ -42,7 +55,15 @@ export function TitlesTabs({
     <div className="flex flex-col gap-6">
       <Tabs items={TABS} defaultValue="owned" onChange={setTab} className="sm:w-fit" />
 
-      {current.length === 0 ? (
+      {tab === "market" ? (
+        <MarketplaceTab
+          sellerStatus={sellerStatus}
+          tradeableTitles={tradeableTitles}
+          myListings={myListings}
+          activeListings={activeListings}
+          recentSales={recentSales}
+        />
+      ) : current.length === 0 ? (
         <EmptyState
           icon={Gem}
           title={tab === "owned" ? "Aucun titre obtenu pour l'instant." : "Rien ici pour le moment."}

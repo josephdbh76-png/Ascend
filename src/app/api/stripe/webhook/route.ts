@@ -4,6 +4,7 @@ import { getStripe, tierForPriceId, intervalForPriceId } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { grantPurchasedTitle } from "@/services/title.service";
 import { recordInfluencerCommissionIfApplicable } from "@/services/influencer.service";
+import { finalizeListingSale } from "@/services/marketplace.service";
 
 export async function POST(request: NextRequest) {
   const signature = request.headers.get("stripe-signature");
@@ -37,6 +38,8 @@ export async function POST(request: NextRequest) {
         } else if (session.mode === "payment" && session.metadata?.kind === "title_purchase") {
           const { user_id: userId, title_id: titleId } = session.metadata;
           if (userId && titleId) await grantPurchasedTitle(userId, titleId);
+        } else if (session.mode === "payment" && session.metadata?.kind === "title_listing_purchase") {
+          await finalizeListingSale(session);
         }
         break;
       }
