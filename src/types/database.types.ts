@@ -743,7 +743,7 @@ export interface Database {
           enabled: boolean;
           updated_at: string;
         };
-        Insert: { email_key: string; enabled?: boolean };
+        Insert: { email_key: string; enabled?: boolean; updated_at?: string };
         Update: Partial<Database["public"]["Tables"]["automated_email_settings"]["Row"]>;
         Relationships: [];
       };

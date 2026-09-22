@@ -14,6 +14,7 @@ import { resolveReferrerId, recordReferral } from "@/services/referral.service";
 import { getResend, resendFromAddress } from "@/lib/resend";
 import { renderEmailHtml } from "@/lib/emailRender";
 import { welcomeEmailContent } from "@/lib/transactionalEmails";
+import { isEmailTypeEnabledPlatformWide } from "@/services/notification.service";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 export type ActionResult<T = undefined> =
@@ -171,7 +172,12 @@ export async function completeOnboardingAction(): Promise<ActionResult> {
 
   // Only the very first completion — re-running this action (it's callable
   // more than once in the wizard's flow) must never re-send the welcome email.
-  if (!alreadyDone && userData.user.email && existingProfile?.email_notifications_enabled !== false) {
+  if (
+    !alreadyDone &&
+    userData.user.email &&
+    existingProfile?.email_notifications_enabled !== false &&
+    (await isEmailTypeEnabledPlatformWide("welcome"))
+  ) {
     try {
       const content = welcomeEmailContent(existingProfile?.first_name ?? null);
       await getResend().emails.send({

@@ -334,6 +334,26 @@ export async function updateEmailNotificationsAction(enabled: boolean): Promise<
   return { success: true, data: undefined };
 }
 
+export async function updateNotificationEmailPrefAction(type: string, enabled: boolean): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("notification_email_prefs")
+    .eq("id", userData.user.id)
+    .maybeSingle();
+
+  const nextPrefs = { ...(profile?.notification_email_prefs ?? {}), [type]: enabled };
+  const { error } = await supabase
+    .from("profiles")
+    .update({ notification_email_prefs: nextPrefs })
+    .eq("id", userData.user.id);
+  if (error) return { success: false, error: toFriendlyAuthError(error.message) };
+  return { success: true, data: undefined };
+}
+
 export async function updateAccentThemeAction(theme: AccentTheme): Promise<ActionResult> {
   if (!ACCENT_THEMES.some((t) => t.id === theme)) {
     return { success: false, error: "Thème invalide." };

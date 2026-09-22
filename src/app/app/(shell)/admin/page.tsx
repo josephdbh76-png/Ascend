@@ -6,6 +6,7 @@ import { getCampaignHistory, listEmailTemplates } from "@/services/email-campaig
 import { listTransactionalEmailPreviews } from "@/lib/transactionalEmailPreviews";
 import { listInfluencers } from "@/services/influencer.service";
 import { listAllDealsForAdmin } from "@/services/deal.service";
+import { listEmailToggleGroups } from "@/services/notification.service";
 import { createClient } from "@/lib/supabase/server";
 import { AdminUsersTable } from "./AdminUsersTable";
 import { TitleStripeSyncButton } from "./TitleStripeSyncButton";
@@ -16,6 +17,7 @@ import { EmailCampaignPanel } from "./EmailCampaignPanel";
 import { TransactionalEmailPreviews } from "./TransactionalEmailPreviews";
 import { InfluencerProgramPanel } from "./InfluencerProgramPanel";
 import { DealsPanel } from "./DealsPanel";
+import { EmailToggleGroupsPanel } from "./EmailToggleGroupsPanel";
 import { Card } from "@/components/ui/Card";
 
 export const metadata: Metadata = { title: "Administration" };
@@ -28,14 +30,16 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (!(await isCurrentUserAdmin())) redirect("/app/dashboard");
 
-  const [users, pendingRevenueReviews, campaignHistory, emailTemplates, influencers, deals] = await Promise.all([
-    listUsersForAdmin(),
-    getPendingRevenueReviews(),
-    getCampaignHistory(),
-    listEmailTemplates(),
-    listInfluencers(),
-    listAllDealsForAdmin(),
-  ]);
+  const [users, pendingRevenueReviews, campaignHistory, emailTemplates, influencers, deals, emailToggleGroups] =
+    await Promise.all([
+      listUsersForAdmin(),
+      getPendingRevenueReviews(),
+      getCampaignHistory(),
+      listEmailTemplates(),
+      listInfluencers(),
+      listAllDealsForAdmin(),
+      listEmailToggleGroups(),
+    ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -114,6 +118,17 @@ export default async function AdminPage() {
           </p>
         </div>
         <TransactionalEmailPreviews items={listTransactionalEmailPreviews()} />
+      </Card>
+
+      <Card className="flex flex-col gap-1 p-5" elevated>
+        <div className="mb-2">
+          <h2 className="text-sm font-semibold text-text-primary">Emails automatiques — activation</h2>
+          <p className="text-xs text-text-secondary">
+            Coupe l&apos;envoi d&apos;un type d&apos;email pour tout le monde, indépendamment des préférences
+            personnelles de chaque membre.
+          </p>
+        </div>
+        <EmailToggleGroupsPanel groups={emailToggleGroups} />
       </Card>
 
       <div>

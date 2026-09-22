@@ -25,6 +25,7 @@ import {
   type InfluencerCommissionRow,
 } from "@/services/influencer.service";
 import { createDeal, setDealActive, deleteDeal, type DealRow, type CreateDealInput } from "@/services/deal.service";
+import { setEmailTypeEnabledPlatformWide } from "@/services/notification.service";
 import type { CampaignAudience, EmailTemplateRow } from "@/lib/emailCampaignDisplay";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { SubscriptionTier } from "@/types/database.types";
@@ -320,6 +321,17 @@ export async function deleteDealAction(dealId: string): Promise<ActionResult> {
     await deleteDeal(dealId);
     revalidatePath("/app/admin");
     revalidatePath("/app/network");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function setEmailTypeEnabledAction(emailKey: string, enabled: boolean): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    await setEmailTypeEnabledPlatformWide(emailKey, enabled);
+    revalidatePath("/app/admin");
     return { success: true, data: undefined };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };

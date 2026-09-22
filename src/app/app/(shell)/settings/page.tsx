@@ -62,7 +62,11 @@ export default async function SettingsPage() {
       .eq("user_id", user.id)
       .maybeSingle(),
     supabase.from("privacy_settings").select("*").eq("user_id", user.id).maybeSingle(),
-    supabase.from("profiles").select("marketing_consent, email_notifications_enabled").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("marketing_consent, email_notifications_enabled, notification_email_prefs")
+      .eq("id", user.id)
+      .maybeSingle(),
     supabase.from("revenue_sources").select("status").eq("user_id", user.id).eq("provider", "stripe").maybeSingle(),
     supabase
       .from("revenue_sources")
@@ -175,6 +179,7 @@ export default async function SettingsPage() {
         <MarketingConsentToggle
           initialMarketing={marketing?.marketing_consent ?? false}
           initialTransactional={marketing?.email_notifications_enabled ?? true}
+          initialPrefs={marketing?.notification_email_prefs ?? {}}
         />
       </Card>
 

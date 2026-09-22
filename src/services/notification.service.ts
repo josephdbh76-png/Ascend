@@ -8,6 +8,21 @@ import { getAppUrl } from "@/lib/utils";
 import type { NotificationType } from "@/types/database.types";
 
 /**
+ * Admin-wide kill switch, checked before any per-member preference —
+ * absence of a row means enabled, so a new email type works by default
+ * without needing a migration or a seed row.
+ */
+export async function isEmailTypeEnabledPlatformWide(emailKey: string): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("automated_email_settings")
+    .select("enabled")
+    .eq("email_key", emailKey)
+    .maybeSingle();
+  return data?.enabled ?? true;
+}
+
+/**
  * Best-effort — a failed email should never break the in-app notification
  * it rides along with, so every failure is swallowed after being logged.
  * Looks the recipient up by id regardless of which client created the
@@ -18,13 +33,22 @@ import type { NotificationType } from "@/types/database.types";
  */
 async function sendTransactionalEmail(userId: string, type: NotificationType, title: string, body: string) {
   try {
+    if (!(await isEmailTypeEnabledPlatformWide(type))) return;
+
     const admin = createAdminClient();
     const [{ data: authUser }, { data: profile }] = await Promise.all([
       admin.auth.admin.getUserById(userId),
-      admin.from("profiles").select("first_name, email_notifications_enabled").eq("id", userId).maybeSingle(),
+      admin
+        .from("profiles")
+        .select("first_name, email_notifications_enabled, notification_email_prefs")
+        .eq("id", userId)
+        .maybeSingle(),
     ]);
     const email = authUser?.user?.email;
     if (!email || profile?.email_notifications_enabled === false) return;
+    // Per-member granular opt-out, layered under the blanket master
+    // switch above — absence of a key means enabled, same convention.
+    if (profile?.notification_email_prefs?.[type] === false) return;
 
     const content = transactionalEmailContent(type, { title, body, firstName: profile?.first_name ?? null });
     if (!content) return;
@@ -167,6 +191,44 @@ export async function markNotificationRead(userId: string, notificationId: strin
     .update({ read_at: new Date().toISOString() })
     .eq("id", notificationId)
     .eq("user_id", userId);
+}
+
+export interface EmailToggleGroup {
+  key: string;
+  label: string;
+  enabled: boolean;
+}
+
+const EMAIL_TOGGLE_LABELS: Record<string, string> = {
+  welcome: "Bienvenue",
+  new_follower: "Nouvel abonné",
+  new_message: "Nouveau message",
+  new_application: "Nouvelle candidature",
+  application_status_changed: "Statut de candidature (acceptée/refusée)",
+  verification_completed: "Revenus vérifiés",
+  revenue_review_completed: "Déclaration de revenu (validée/refusée)",
+  referral_rewarded: "Parrainage récompensé",
+};
+
+/** Admin-only: the full on/off state for every automated email type, in a stable order. */
+export async function listEmailToggleGroups(): Promise<EmailToggleGroup[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.from("automated_email_settings").select("email_key, enabled");
+  const overrides = new Map((data ?? []).map((r) => [r.email_key, r.enabled]));
+
+  return Object.entries(EMAIL_TOGGLE_LABELS).map(([key, label]) => ({
+    key,
+    label,
+    enabled: overrides.get(key) ?? true,
+  }));
+}
+
+export async function setEmailTypeEnabledPlatformWide(emailKey: string, enabled: boolean): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("automated_email_settings")
+    .upsert({ email_key: emailKey, enabled, updated_at: new Date().toISOString() }, { onConflict: "email_key" });
+  if (error) throw new Error(error.message);
 }
 
 export async function markAllNotificationsRead(userId: string) {
