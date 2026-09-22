@@ -2976,3 +2976,125 @@ create policy "admins can view influencer commissions" on influencer_commissions
 
 grant insert, update on influencers to service_role;
 grant insert, update on influencer_commissions to service_role;
+
+-- Two independent layers of control over automated emails: an
+-- admin-wide kill switch per email type (this table — absence of a row
+-- means "enabled", so new email types work by default without a
+-- migration), and a per-member granular opt-out (profiles column below,
+-- same absence-means-enabled convention) layered on top of the existing
+-- blanket email_notifications_enabled master switch.
+create table automated_email_settings (
+  email_key text primary key,
+  enabled boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+
+alter table automated_email_settings enable row level security;
+
+create policy "admins can view automated email settings" on automated_email_settings
+  for select using (
+    exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
+
+grant insert, update on automated_email_settings to service_role;
+
+alter table profiles add column notification_email_prefs jsonb not null default '{}'::jsonb;
+
+-- "Bons plans" — admin-curated deals from influencers (mostly training/
+-- course sales), Elite-only. ASCEND never processes the payment for these
+-- (that would mean collecting money on behalf of a third party's own
+-- product) — each deal links out to the influencer's own checkout, same
+-- spirit as the discount codes already used for ASCEND subscriptions.
+create table deals (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null,
+  influencer_name text not null,
+  original_price_cents integer not null,
+  deal_price_cents integer not null,
+  external_url text not null,
+  cover_image_url text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+alter table deals enable row level security;
+
+-- Elite-gating happens in application code (same pattern as the
+-- Opportunities "Découvrir" catalog) — RLS here only needs to keep
+-- inactive/draft deals hidden from everyone but admins.
+create policy "members can view active deals" on deals
+  for select using (is_active = true);
+
+create policy "admins can view all deals" on deals
+  for select using (
+    exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
+
+grant insert, update, delete on deals to service_role;
+
+-- The discount percentage and lifetime-vs-once duration were hardcoded
+-- (10% forever) when the influencer program shipped — now configurable
+-- per influencer, since different creators warrant different deals.
+alter table influencers add column discount_percent numeric not null default 10;
+alter table influencers add column duration text not null default 'forever' check (duration in ('forever', 'once'));
+
+-- Peer-to-peer resale market for owned titles, with real payouts via
+-- Stripe Connect (Express accounts) — a seller must complete Connect
+-- onboarding (identity verification included) before they can list
+-- anything. Only writes go through service-role service functions after
+-- server-side validation (ownership, no duplicate active listing,
+-- tradeable flag); RLS below only governs direct reads.
+
+create table seller_accounts (
+  user_id uuid primary key references profiles (id) on delete cascade,
+  stripe_account_id text not null unique,
+  payouts_enabled boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table seller_accounts enable row level security;
+
+create policy "members can view their own seller account" on seller_accounts
+  for select using (auth.uid() = user_id);
+
+grant insert, update on seller_accounts to service_role;
+
+-- Only the limited-supply purchasable titles are resellable — collectible
+-- scarcity is where FOMO actually makes sense; "earned" achievement
+-- badges (top-10, founding-member, ...) stay non-transferable so nobody
+-- can sell their way into a rank/date-based badge they didn't earn.
+alter table titles add column tradeable boolean not null default false;
+update titles set tradeable = true where type = 'purchasable';
+
+create table title_listings (
+  id uuid primary key default gen_random_uuid(),
+  seller_id uuid not null references profiles (id) on delete cascade,
+  user_title_id uuid not null references user_titles (id) on delete cascade,
+  title_id text not null references titles (id) on delete cascade,
+  price_cents integer not null check (price_cents > 0),
+  status text not null default 'active' check (status in ('active', 'sold', 'cancelled')),
+  buyer_id uuid references profiles (id),
+  commission_cents integer,
+  stripe_checkout_session_id text,
+  view_count integer not null default 0,
+  created_at timestamptz not null default now(),
+  sold_at timestamptz
+);
+
+-- Only one active listing per owned title instance at a time.
+create unique index title_listings_one_active_per_user_title
+  on title_listings (user_title_id) where status = 'active';
+create index title_listings_status_idx on title_listings (status, created_at desc);
+
+alter table title_listings enable row level security;
+
+create policy "anyone can view active listings" on title_listings
+  for select using (status = 'active');
+create policy "sellers can view their own listings" on title_listings
+  for select using (auth.uid() = seller_id);
+create policy "buyers can view listings they bought" on title_listings
+  for select using (auth.uid() = buyer_id);
+
+grant insert, update on title_listings to service_role;

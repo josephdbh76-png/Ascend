@@ -15,14 +15,18 @@ export function MessageThread({
   conversationId,
   currentUserId,
   thread,
+  messagesRemaining,
 }: {
   conversationId: string;
   currentUserId: string;
   thread: { otherUser: ConversationParticipant; status: ConversationStatus; isRequester: boolean; messages: MessageRow[] };
+  /** null for Elite (unlimited); remaining sends this month for Pro. */
+  messagesRemaining: number | null;
 }) {
   const [messages, setMessages] = useState(thread.messages);
   const [status, setStatus] = useState(thread.status);
   const [body, setBody] = useState("");
+  const [remaining, setRemaining] = useState(messagesRemaining);
   const [pending, startTransition] = useTransition();
   const toast = useToast();
   const router = useRouter();
@@ -64,6 +68,7 @@ export function MessageThread({
         toast.show(result.error, "error");
         return;
       }
+      setRemaining((r) => (r == null ? r : Math.max(0, r - 1)));
       if (canReplyToAccept) setStatus("accepted");
     });
   }
@@ -146,11 +151,27 @@ export function MessageThread({
           En attente d&apos;une réponse — tu ne peux envoyer qu&apos;un seul message tant que{" "}
           {thread.otherUser.firstName} n&apos;a pas répondu ou accepté.
         </div>
+      ) : remaining != null && remaining <= 0 ? (
+        <div className="flex flex-col items-center gap-1.5 rounded-md border border-gold/30 bg-gold/5 px-4 py-3 text-center">
+          <Lock className="h-4 w-4 text-gold" />
+          <p className="text-xs text-text-secondary">
+            Tu as atteint ta limite de messages ce mois-ci.{" "}
+            <a href="/api/stripe/checkout?tier=elite" className="text-gold hover:underline">
+              Passe Elite
+            </a>{" "}
+            pour un accès illimité.
+          </p>
+        </div>
       ) : (
         <div className="flex flex-col gap-1.5">
           {firstContact && (
             <p className="flex items-center gap-1.5 px-1 text-[11px] text-text-muted">
               <Lock className="h-3 w-3" /> 1 seul message autorisé avant réponse ou acceptation.
+            </p>
+          )}
+          {remaining != null && (
+            <p className="px-1 text-[11px] text-text-muted">
+              {remaining} message{remaining > 1 ? "s" : ""} restant{remaining > 1 ? "s" : ""} ce mois-ci (formule Pro).
             </p>
           )}
           <form onSubmit={submit} className="flex items-center gap-2">

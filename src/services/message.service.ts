@@ -284,6 +284,22 @@ export async function getConversationThread(
   };
 }
 
+export const PRO_MONTHLY_MESSAGE_LIMIT = 10;
+
+export async function getSentMessageCountThisMonth(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const startOfMonth = new Date();
+  startOfMonth.setUTCDate(1);
+  startOfMonth.setUTCHours(0, 0, 0, 0);
+
+  const { count } = await supabase
+    .from("messages")
+    .select("*", { count: "exact", head: true })
+    .eq("sender_id", userId)
+    .gte("created_at", startOfMonth.toISOString());
+  return count ?? 0;
+}
+
 export async function getUnreadMessageCount(userId: string): Promise<number> {
   const supabase = await createClient();
   const { data: conversations } = await supabase

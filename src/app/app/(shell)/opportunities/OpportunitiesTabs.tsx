@@ -16,13 +16,14 @@ const TABS = [
 ];
 
 export function OpportunitiesTabs({
-  isElite,
+  canBrowse,
   discoverable,
   teaser,
   applications,
   myOpportunities,
 }: {
-  isElite: boolean;
+  /** Pro or Elite — Free still sees only the FOMO teaser. */
+  canBrowse: boolean;
   discoverable: OpportunityMatch[];
   teaser: DiscoverTeaser | null;
   applications: (OpportunityApplication & { opportunity: Opportunity })[];
@@ -35,7 +36,7 @@ export function OpportunitiesTabs({
       <Tabs items={TABS} defaultValue="discover" onChange={setTab} className="sm:w-fit" />
 
       {tab === "discover" &&
-        (isElite ? (
+        (canBrowse ? (
           <DiscoverOpportunities opportunities={discoverable} />
         ) : (
           <OpportunitiesFomoTeaser

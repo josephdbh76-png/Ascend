@@ -3,12 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { opportunitySchema, opportunityApplicationSchema } from "@/lib/validations";
-import { getSubscription, hasEliteAccess } from "@/services/subscription.service";
+import { getSubscription, hasProAccess, hasEliteAccess } from "@/services/subscription.service";
 import {
   createOpportunity,
   closeOpportunity,
   applyToOpportunity,
   updateApplicationStatus,
+  getApplicationCountThisMonth,
+  PRO_MONTHLY_APPLICATION_LIMIT,
   type CreateOpportunityInput,
   type UploadedAttachment,
 } from "@/services/opportunity.service";
@@ -73,8 +75,17 @@ export async function applyToOpportunityAction(opportunityId: string, formData: 
   const userId = userData.user.id;
 
   const subscription = await getSubscription(userId);
+  if (!hasProAccess(subscription.tier)) {
+    return { success: false, error: "Postuler aux opportunités est réservé aux membres Pro et Elite." };
+  }
   if (!hasEliteAccess(subscription.tier)) {
-    return { success: false, error: "Postuler aux opportunités est réservé aux membres Elite." };
+    const appliedThisMonth = await getApplicationCountThisMonth(userId);
+    if (appliedThisMonth >= PRO_MONTHLY_APPLICATION_LIMIT) {
+      return {
+        success: false,
+        error: `Tu as atteint ta limite de ${PRO_MONTHLY_APPLICATION_LIMIT} candidatures ce mois-ci. Passe Elite pour un accès illimité.`,
+      };
+    }
   }
 
   const files = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);

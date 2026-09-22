@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Lock, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getSubscription, hasEliteAccess } from "@/services/subscription.service";
+import { getSubscription, hasProAccess } from "@/services/subscription.service";
 import { listConversations } from "@/services/message.service";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
@@ -19,9 +19,9 @@ export default async function MessagesPage() {
   if (!user) return null;
 
   const subscription = await getSubscription(user.id);
-  const isElite = hasEliteAccess(subscription.tier);
+  const isPro = hasProAccess(subscription.tier);
 
-  if (!isElite) {
+  if (!isPro) {
     return (
       <div className="flex flex-col gap-6">
         <div>
@@ -30,11 +30,11 @@ export default async function MessagesPage() {
         </div>
         <EmptyState
           icon={Lock}
-          title="Réservé aux membres Elite."
-          description="Envoie et reçois des messages depuis n'importe quel profil — une fonctionnalité Elite."
+          title="Réservé aux membres Pro et Elite."
+          description="Envoie et reçois des messages depuis n'importe quel profil — Pro donne 10 messages par mois, Elite un accès illimité."
           action={
-            <Button href="/api/stripe/checkout?tier=elite" size="sm">
-              Passer Elite
+            <Button href="/api/stripe/checkout?tier=pro" size="sm">
+              Passer Pro
             </Button>
           }
         />

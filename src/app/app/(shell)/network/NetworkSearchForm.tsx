@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, Lock } from "lucide-react";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
@@ -11,10 +11,13 @@ export function NetworkSearchForm({
   initialQuery,
   initialCity,
   initialCategory,
+  cityLocked,
 }: {
   initialQuery: string;
   initialCity: string;
   initialCategory: string;
+  /** True for Pro (non-Elite) — the city field is shown but disabled with an upsell. */
+  cityLocked: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -26,7 +29,7 @@ export function NetworkSearchForm({
     e.preventDefault();
     const params = new URLSearchParams();
     if (query.trim()) params.set("q", query.trim());
-    if (city.trim()) params.set("city", city.trim());
+    if (!cityLocked && city.trim()) params.set("city", city.trim());
     if (category) params.set("category", category);
     router.push(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`);
   }
@@ -42,12 +45,19 @@ export function NetworkSearchForm({
           className="pl-10"
         />
       </div>
-      <Input
-        value={city}
-        onChange={(e) => setCity(e.target.value)}
-        placeholder="Ville..."
-        className="sm:w-48"
-      />
+      <div className="relative sm:w-48">
+        <Input
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          placeholder={cityLocked ? "Ville (Elite)" : "Ville..."}
+          disabled={cityLocked}
+          title={cityLocked ? "Recherche par ville réservée aux membres Elite." : undefined}
+          className={cityLocked ? "pr-8 opacity-60" : undefined}
+        />
+        {cityLocked && (
+          <Lock className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+        )}
+      </div>
       <Select value={category} onChange={(e) => setCategory(e.target.value)} className="sm:w-56">
         <option value="">Toutes les activités</option>
         {BUSINESS_CATEGORIES.map((c) => (

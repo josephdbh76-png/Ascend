@@ -5,14 +5,17 @@ import { getPendingRevenueReviews } from "@/services/revenue.service";
 import { getCampaignHistory, listEmailTemplates } from "@/services/email-campaign.service";
 import { listTransactionalEmailPreviews } from "@/lib/transactionalEmailPreviews";
 import { listInfluencers } from "@/services/influencer.service";
+import { listAllDealsForAdmin } from "@/services/deal.service";
 import { createClient } from "@/lib/supabase/server";
 import { AdminUsersTable } from "./AdminUsersTable";
 import { TitleStripeSyncButton } from "./TitleStripeSyncButton";
 import { AnnualPriceSyncPanel } from "./AnnualPriceSyncPanel";
+import { ElitePricingPanel } from "./ElitePricingPanel";
 import { RevenueReviewQueue } from "./RevenueReviewQueue";
 import { EmailCampaignPanel } from "./EmailCampaignPanel";
 import { TransactionalEmailPreviews } from "./TransactionalEmailPreviews";
 import { InfluencerProgramPanel } from "./InfluencerProgramPanel";
+import { DealsPanel } from "./DealsPanel";
 import { Card } from "@/components/ui/Card";
 
 export const metadata: Metadata = { title: "Administration" };
@@ -25,12 +28,13 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (!(await isCurrentUserAdmin())) redirect("/app/dashboard");
 
-  const [users, pendingRevenueReviews, campaignHistory, emailTemplates, influencers] = await Promise.all([
+  const [users, pendingRevenueReviews, campaignHistory, emailTemplates, influencers, deals] = await Promise.all([
     listUsersForAdmin(),
     getPendingRevenueReviews(),
     getCampaignHistory(),
     listEmailTemplates(),
     listInfluencers(),
+    listAllDealsForAdmin(),
   ]);
 
   return (
@@ -63,6 +67,16 @@ export default async function AdminPage() {
 
       <Card className="flex flex-col gap-3 p-5" elevated>
         <div>
+          <h2 className="text-sm font-semibold text-text-primary">Tarif Elite</h2>
+          <p className="text-xs text-text-secondary">
+            Crée les nouveaux prix Stripe (39€/mois, 351€/an) sur le produit Elite existant.
+          </p>
+        </div>
+        <ElitePricingPanel />
+      </Card>
+
+      <Card className="flex flex-col gap-3 p-5" elevated>
+        <div>
           <h2 className="text-sm font-semibold text-text-primary">Campagne email</h2>
           <p className="text-xs text-text-secondary">
             Envoie un email à un segment de membres — un lien de désinscription est ajouté automatiquement, seuls les membres ayant donné leur consentement le reçoivent.
@@ -80,6 +94,16 @@ export default async function AdminPage() {
           </p>
         </div>
         <InfluencerProgramPanel influencers={influencers} />
+      </Card>
+
+      <Card className="flex flex-col gap-3 p-5" elevated>
+        <div>
+          <h2 className="text-sm font-semibold text-text-primary">Bons plans</h2>
+          <p className="text-xs text-text-secondary">
+            Offres d&apos;influenceurs (formations, etc.) visibles uniquement par les membres Elite dans le Réseau.
+          </p>
+        </div>
+        <DealsPanel deals={deals} />
       </Card>
 
       <Card className="flex flex-col gap-1 p-5" elevated>

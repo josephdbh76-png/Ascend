@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isCurrentUserAdmin, adminSetTier, adminSetIsAdmin } from "@/services/admin.service";
 import { syncPurchasableTitleStripeProducts } from "@/services/title.service";
 import { approveRevenueDeclaration, rejectRevenueDeclaration } from "@/services/revenue.service";
-import { syncAnnualPrices, type AnnualPriceSyncResult } from "@/services/subscription.service";
+import { syncAnnualPrices, updateElitePricing, type AnnualPriceSyncResult, type ElitePriceUpdateResult } from "@/services/subscription.service";
 import {
   getAudienceCount,
   sendCampaign,
@@ -24,6 +24,7 @@ import {
   type InfluencerRow,
   type InfluencerCommissionRow,
 } from "@/services/influencer.service";
+import { createDeal, setDealActive, deleteDeal, type DealRow, type CreateDealInput } from "@/services/deal.service";
 import type { CampaignAudience, EmailTemplateRow } from "@/lib/emailCampaignDisplay";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { SubscriptionTier } from "@/types/database.types";
@@ -60,6 +61,17 @@ export async function adminSyncTitleStripeProductsAction(): Promise<ActionResult
 
   try {
     const result = await syncPurchasableTitleStripeProducts();
+    return { success: true, data: result };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function adminUpdateElitePricingAction(): Promise<ActionResult<ElitePriceUpdateResult[]>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+
+  try {
+    const result = await updateElitePricing();
     return { success: true, data: result };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
@@ -223,12 +235,19 @@ export async function deleteEmailTemplateAction(id: string): Promise<ActionResul
   }
 }
 
-export async function createInfluencerAction(name: string, email: string, code: string): Promise<ActionResult<InfluencerRow>> {
+export async function createInfluencerAction(
+  name: string,
+  email: string,
+  code: string,
+  discountPercent: number,
+  commissionPercent: number,
+  duration: "forever" | "once",
+): Promise<ActionResult<InfluencerRow>> {
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   if (!name.trim() || !email.trim() || !code.trim()) return { success: false, error: "Nom, email et code obligatoires." };
 
   try {
-    const influencer = await createInfluencer(name, email, code);
+    const influencer = await createInfluencer(name, email, code, commissionPercent / 100, discountPercent, duration);
     revalidatePath("/app/admin");
     return { success: true, data: influencer };
   } catch (err) {
@@ -261,6 +280,46 @@ export async function markCommissionPaidAction(commissionId: string): Promise<Ac
   try {
     await markCommissionPaid(commissionId);
     revalidatePath("/app/admin");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function createDealAction(input: CreateDealInput): Promise<ActionResult<DealRow>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  if (!input.title.trim() || !input.description.trim() || !input.influencerName.trim() || !input.externalUrl.trim()) {
+    return { success: false, error: "Tous les champs sont obligatoires." };
+  }
+
+  try {
+    const deal = await createDeal(input);
+    revalidatePath("/app/admin");
+    revalidatePath("/app/network");
+    return { success: true, data: deal };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function setDealActiveAction(dealId: string, isActive: boolean): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    await setDealActive(dealId, isActive);
+    revalidatePath("/app/admin");
+    revalidatePath("/app/network");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function deleteDealAction(dealId: string): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    await deleteDeal(dealId);
+    revalidatePath("/app/admin");
+    revalidatePath("/app/network");
     return { success: true, data: undefined };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };

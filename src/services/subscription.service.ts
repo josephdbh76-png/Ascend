@@ -138,3 +138,58 @@ export async function syncAnnualPrices(): Promise<AnnualPriceSyncResult[]> {
 
   return results;
 }
+
+export interface ElitePriceUpdateResult {
+  interval: "month" | "year";
+  priceId: string;
+  envVar: string;
+  amountCents: number;
+  alreadyExisted: boolean;
+}
+
+// Stripe prices are immutable in amount, so a pricing change always means
+// a NEW Price object on the same Product — existing subscribers keep
+// whatever price their subscription already references either way, this
+// only affects what new checkouts use once the env vars below are set.
+const NEW_ELITE_PRICES: Record<"month" | "year", { amountCents: number; envVar: string }> = {
+  month: { amountCents: 3900, envVar: "STRIPE_PRICE_ELITE" },
+  year: { amountCents: 35100, envVar: "STRIPE_PRICE_ELITE_ANNUAL" }, // 39€ × 9 months — 3 months free, same structure as before
+};
+
+/**
+ * Admin-only, idempotent: creates (or finds, if already created) the new
+ * Elite monthly + annual prices on the existing Elite product. Returns the
+ * IDs so an admin can set them as STRIPE_PRICE_ELITE /
+ * STRIPE_PRICE_ELITE_ANNUAL — this app has no way to write Vercel env
+ * vars itself.
+ */
+export async function updateElitePricing(): Promise<ElitePriceUpdateResult[]> {
+  const { getStripe, priceIdForTier } = await import("@/lib/stripe");
+  const stripe = getStripe();
+
+  const currentMonthlyPrice = await stripe.prices.retrieve(priceIdForTier("elite", "month"));
+  const productId =
+    typeof currentMonthlyPrice.product === "string" ? currentMonthlyPrice.product : currentMonthlyPrice.product.id;
+
+  const existingPrices = await stripe.prices.list({ product: productId, active: true, limit: 100 });
+  const results: ElitePriceUpdateResult[] = [];
+
+  for (const interval of ["month", "year"] as const) {
+    const { amountCents, envVar } = NEW_ELITE_PRICES[interval];
+    const match = existingPrices.data.find((p) => p.recurring?.interval === interval && p.unit_amount === amountCents);
+    if (match) {
+      results.push({ interval, priceId: match.id, envVar, amountCents, alreadyExisted: true });
+      continue;
+    }
+
+    const created = await stripe.prices.create({
+      product: productId,
+      unit_amount: amountCents,
+      currency: "eur",
+      recurring: { interval },
+    });
+    results.push({ interval, priceId: created.id, envVar, amountCents, alreadyExisted: false });
+  }
+
+  return results;
+}

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Plus, Copy, Check, ChevronDown, ChevronUp, Power, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Field, Input } from "@/components/ui/Input";
+import { Field, Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { formatCurrency } from "@/lib/utils";
@@ -21,6 +21,9 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
+  const [discountPercent, setDiscountPercent] = useState("10");
+  const [commissionPercent, setCommissionPercent] = useState("20");
+  const [duration, setDuration] = useState<"forever" | "once">("forever");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [commissions, setCommissions] = useState<InfluencerCommissionRow[]>([]);
   const [loadingCommissions, setLoadingCommissions] = useState(false);
@@ -31,7 +34,14 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
   function create(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
-      const result = await createInfluencerAction(name, email, code);
+      const result = await createInfluencerAction(
+        name,
+        email,
+        code,
+        Number(discountPercent),
+        Number(commissionPercent),
+        duration,
+      );
       if (!result.success) return toast.show(result.error, "error");
       setInfluencers((prev) => [result.data, ...prev]);
       toast.show(`Code "${result.data.code}" créé.`, "success");
@@ -39,6 +49,9 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
       setName("");
       setEmail("");
       setCode("");
+      setDiscountPercent("10");
+      setCommissionPercent("20");
+      setDuration("forever");
     });
   }
 
@@ -97,9 +110,8 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <p className="text-xs text-text-secondary">
-          Chaque code donne -10% à vie à l&apos;abonné, et te rappelle de verser une commission
-          {influencers[0] ? ` (${Math.round(influencers[0].commissionRate * 100)}% par défaut)` : ""} sur son premier
-          paiement.
+          Réduction, commission et durée sont réglables par influenceur — la commission se calcule sur le
+          premier paiement, une fois, quelle que soit la durée de la réduction.
         </p>
         <Button size="sm" onClick={() => setModalOpen(true)} className="shrink-0">
           <Plus className="h-3.5 w-3.5" /> Nouveau code
@@ -123,14 +135,20 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
                     )}
                   </div>
                   <p className="truncate text-xs text-text-muted">{i.email}</p>
-                  <button
-                    type="button"
-                    onClick={() => copyCode(i.id, i.code)}
-                    className="mt-1 inline-flex items-center gap-1 rounded border border-border bg-card px-1.5 py-0.5 font-mono text-xs text-text-secondary hover:border-gold/50"
-                  >
-                    {i.code}
-                    {copiedId === i.id ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
-                  </button>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => copyCode(i.id, i.code)}
+                      className="inline-flex items-center gap-1 rounded border border-border bg-card px-1.5 py-0.5 font-mono text-xs text-text-secondary hover:border-gold/50"
+                    >
+                      {i.code}
+                      {copiedId === i.id ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
+                    </button>
+                    <span className="text-[11px] text-text-muted">
+                      -{i.discountPercent}% {i.duration === "forever" ? "à vie" : "au 1er paiement"} · commission{" "}
+                      {Math.round(i.commissionRate * 100)}%
+                    </span>
+                  </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-4">
                   <div className="text-right text-xs">
@@ -198,7 +216,39 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
               required
             />
           </Field>
-          <Button type="submit" disabled={pending || !name.trim() || !email.trim() || !code.trim()} className="self-start">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Réduction (%)" hint="Pour l'abonné.">
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(e.target.value)}
+                required
+              />
+            </Field>
+            <Field label="Commission (%)" hint="Pour l'influenceur.">
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={commissionPercent}
+                onChange={(e) => setCommissionPercent(e.target.value)}
+                required
+              />
+            </Field>
+          </div>
+          <Field label="Durée de la réduction">
+            <Select value={duration} onChange={(e) => setDuration(e.target.value as "forever" | "once")}>
+              <option value="forever">À vie (tant que l&apos;abonné reste abonné)</option>
+              <option value="once">Une seule fois (premier paiement)</option>
+            </Select>
+          </Field>
+          <Button
+            type="submit"
+            disabled={pending || !name.trim() || !email.trim() || !code.trim() || !discountPercent || !commissionPercent}
+            className="self-start"
+          >
             Créer le code
           </Button>
         </form>

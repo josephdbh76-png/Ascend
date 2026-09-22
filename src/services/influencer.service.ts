@@ -3,14 +3,14 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const DISCOUNT_PERCENT_OFF = 10;
-
 export interface InfluencerRow {
   id: string;
   name: string;
   email: string;
   code: string;
   commissionRate: number;
+  discountPercent: number;
+  duration: "forever" | "once";
   status: "active" | "inactive";
   createdAt: string;
   pendingCents: number;
@@ -28,23 +28,28 @@ export interface InfluencerCommissionRow {
   createdAt: string;
 }
 
-// Creates the Stripe coupon (10% off, applied to every renewal for as
-// long as the subscription stays active) and the human-readable
-// promotion code the influencer shares with their audience, then stores
-// the pairing so the webhook can attribute a sale back to them.
+// Creates the Stripe coupon (the discount% off, applied either once or to
+// every renewal for as long as the subscription stays active, per
+// `duration`) and the human-readable promotion code the influencer shares
+// with their audience, then stores the pairing so the webhook can
+// attribute a sale back to them.
 export async function createInfluencer(
   name: string,
   email: string,
   rawCode: string,
-  commissionRate = 0.2,
+  commissionRate: number,
+  discountPercent: number,
+  duration: "forever" | "once",
 ): Promise<InfluencerRow> {
   const code = rawCode.trim().toUpperCase();
   if (!code) throw new Error("Le code ne peut pas être vide.");
+  if (discountPercent <= 0 || discountPercent > 100) throw new Error("La réduction doit être entre 1 et 100%.");
+  if (commissionRate <= 0 || commissionRate > 1) throw new Error("La commission doit être entre 1 et 100%.");
 
   const stripe = getStripe();
   const coupon = await stripe.coupons.create({
-    percent_off: DISCOUNT_PERCENT_OFF,
-    duration: "forever",
+    percent_off: discountPercent,
+    duration,
     name: `Influenceur — ${name}`,
   });
 
@@ -72,8 +77,10 @@ export async function createInfluencer(
       stripe_coupon_id: coupon.id,
       stripe_promotion_code_id: promotionCode.id,
       commission_rate: commissionRate,
+      discount_percent: discountPercent,
+      duration,
     })
-    .select("id, name, email, code, commission_rate, status, created_at")
+    .select("id, name, email, code, commission_rate, discount_percent, duration, status, created_at")
     .single();
 
   if (error || !data) {
@@ -88,6 +95,8 @@ export async function createInfluencer(
     email: data.email,
     code: data.code,
     commissionRate: data.commission_rate,
+    discountPercent: data.discount_percent,
+    duration: data.duration,
     status: data.status,
     createdAt: data.created_at,
     pendingCents: 0,
@@ -99,7 +108,7 @@ export async function listInfluencers(): Promise<InfluencerRow[]> {
   const admin = createAdminClient();
   const { data: influencers, error } = await admin
     .from("influencers")
-    .select("id, name, email, code, commission_rate, status, created_at")
+    .select("id, name, email, code, commission_rate, discount_percent, duration, status, created_at")
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
 
@@ -119,6 +128,8 @@ export async function listInfluencers(): Promise<InfluencerRow[]> {
     email: i.email,
     code: i.code,
     commissionRate: i.commission_rate,
+    discountPercent: i.discount_percent,
+    duration: i.duration,
     status: i.status,
     createdAt: i.created_at,
     pendingCents: totals.get(i.id)?.pending ?? 0,

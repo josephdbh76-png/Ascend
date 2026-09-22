@@ -62,7 +62,7 @@ export function NetworkFomoTeaser({
           <p className="mt-1 max-w-sm text-sm text-text-secondary">
             {hasCategoryMatch
               ? `Dont ${sameCategoryCount} en ${categoryLabel(category!)} — recherche, suis et échange avec eux.`
-              : "Recherche par nom, ville ou activité, et connecte-toi avec eux — réservé aux membres Elite."}
+              : "Recherche par nom ou activité, et connecte-toi avec eux — réservé aux membres Pro et Elite."}
           </p>
         </div>
         <Button onClick={() => setOpen(true)}>
@@ -82,7 +82,7 @@ export function NetworkFomoTeaser({
         }
         resultScore={hasCategoryMatch ? sameCategoryCount : null}
         resultScoreFormat={(n) => `${Math.round(n)}`}
-        resultSubtext="Passe Elite pour parcourir le réseau, suivre des fondateurs et échanger en message privé."
+        resultSubtext="Passe Pro pour parcourir le réseau et suivre des fondateurs — Elite ajoute la recherche par ville."
         ctaLabel="Débloquer le Réseau"
         ctaHref="/app/settings#abonnement"
       />

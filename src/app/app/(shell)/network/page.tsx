@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Flame, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getSubscription, hasEliteAccess } from "@/services/subscription.service";
+import { getSubscription, hasProAccess, hasEliteAccess } from "@/services/subscription.service";
 import { searchNetwork, getTrendingFounders, getNewestFounders, getNetworkTeaser } from "@/services/network.service";
+import { listActiveDeals } from "@/services/deal.service";
 import { NetworkFomoTeaser } from "@/components/fomo/NetworkFomoTeaser";
+import { DealsSection } from "@/components/network/DealsSection";
 import { NetworkSearchForm } from "./NetworkSearchForm";
 import { NetworkResults } from "./NetworkResults";
 
@@ -20,19 +22,25 @@ export default async function NetworkPage({
     data: { user },
   } = await supabase.auth.getUser();
   const subscription = user ? await getSubscription(user.id) : null;
+  const isPro = subscription ? hasProAccess(subscription.tier) : false;
   const isElite = subscription ? hasEliteAccess(subscription.tier) : false;
 
-  const hasFilters = !!(params.q || params.city || params.category);
+  // City search is Elite-only — a Pro member's city param is silently
+  // dropped server-side (never trusted from the URL alone), not just
+  // hidden in the form.
+  const cityFilter = isElite ? params.city : undefined;
+  const hasFilters = !!(params.q || cityFilter || params.category);
 
-  const results = isElite && user
-    ? await searchNetwork({ query: params.q, city: params.city, category: params.category }, user.id)
+  const results = isPro && user
+    ? await searchNetwork({ query: params.q, city: cityFilter, category: params.category }, user.id)
     : [];
 
-  const [trending, newest] = isElite && user && !hasFilters
+  const [trending, newest] = isPro && user && !hasFilters
     ? await Promise.all([getTrendingFounders(user.id), getNewestFounders(user.id)])
     : [[], []];
 
-  const teaser = !isElite && user ? await getNetworkTeaser(user.id) : null;
+  const teaser = !isPro && user ? await getNetworkTeaser(user.id) : null;
+  const deals = isElite ? await listActiveDeals() : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -43,13 +51,16 @@ export default async function NetworkPage({
         </p>
       </div>
 
-      {isElite ? (
+      {isPro ? (
         <>
           <NetworkSearchForm
             initialQuery={params.q ?? ""}
-            initialCity={params.city ?? ""}
+            initialCity={cityFilter ?? ""}
             initialCategory={params.category ?? ""}
+            cityLocked={!isElite}
           />
+
+          {isElite && !hasFilters && <DealsSection deals={deals} />}
 
           {!hasFilters && trending.length > 0 && (
             <section className="flex flex-col gap-3">

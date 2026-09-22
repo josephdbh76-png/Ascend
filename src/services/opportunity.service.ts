@@ -407,6 +407,22 @@ export async function applyToOpportunity(
   });
 }
 
+export const PRO_MONTHLY_APPLICATION_LIMIT = 5;
+
+export async function getApplicationCountThisMonth(applicantId: string): Promise<number> {
+  const supabase = await createClient();
+  const startOfMonth = new Date();
+  startOfMonth.setUTCDate(1);
+  startOfMonth.setUTCHours(0, 0, 0, 0);
+
+  const { count } = await supabase
+    .from("opportunity_applications")
+    .select("*", { count: "exact", head: true })
+    .eq("applicant_id", applicantId)
+    .gte("created_at", startOfMonth.toISOString());
+  return count ?? 0;
+}
+
 export async function updateApplicationStatus(
   authorId: string,
   applicationId: string,

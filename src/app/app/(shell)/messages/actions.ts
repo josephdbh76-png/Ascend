@@ -2,11 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getSubscription, hasEliteAccess } from "@/services/subscription.service";
-import { getOrCreateConversation, sendMessage, acceptConversation } from "@/services/message.service";
+import { getSubscription, hasProAccess, hasEliteAccess } from "@/services/subscription.service";
+import {
+  getOrCreateConversation,
+  sendMessage,
+  acceptConversation,
+  getSentMessageCountThisMonth,
+  PRO_MONTHLY_MESSAGE_LIMIT,
+} from "@/services/message.service";
 import type { ActionResult } from "@/app/(auth)/actions";
 
-async function requireElite(): Promise<{ userId: string } | { error: string }> {
+async function requireMessagingAccess(): Promise<{ userId: string; isElite: boolean } | { error: string }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -14,13 +20,15 @@ async function requireElite(): Promise<{ userId: string } | { error: string }> {
   if (!user) return { error: "Tu n'es pas connecté." };
 
   const subscription = await getSubscription(user.id);
-  if (!hasEliteAccess(subscription.tier)) return { error: "La messagerie est réservée aux membres Elite." };
+  if (!hasProAccess(subscription.tier)) {
+    return { error: "La messagerie est réservée aux membres Pro et Elite." };
+  }
 
-  return { userId: user.id };
+  return { userId: user.id, isElite: hasEliteAccess(subscription.tier) };
 }
 
 export async function startConversationAction(targetUserId: string): Promise<ActionResult<{ conversationId: string }>> {
-  const auth = await requireElite();
+  const auth = await requireMessagingAccess();
   if ("error" in auth) return { success: false, error: auth.error };
 
   try {
@@ -32,8 +40,18 @@ export async function startConversationAction(targetUserId: string): Promise<Act
 }
 
 export async function sendMessageAction(conversationId: string, body: string): Promise<ActionResult> {
-  const auth = await requireElite();
+  const auth = await requireMessagingAccess();
   if ("error" in auth) return { success: false, error: auth.error };
+
+  if (!auth.isElite) {
+    const sentThisMonth = await getSentMessageCountThisMonth(auth.userId);
+    if (sentThisMonth >= PRO_MONTHLY_MESSAGE_LIMIT) {
+      return {
+        success: false,
+        error: `Tu as atteint ta limite de ${PRO_MONTHLY_MESSAGE_LIMIT} messages ce mois-ci. Passe Elite pour un accès illimité.`,
+      };
+    }
+  }
 
   try {
     await sendMessage(conversationId, auth.userId, body);
@@ -46,7 +64,7 @@ export async function sendMessageAction(conversationId: string, body: string): P
 }
 
 export async function acceptConversationAction(conversationId: string): Promise<ActionResult> {
-  const auth = await requireElite();
+  const auth = await requireMessagingAccess();
   if ("error" in auth) return { success: false, error: auth.error };
 
   try {

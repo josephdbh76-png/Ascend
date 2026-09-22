@@ -65,6 +65,7 @@ export interface Database {
           email_notifications_enabled: boolean;
           referred_by: string | null;
           pro_credit_until: string | null;
+          notification_email_prefs: Record<string, boolean>;
           created_at: string;
           updated_at: string;
         };
@@ -398,6 +399,7 @@ export interface Database {
           remaining_supply: number | null;
           stripe_price_id: string | null;
           requirement: Record<string, unknown>;
+          tradeable: boolean;
           created_at: string;
         };
         Insert: Database["public"]["Tables"]["titles"]["Row"];
@@ -695,6 +697,8 @@ export interface Database {
           stripe_coupon_id: string;
           stripe_promotion_code_id: string;
           commission_rate: number;
+          discount_percent: number;
+          duration: "forever" | "once";
           status: "active" | "inactive";
           notes: string | null;
           created_at: string;
@@ -731,6 +735,76 @@ export interface Database {
           currency: string;
         };
         Update: Partial<Database["public"]["Tables"]["influencer_commissions"]["Row"]>;
+        Relationships: [];
+      };
+      automated_email_settings: {
+        Row: {
+          email_key: string;
+          enabled: boolean;
+          updated_at: string;
+        };
+        Insert: { email_key: string; enabled?: boolean };
+        Update: Partial<Database["public"]["Tables"]["automated_email_settings"]["Row"]>;
+        Relationships: [];
+      };
+      deals: {
+        Row: {
+          id: string;
+          title: string;
+          description: string;
+          influencer_name: string;
+          original_price_cents: number;
+          deal_price_cents: number;
+          external_url: string;
+          cover_image_url: string | null;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["deals"]["Row"], "id">> & {
+          title: string;
+          description: string;
+          influencer_name: string;
+          original_price_cents: number;
+          deal_price_cents: number;
+          external_url: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["deals"]["Row"]>;
+        Relationships: [];
+      };
+      seller_accounts: {
+        Row: {
+          user_id: string;
+          stripe_account_id: string;
+          payouts_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: { user_id: string; stripe_account_id: string; payouts_enabled?: boolean };
+        Update: Partial<Database["public"]["Tables"]["seller_accounts"]["Row"]>;
+        Relationships: [];
+      };
+      title_listings: {
+        Row: {
+          id: string;
+          seller_id: string;
+          user_title_id: string;
+          title_id: string;
+          price_cents: number;
+          status: "active" | "sold" | "cancelled";
+          buyer_id: string | null;
+          commission_cents: number | null;
+          stripe_checkout_session_id: string | null;
+          view_count: number;
+          created_at: string;
+          sold_at: string | null;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["title_listings"]["Row"], "id">> & {
+          seller_id: string;
+          user_title_id: string;
+          title_id: string;
+          price_cents: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["title_listings"]["Row"]>;
         Relationships: [];
       };
     };

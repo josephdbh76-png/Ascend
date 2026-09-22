@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { getSubscription, hasEliteAccess } from "@/services/subscription.service";
+import { getSubscription, hasProAccess, hasEliteAccess } from "@/services/subscription.service";
 import {
   listDiscoverableOpportunities,
   getDiscoverTeaser,
@@ -20,11 +20,12 @@ export default async function OpportunitiesPage() {
   if (!user) return null;
 
   const subscription = await getSubscription(user.id);
+  const isPro = hasProAccess(subscription.tier);
   const isElite = hasEliteAccess(subscription.tier);
 
   const [discoverable, teaser, myOpportunities, applications] = await Promise.all([
-    isElite ? listDiscoverableOpportunities(user.id) : Promise.resolve([]),
-    isElite ? Promise.resolve(null) : getDiscoverTeaser(user.id),
+    isPro ? listDiscoverableOpportunities(user.id) : Promise.resolve([]),
+    isPro ? Promise.resolve(null) : getDiscoverTeaser(user.id),
     listMyOpportunities(user.id),
     listMyApplications(user.id),
   ]);
@@ -42,7 +43,7 @@ export default async function OpportunitiesPage() {
       </div>
 
       <OpportunitiesTabs
-        isElite={isElite}
+        canBrowse={isPro}
         discoverable={discoverable}
         teaser={teaser}
         applications={applications}
