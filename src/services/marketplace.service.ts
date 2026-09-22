@@ -172,7 +172,7 @@ export async function listActiveMarketplaceListings(excludeSellerId: string | nu
   const supabase = await createClient();
   let query = supabase
     .from("title_listings")
-    .select("id, title_id, seller_id, price_cents, status, created_at, sold_at, titles(name, icon, rarity), profiles(username)")
+    .select("id, title_id, seller_id, price_cents, status, created_at, sold_at, titles(name, icon, rarity), profiles!seller_id(username)")
     .eq("status", "active")
     .order("created_at", { ascending: false });
   if (excludeSellerId) query = query.neq("seller_id", excludeSellerId);
@@ -186,7 +186,7 @@ export async function listMyListings(userId: string): Promise<MarketplaceListing
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("title_listings")
-    .select("id, title_id, seller_id, price_cents, status, created_at, sold_at, titles(name, icon, rarity), profiles(username)")
+    .select("id, title_id, seller_id, price_cents, status, created_at, sold_at, titles(name, icon, rarity), profiles!seller_id(username)")
     .eq("seller_id", userId)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
@@ -198,7 +198,7 @@ export async function listRecentSales(limit = 8): Promise<MarketplaceListing[]> 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("title_listings")
-    .select("id, title_id, seller_id, price_cents, status, created_at, sold_at, titles(name, icon, rarity), profiles(username)")
+    .select("id, title_id, seller_id, price_cents, status, created_at, sold_at, titles(name, icon, rarity), profiles!seller_id(username)")
     .eq("status", "sold")
     .order("sold_at", { ascending: false })
     .limit(limit);
