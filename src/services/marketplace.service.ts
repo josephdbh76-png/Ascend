@@ -62,7 +62,12 @@ export async function startSellerOnboarding(userId: string, email: string): Prom
       type: "express",
       country: profile?.country || "FR",
       email,
-      capabilities: { transfers: { requested: true } },
+      // Requesting transfers alone requires Stripe's manual approval (an
+      // anti-money-laundering safeguard against "receive-only" accounts).
+      // card_payments is never actually used — all charges happen on the
+      // platform's own Checkout — but requesting it too keeps this in
+      // Stripe's standard, auto-approved bucket.
+      capabilities: { transfers: { requested: true }, card_payments: { requested: true } },
     });
     accountId = account.id;
     await admin.from("seller_accounts").insert({ user_id: userId, stripe_account_id: accountId });
