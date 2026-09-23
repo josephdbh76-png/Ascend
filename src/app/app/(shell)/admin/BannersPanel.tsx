@@ -207,41 +207,49 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
               </p>
             )}
             {form.buttons.map((btn) => (
-              <div key={btn.key} className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={btn.type}
-                    onChange={(e) => updateButton(btn.key, { type: e.target.value as BannerButton["type"] })}
-                    className="w-40 shrink-0"
-                  >
-                    <option value="link">Lien</option>
-                    <option value="copy_code">Code à copier</option>
-                  </Select>
-                  <Input
-                    value={btn.label}
-                    onChange={(e) => updateButton(btn.key, { label: e.target.value })}
-                    placeholder={btn.type === "copy_code" ? "Ex. Copier le code" : "Ex. Voir l'offre"}
-                    className="flex-1"
-                  />
+              <div key={btn.key} className="flex flex-col gap-3 rounded-md border border-border bg-card p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Field label="Type de bouton">
+                    <Select
+                      value={btn.type}
+                      onChange={(e) => updateButton(btn.key, { type: e.target.value as BannerButton["type"] })}
+                      className="w-48"
+                    >
+                      <option value="link">Lien (redirige quelque part)</option>
+                      <option value="copy_code">Code à copier</option>
+                    </Select>
+                  </Field>
                   <button
                     type="button"
                     onClick={() => removeButton(btn.key)}
-                    className="shrink-0 rounded-md border border-border-strong p-2 text-text-muted hover:text-error"
+                    className="mt-5 shrink-0 rounded-md border border-border-strong p-2 text-text-muted hover:text-error"
                     aria-label="Retirer ce bouton"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
-                <Input
-                  value={btn.value}
-                  onChange={(e) =>
-                    updateButton(btn.key, {
-                      value: btn.type === "copy_code" ? e.target.value.toUpperCase() : e.target.value,
-                    })
-                  }
-                  placeholder={btn.type === "copy_code" ? "Ex. ASCEND15" : "/app/network ou https://..."}
-                  className={btn.type === "copy_code" ? "font-mono uppercase" : undefined}
-                />
+                <Field label="Texte affiché sur le bouton" hint={btn.type === "copy_code" ? "Ex. Copier le code" : "Ex. Voir l'offre"}>
+                  <Input
+                    value={btn.label}
+                    onChange={(e) => updateButton(btn.key, { label: e.target.value })}
+                    placeholder={btn.type === "copy_code" ? "Copier le code" : "Voir l'offre"}
+                  />
+                </Field>
+                <Field
+                  label={btn.type === "copy_code" ? "Code promo" : "Destination du lien"}
+                  hint={btn.type === "copy_code" ? "Ce qui sera copié, ex. ASCEND15" : "Un chemin ASCEND (/app/settings) ou une URL complète (https://...)"}
+                >
+                  <Input
+                    value={btn.value}
+                    onChange={(e) =>
+                      updateButton(btn.key, {
+                        value: btn.type === "copy_code" ? e.target.value.toUpperCase() : e.target.value,
+                      })
+                    }
+                    placeholder={btn.type === "copy_code" ? "ASCEND15" : "/app/settings"}
+                    className={btn.type === "copy_code" ? "font-mono uppercase" : undefined}
+                  />
+                </Field>
               </div>
             ))}
           </div>
