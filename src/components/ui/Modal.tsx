@@ -48,11 +48,11 @@ export function Modal({
         aria-labelledby={title ? "modal-title" : undefined}
         tabIndex={-1}
         className={cn(
-          "relative w-full max-w-md rounded-lg border border-border-strong bg-card-elevated p-6 shadow-2xl animate-fade-up focus:outline-none",
+          "relative flex max-h-[85vh] w-full max-w-md flex-col rounded-lg border border-border-strong bg-card-elevated p-6 shadow-2xl animate-fade-up focus:outline-none",
           className,
         )}
       >
-        <div className="flex items-start justify-between">
+        <div className="flex shrink-0 items-start justify-between">
           {title && (
             <h2 id="modal-title" className="text-lg font-semibold text-text-primary">
               {title}
@@ -66,7 +66,7 @@ export function Modal({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="mt-4">{children}</div>
+        <div className="mt-4 overflow-y-auto">{children}</div>
       </div>
     </div>
   );
