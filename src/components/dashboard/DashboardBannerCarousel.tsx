@@ -1,33 +1,55 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import type { DashboardBannerRow } from "@/services/banner.service";
+import { Check, Copy } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import type { DashboardBannerRow, BannerButton } from "@/services/banner.service";
 
-function isExternal(url: string) {
-  return url.startsWith("http://") || url.startsWith("https://");
+function CopyCodeButton({ button }: { button: BannerButton }) {
+  const [copied, setCopied] = useState(false);
+
+  function copy() {
+    navigator.clipboard.writeText(button.value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+
+  return (
+    <Button type="button" variant="secondary" size="sm" onClick={copy}>
+      {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+      {copied ? "Copié !" : `${button.label} — ${button.value}`}
+    </Button>
+  );
+}
+
+function BannerButtons({ buttons }: { buttons: BannerButton[] }) {
+  if (buttons.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {buttons.map((btn, i) =>
+        btn.type === "copy_code" ? (
+          <CopyCodeButton key={i} button={btn} />
+        ) : (
+          <Button key={i} href={btn.value} size="sm">
+            {btn.label}
+          </Button>
+        ),
+      )}
+    </div>
+  );
 }
 
 function Slide({ banner }: { banner: DashboardBannerRow }) {
-  const content = (
-    <div className="relative aspect-[3/1] w-full overflow-hidden rounded-xl">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={banner.imageUrl} alt={banner.title} className="h-full w-full object-cover" />
-    </div>
-  );
-
-  if (!banner.linkUrl) return content;
-  if (isExternal(banner.linkUrl)) {
-    return (
-      <a href={banner.linkUrl} target="_blank" rel="noopener noreferrer" className="block">
-        {content}
-      </a>
-    );
-  }
   return (
-    <Link href={banner.linkUrl} className="block">
-      {content}
-    </Link>
+    <div className="flex flex-col gap-3">
+      <div className="relative aspect-[3/1] w-full overflow-hidden rounded-xl">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={banner.imageUrl} alt={banner.title} className="h-full w-full object-cover" />
+      </div>
+      <BannerButtons buttons={banner.buttons} />
+    </div>
   );
 }
 

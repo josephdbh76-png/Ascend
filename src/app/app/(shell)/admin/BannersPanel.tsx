@@ -1,20 +1,22 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Power, Trash2 } from "lucide-react";
+import { Plus, Power, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Field, Input } from "@/components/ui/Input";
+import { Field, Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { AdminImageUpload } from "./AdminImageUpload";
 import { createBannerAction, setBannerActiveAction, deleteBannerAction } from "./actions";
-import type { DashboardBannerRow } from "@/services/banner.service";
+import type { DashboardBannerRow, BannerButton } from "@/services/banner.service";
+
+const EMPTY_BUTTON: BannerButton = { type: "link", label: "", value: "" };
 
 const EMPTY_FORM = {
   imageUrl: null as string | null,
   title: "",
   subtitle: "",
-  linkUrl: "",
+  buttons: [] as BannerButton[],
 };
 
 export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow[] }) {
@@ -32,7 +34,7 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
         imageUrl: form.imageUrl!,
         title: form.title,
         subtitle: form.subtitle || null,
-        linkUrl: form.linkUrl || null,
+        buttons: form.buttons,
       });
       if (!result.success) return toast.show(result.error, "error");
       setBanners((prev) => [result.data, ...prev]);
@@ -48,6 +50,21 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
       if (!result.success) return toast.show(result.error, "error");
       setBanners((prev) => prev.map((b) => (b.id === banner.id ? { ...b, isActive: !b.isActive } : b)));
     });
+  }
+
+  function addButton() {
+    setForm((f) => ({ ...f, buttons: [...f.buttons, { ...EMPTY_BUTTON }] }));
+  }
+
+  function updateButton(index: number, patch: Partial<BannerButton>) {
+    setForm((f) => ({
+      ...f,
+      buttons: f.buttons.map((b, i) => (i === index ? { ...b, ...patch } : b)),
+    }));
+  }
+
+  function removeButton(index: number) {
+    setForm((f) => ({ ...f, buttons: f.buttons.filter((_, i) => i !== index) }));
   }
 
   function remove(bannerId: string) {
@@ -93,6 +110,11 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
                     )}
                   </div>
                   {b.subtitle && <p className="truncate text-xs text-text-muted">{b.subtitle}</p>}
+                  {b.buttons.length > 0 && (
+                    <p className="truncate text-xs text-text-muted">
+                      {b.buttons.map((btn) => `${btn.label} (${btn.type === "copy_code" ? "code" : "lien"})`).join(" · ")}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -117,14 +139,53 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
           <Field label="Sous-titre (optionnel)">
             <Input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} />
           </Field>
-          <Field label="Lien (optionnel)" hint="Où le membre atterrit s'il clique sur la bannière.">
-            <Input
-              type="url"
-              value={form.linkUrl}
-              onChange={(e) => setForm({ ...form, linkUrl: e.target.value })}
-              placeholder="/app/network ou https://..."
-            />
-          </Field>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-text-primary">Boutons (optionnel)</span>
+              <Button type="button" variant="secondary" size="sm" onClick={addButton}>
+                <Plus className="h-3.5 w-3.5" /> Ajouter
+              </Button>
+            </div>
+            {form.buttons.length === 0 && (
+              <p className="text-xs text-text-muted">
+                Aucun bouton — seule l&apos;image sera affichée. Ajoute un bouton lien ou un code à copier.
+              </p>
+            )}
+            {form.buttons.map((btn, i) => (
+              <div key={i} className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={btn.type}
+                    onChange={(e) => updateButton(i, { type: e.target.value as BannerButton["type"] })}
+                    className="w-40 shrink-0"
+                  >
+                    <option value="link">Lien</option>
+                    <option value="copy_code">Code à copier</option>
+                  </Select>
+                  <Input
+                    value={btn.label}
+                    onChange={(e) => updateButton(i, { label: e.target.value })}
+                    placeholder={btn.type === "copy_code" ? "Ex. Copier le code" : "Ex. Voir l'offre"}
+                    className="flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeButton(i)}
+                    className="shrink-0 rounded-md border border-border-strong p-2 text-text-muted hover:text-error"
+                    aria-label="Retirer ce bouton"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <Input
+                  value={btn.value}
+                  onChange={(e) => updateButton(i, { value: e.target.value })}
+                  placeholder={btn.type === "copy_code" ? "Ex. ASCEND15" : "/app/network ou https://..."}
+                  className={btn.type === "copy_code" ? "font-mono uppercase" : undefined}
+                />
+              </div>
+            ))}
+          </div>
           <Button type="submit" disabled={pending || !form.imageUrl || !form.title.trim()} className="self-start">
             Créer la bannière
           </Button>

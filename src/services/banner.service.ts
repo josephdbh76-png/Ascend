@@ -2,12 +2,18 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export interface BannerButton {
+  type: "link" | "copy_code";
+  label: string;
+  value: string;
+}
+
 export interface DashboardBannerRow {
   id: string;
   imageUrl: string;
   title: string;
   subtitle: string | null;
-  linkUrl: string | null;
+  buttons: BannerButton[];
   displayOrder: number;
   isActive: boolean;
   createdAt: string;
@@ -18,7 +24,7 @@ type BannerDbRow = {
   image_url: string;
   title: string;
   subtitle: string | null;
-  link_url: string | null;
+  buttons: BannerButton[];
   display_order: number;
   is_active: boolean;
   created_at: string;
@@ -30,7 +36,7 @@ function mapBanner(row: BannerDbRow): DashboardBannerRow {
     imageUrl: row.image_url,
     title: row.title,
     subtitle: row.subtitle,
-    linkUrl: row.link_url,
+    buttons: row.buttons ?? [],
     displayOrder: row.display_order,
     isActive: row.is_active,
     createdAt: row.created_at,
@@ -65,11 +71,12 @@ export interface CreateBannerInput {
   imageUrl: string;
   title: string;
   subtitle?: string | null;
-  linkUrl?: string | null;
+  buttons?: BannerButton[];
   displayOrder?: number;
 }
 
 export async function createBanner(input: CreateBannerInput): Promise<DashboardBannerRow> {
+  const buttons = (input.buttons ?? []).filter((b) => b.label.trim() && b.value.trim());
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("dashboard_banners")
@@ -77,7 +84,7 @@ export async function createBanner(input: CreateBannerInput): Promise<DashboardB
       image_url: input.imageUrl,
       title: input.title.trim(),
       subtitle: input.subtitle?.trim() || null,
-      link_url: input.linkUrl?.trim() || null,
+      buttons,
       display_order: input.displayOrder ?? 0,
     })
     .select("*")

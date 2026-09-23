@@ -813,7 +813,7 @@ export interface Database {
           image_url: string;
           title: string;
           subtitle: string | null;
-          link_url: string | null;
+          buttons: { type: "link" | "copy_code"; label: string; value: string }[];
           display_order: number;
           is_active: boolean;
           created_at: string;
