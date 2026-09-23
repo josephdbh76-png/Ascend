@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Check, Copy } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import type { DashboardBannerRow, BannerButton } from "@/services/banner.service";
+
+// Both chip styles below share the exact same padding/height so a link
+// button and a code chip sitting side by side on a banner read as one
+// matched pair, not two mismatched controls.
+const CHIP_SIZING = "px-3.5 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base";
 
 // Styled to match the dashed voucher-chip look of the source banner
 // designs — meant to sit directly on the artwork, not as generic UI chrome.
@@ -21,14 +26,30 @@ function CopyCodeChip({ button }: { button: BannerButton }) {
     <button
       type="button"
       onClick={copy}
-      className="flex items-center gap-2.5 rounded-lg border-[1.5px] border-dashed border-gold/55 bg-black/40 px-3.5 py-2 backdrop-blur-sm transition-colors hover:bg-black/55 sm:px-4 sm:py-2.5"
+      className={`flex items-center gap-2.5 rounded-lg border-[1.5px] border-dashed border-gold/55 bg-black/40 backdrop-blur-sm transition-colors hover:bg-black/55 ${CHIP_SIZING}`}
     >
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-white/60 sm:text-[11px]">
-        {button.label || "Code"}
-      </span>
-      <span className="font-mono text-sm font-extrabold tracking-wide text-white sm:text-base">{button.value}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-white/60 sm:text-[11px]">Code</span>
+      <span className="font-mono font-extrabold tracking-wide text-white">{button.value}</span>
       {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5 text-white/70" />}
     </button>
+  );
+}
+
+function LinkChip({ button }: { button: BannerButton }) {
+  const isExternal = button.value.startsWith("http://") || button.value.startsWith("https://");
+  const className = `inline-flex items-center gap-2 rounded-lg bg-gold font-bold text-[#0a0a0a] transition-colors hover:bg-gold-light ${CHIP_SIZING}`;
+
+  if (isExternal) {
+    return (
+      <a href={button.value} target="_blank" rel="noopener noreferrer" className={className}>
+        {button.label}
+      </a>
+    );
+  }
+  return (
+    <Link href={button.value} className={className}>
+      {button.label}
+    </Link>
   );
 }
 
@@ -37,15 +58,7 @@ function BannerButtons({ buttons }: { buttons: BannerButton[] }) {
 
   return (
     <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-2 p-3 sm:gap-3 sm:p-5">
-      {buttons.map((btn, i) =>
-        btn.type === "copy_code" ? (
-          <CopyCodeChip key={i} button={btn} />
-        ) : (
-          <Button key={i} href={btn.value} size="sm">
-            {btn.label}
-          </Button>
-        ),
-      )}
+      {buttons.map((btn, i) => (btn.type === "copy_code" ? <CopyCodeChip key={i} button={btn} /> : <LinkChip key={i} button={btn} />))}
     </div>
   );
 }

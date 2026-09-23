@@ -57,10 +57,16 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
     e.preventDefault();
     if (!form.imageUrl) return;
 
-    const incomplete = form.buttons.find((b) => !!b.label.trim() !== !!b.value.trim());
+    // A copy_code button only ever needs the code itself — the label is
+    // never shown for that type (it's always rendered as "CODE").
+    const incomplete = form.buttons.find((b) =>
+      b.type === "copy_code" ? !b.value.trim() : !!b.label.trim() !== !!b.value.trim(),
+    );
     if (incomplete) {
       return toast.show(
-        `Le bouton "${incomplete.label || incomplete.value || "sans nom"}" est incomplet — remplis les deux champs ou retire-le.`,
+        incomplete.type === "copy_code"
+          ? "Un bouton code n'a pas de valeur — remplis-le ou retire-le."
+          : `Le bouton "${incomplete.label || incomplete.value || "sans nom"}" est incomplet — remplis les deux champs ou retire-le.`,
         "error",
       );
     }
@@ -71,8 +77,8 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
         title: form.title,
         subtitle: form.subtitle || null,
         buttons: form.buttons
-          .filter((b) => b.label.trim() && b.value.trim())
-          .map(({ type, label, value }) => ({ type, label, value })),
+          .filter((b) => (b.type === "copy_code" ? b.value.trim() : b.label.trim() && b.value.trim()))
+          .map(({ type, label, value }) => ({ type, label: type === "copy_code" ? "" : label, value })),
       };
       const result = editingId ? await updateBannerAction(editingId, payload) : await createBannerAction(payload);
       if (!result.success) return toast.show(result.error, "error");
@@ -154,7 +160,7 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
                   {b.subtitle && <p className="truncate text-xs text-text-muted">{b.subtitle}</p>}
                   {b.buttons.length > 0 && (
                     <p className="truncate text-xs text-text-muted">
-                      {b.buttons.map((btn) => `${btn.label} (${btn.type === "copy_code" ? "code" : "lien"})`).join(" · ")}
+                      {b.buttons.map((btn) => (btn.type === "copy_code" ? `Code ${btn.value}` : `${btn.label} (lien)`)).join(" · ")}
                     </p>
                   )}
                 </div>
@@ -228,13 +234,15 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
                     <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
-                <Field label="Texte affiché sur le bouton" hint={btn.type === "copy_code" ? "Ex. Copier le code" : "Ex. Voir l'offre"}>
-                  <Input
-                    value={btn.label}
-                    onChange={(e) => updateButton(btn.key, { label: e.target.value })}
-                    placeholder={btn.type === "copy_code" ? "Copier le code" : "Voir l'offre"}
-                  />
-                </Field>
+                {btn.type === "link" && (
+                  <Field label="Texte affiché sur le bouton" hint="Ex. Voir l'offre">
+                    <Input
+                      value={btn.label}
+                      onChange={(e) => updateButton(btn.key, { label: e.target.value })}
+                      placeholder="Voir l'offre"
+                    />
+                  </Field>
+                )}
                 <Field
                   label={btn.type === "copy_code" ? "Code promo" : "Destination du lien"}
                   hint={btn.type === "copy_code" ? "Ce qui sera copié, ex. ASCEND15" : "Un chemin ASCEND (/app/settings) ou une URL complète (https://...)"}
