@@ -10,14 +10,9 @@ function isExternal(url: string) {
 
 function Slide({ banner }: { banner: DashboardBannerRow }) {
   const content = (
-    <div className="relative h-32 w-full overflow-hidden rounded-xl sm:h-40">
+    <div className="relative aspect-[3/1] w-full overflow-hidden rounded-xl">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={banner.imageUrl} alt="" className="h-full w-full object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 p-4">
-        <p className="text-sm font-semibold text-white sm:text-base">{banner.title}</p>
-        {banner.subtitle && <p className="text-xs text-white/80">{banner.subtitle}</p>}
-      </div>
+      <img src={banner.imageUrl} alt={banner.title} className="h-full w-full object-cover" />
     </div>
   );
 
