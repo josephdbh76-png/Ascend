@@ -10,13 +10,22 @@ import { AdminImageUpload } from "./AdminImageUpload";
 import { createBannerAction, updateBannerAction, setBannerActiveAction, deleteBannerAction } from "./actions";
 import type { DashboardBannerRow, BannerButton } from "@/services/banner.service";
 
-const EMPTY_BUTTON: BannerButton = { type: "link", label: "", value: "" };
+// A locally-generated id, never sent to the server — React needs a key
+// that stays attached to the same conceptual row when buttons are added
+// or removed, and the array index isn't stable enough for that.
+interface EditableButton extends BannerButton {
+  key: string;
+}
+
+function newButton(): EditableButton {
+  return { key: crypto.randomUUID(), type: "link", label: "", value: "" };
+}
 
 const EMPTY_FORM = {
   imageUrl: null as string | null,
   title: "",
   subtitle: "",
-  buttons: [] as BannerButton[],
+  buttons: [] as EditableButton[],
 };
 
 export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow[] }) {
@@ -39,7 +48,7 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
       imageUrl: banner.imageUrl,
       title: banner.title,
       subtitle: banner.subtitle ?? "",
-      buttons: banner.buttons,
+      buttons: banner.buttons.map((b) => ({ ...b, key: crypto.randomUUID() })),
     });
     setModalOpen(true);
   }
@@ -47,12 +56,23 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
   function save(e: React.FormEvent) {
     e.preventDefault();
     if (!form.imageUrl) return;
+
+    const incomplete = form.buttons.find((b) => !!b.label.trim() !== !!b.value.trim());
+    if (incomplete) {
+      return toast.show(
+        `Le bouton "${incomplete.label || incomplete.value || "sans nom"}" est incomplet — remplis les deux champs ou retire-le.`,
+        "error",
+      );
+    }
+
     startTransition(async () => {
       const payload = {
         imageUrl: form.imageUrl!,
         title: form.title,
         subtitle: form.subtitle || null,
-        buttons: form.buttons,
+        buttons: form.buttons
+          .filter((b) => b.label.trim() && b.value.trim())
+          .map(({ type, label, value }) => ({ type, label, value })),
       };
       const result = editingId ? await updateBannerAction(editingId, payload) : await createBannerAction(payload);
       if (!result.success) return toast.show(result.error, "error");
@@ -75,18 +95,18 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
   }
 
   function addButton() {
-    setForm((f) => ({ ...f, buttons: [...f.buttons, { ...EMPTY_BUTTON }] }));
+    setForm((f) => ({ ...f, buttons: [...f.buttons, newButton()] }));
   }
 
-  function updateButton(index: number, patch: Partial<BannerButton>) {
+  function updateButton(key: string, patch: Partial<BannerButton>) {
     setForm((f) => ({
       ...f,
-      buttons: f.buttons.map((b, i) => (i === index ? { ...b, ...patch } : b)),
+      buttons: f.buttons.map((b) => (b.key === key ? { ...b, ...patch } : b)),
     }));
   }
 
-  function removeButton(index: number) {
-    setForm((f) => ({ ...f, buttons: f.buttons.filter((_, i) => i !== index) }));
+  function removeButton(key: string) {
+    setForm((f) => ({ ...f, buttons: f.buttons.filter((b) => b.key !== key) }));
   }
 
   function remove(bannerId: string) {
@@ -186,12 +206,12 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
                 Aucun bouton — seule l&apos;image sera affichée. Ajoute un bouton lien ou un code à copier.
               </p>
             )}
-            {form.buttons.map((btn, i) => (
-              <div key={i} className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
+            {form.buttons.map((btn) => (
+              <div key={btn.key} className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
                 <div className="flex items-center gap-2">
                   <Select
                     value={btn.type}
-                    onChange={(e) => updateButton(i, { type: e.target.value as BannerButton["type"] })}
+                    onChange={(e) => updateButton(btn.key, { type: e.target.value as BannerButton["type"] })}
                     className="w-40 shrink-0"
                   >
                     <option value="link">Lien</option>
@@ -199,13 +219,13 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
                   </Select>
                   <Input
                     value={btn.label}
-                    onChange={(e) => updateButton(i, { label: e.target.value })}
+                    onChange={(e) => updateButton(btn.key, { label: e.target.value })}
                     placeholder={btn.type === "copy_code" ? "Ex. Copier le code" : "Ex. Voir l'offre"}
                     className="flex-1"
                   />
                   <button
                     type="button"
-                    onClick={() => removeButton(i)}
+                    onClick={() => removeButton(btn.key)}
                     className="shrink-0 rounded-md border border-border-strong p-2 text-text-muted hover:text-error"
                     aria-label="Retirer ce bouton"
                   >
@@ -214,7 +234,11 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
                 </div>
                 <Input
                   value={btn.value}
-                  onChange={(e) => updateButton(i, { value: e.target.value })}
+                  onChange={(e) =>
+                    updateButton(btn.key, {
+                      value: btn.type === "copy_code" ? e.target.value.toUpperCase() : e.target.value,
+                    })
+                  }
                   placeholder={btn.type === "copy_code" ? "Ex. ASCEND15" : "/app/network ou https://..."}
                   className={btn.type === "copy_code" ? "font-mono uppercase" : undefined}
                 />

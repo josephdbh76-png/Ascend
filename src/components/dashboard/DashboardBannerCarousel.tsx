@@ -5,7 +5,9 @@ import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { DashboardBannerRow, BannerButton } from "@/services/banner.service";
 
-function CopyCodeButton({ button }: { button: BannerButton }) {
+// Styled to match the dashed voucher-chip look of the source banner
+// designs — meant to sit directly on the artwork, not as generic UI chrome.
+function CopyCodeChip({ button }: { button: BannerButton }) {
   const [copied, setCopied] = useState(false);
 
   function copy() {
@@ -16,10 +18,17 @@ function CopyCodeButton({ button }: { button: BannerButton }) {
   }
 
   return (
-    <Button type="button" variant="secondary" size="sm" onClick={copy}>
-      {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-      {copied ? "Copié !" : `${button.label} — ${button.value}`}
-    </Button>
+    <button
+      type="button"
+      onClick={copy}
+      className="flex items-center gap-2.5 rounded-lg border-[1.5px] border-dashed border-gold/55 bg-black/40 px-3.5 py-2 backdrop-blur-sm transition-colors hover:bg-black/55 sm:px-4 sm:py-2.5"
+    >
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-white/60 sm:text-[11px]">
+        {button.label || "Code"}
+      </span>
+      <span className="font-mono text-sm font-extrabold tracking-wide text-white sm:text-base">{button.value}</span>
+      {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5 text-white/70" />}
+    </button>
   );
 }
 
@@ -27,10 +36,10 @@ function BannerButtons({ buttons }: { buttons: BannerButton[] }) {
   if (buttons.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-2 p-3 sm:gap-3 sm:p-5">
       {buttons.map((btn, i) =>
         btn.type === "copy_code" ? (
-          <CopyCodeButton key={i} button={btn} />
+          <CopyCodeChip key={i} button={btn} />
         ) : (
           <Button key={i} href={btn.value} size="sm">
             {btn.label}
@@ -43,11 +52,9 @@ function BannerButtons({ buttons }: { buttons: BannerButton[] }) {
 
 function Slide({ banner }: { banner: DashboardBannerRow }) {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="relative aspect-[3/1] w-full overflow-hidden rounded-xl">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={banner.imageUrl} alt={banner.title} className="h-full w-full object-cover" />
-      </div>
+    <div className="relative aspect-[3/1] w-full overflow-hidden rounded-xl">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={banner.imageUrl} alt={banner.title} className="h-full w-full object-cover" />
       <BannerButtons buttons={banner.buttons} />
     </div>
   );
