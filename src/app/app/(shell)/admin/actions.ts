@@ -28,6 +28,7 @@ import {
 import { createDeal, setDealActive, deleteDeal, type DealRow, type CreateDealInput } from "@/services/deal.service";
 import {
   createBanner,
+  updateBanner,
   setBannerActive,
   deleteBanner,
   type DashboardBannerRow,
@@ -352,6 +353,23 @@ export async function createBannerAction(input: CreateBannerInput): Promise<Acti
 
   try {
     const banner = await createBanner(input);
+    revalidatePath("/app/admin");
+    revalidatePath("/app/dashboard");
+    return { success: true, data: banner };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function updateBannerAction(
+  bannerId: string,
+  input: CreateBannerInput,
+): Promise<ActionResult<DashboardBannerRow>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  if (!input.imageUrl || !input.title.trim()) return { success: false, error: "Image et titre obligatoires." };
+
+  try {
+    const banner = await updateBanner(bannerId, input);
     revalidatePath("/app/admin");
     revalidatePath("/app/dashboard");
     return { success: true, data: banner };

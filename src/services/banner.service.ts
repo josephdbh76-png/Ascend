@@ -93,6 +93,24 @@ export async function createBanner(input: CreateBannerInput): Promise<DashboardB
   return mapBanner(data);
 }
 
+export async function updateBanner(bannerId: string, input: CreateBannerInput): Promise<DashboardBannerRow> {
+  const buttons = (input.buttons ?? []).filter((b) => b.label.trim() && b.value.trim());
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("dashboard_banners")
+    .update({
+      image_url: input.imageUrl,
+      title: input.title.trim(),
+      subtitle: input.subtitle?.trim() || null,
+      buttons,
+    })
+    .eq("id", bannerId)
+    .select("*")
+    .single();
+  if (error || !data) throw new Error(error?.message ?? "Impossible de modifier la bannière.");
+  return mapBanner(data);
+}
+
 export async function setBannerActive(bannerId: string, isActive: boolean): Promise<void> {
   const admin = createAdminClient();
   const { error } = await admin.from("dashboard_banners").update({ is_active: isActive }).eq("id", bannerId);

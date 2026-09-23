@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Power, Trash2, X } from "lucide-react";
+import { Plus, Power, Trash2, X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { AdminImageUpload } from "./AdminImageUpload";
-import { createBannerAction, setBannerActiveAction, deleteBannerAction } from "./actions";
+import { createBannerAction, updateBannerAction, setBannerActiveAction, deleteBannerAction } from "./actions";
 import type { DashboardBannerRow, BannerButton } from "@/services/banner.service";
 
 const EMPTY_BUTTON: BannerButton = { type: "link", label: "", value: "" };
@@ -22,25 +22,47 @@ const EMPTY_FORM = {
 export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow[] }) {
   const [banners, setBanners] = useState(initial);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [pending, startTransition] = useTransition();
   const toast = useToast();
 
-  function create(e: React.FormEvent) {
+  function openCreate() {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setModalOpen(true);
+  }
+
+  function openEdit(banner: DashboardBannerRow) {
+    setEditingId(banner.id);
+    setForm({
+      imageUrl: banner.imageUrl,
+      title: banner.title,
+      subtitle: banner.subtitle ?? "",
+      buttons: banner.buttons,
+    });
+    setModalOpen(true);
+  }
+
+  function save(e: React.FormEvent) {
     e.preventDefault();
     if (!form.imageUrl) return;
     startTransition(async () => {
-      const result = await createBannerAction({
+      const payload = {
         imageUrl: form.imageUrl!,
         title: form.title,
         subtitle: form.subtitle || null,
         buttons: form.buttons,
-      });
+      };
+      const result = editingId ? await updateBannerAction(editingId, payload) : await createBannerAction(payload);
       if (!result.success) return toast.show(result.error, "error");
-      setBanners((prev) => [result.data, ...prev]);
-      toast.show("Bannière créée.", "success");
+      setBanners((prev) =>
+        editingId ? prev.map((b) => (b.id === editingId ? result.data : b)) : [result.data, ...prev],
+      );
+      toast.show(editingId ? "Bannière modifiée." : "Bannière créée.", "success");
       setModalOpen(false);
       setForm(EMPTY_FORM);
+      setEditingId(null);
     });
   }
 
@@ -83,7 +105,7 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
           Affichées en haut du tableau de bord de tous les membres. Sans bannière active, rien ne change sur
           le tableau de bord.
         </p>
-        <Button size="sm" onClick={() => setModalOpen(true)} className="shrink-0">
+        <Button size="sm" onClick={openCreate} className="shrink-0">
           <Plus className="h-3.5 w-3.5" /> Nouvelle bannière
         </Button>
       </div>
@@ -118,6 +140,9 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => openEdit(b)} disabled={pending}>
+                  <Pencil className="h-3.5 w-3.5" /> Modifier
+                </Button>
                 <Button variant="secondary" size="sm" onClick={() => toggleActive(b)} disabled={pending}>
                   <Power className="h-3.5 w-3.5" /> {b.isActive ? "Désactiver" : "Réactiver"}
                 </Button>
@@ -130,8 +155,18 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nouvelle bannière">
-        <form onSubmit={create} className="flex flex-col gap-4">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? "Modifier la bannière" : "Nouvelle bannière"}>
+        <form
+          onSubmit={save}
+          onKeyDown={(e) => {
+            // Several plain text inputs live in this form (title,
+            // subtitle, per-button label/value) — Enter in any of them
+            // would otherwise submit the whole banner immediately,
+            // silently dropping whatever button row wasn't filled in yet.
+            if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") e.preventDefault();
+          }}
+          className="flex flex-col gap-4"
+        >
           <AdminImageUpload value={form.imageUrl} onChange={(url) => setForm({ ...form, imageUrl: url })} />
           <Field label="Titre" hint="Le texte accrocheur affiché sur la bannière.">
             <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required autoFocus />
@@ -187,7 +222,7 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
             ))}
           </div>
           <Button type="submit" disabled={pending || !form.imageUrl || !form.title.trim()} className="self-start">
-            Créer la bannière
+            {editingId ? "Enregistrer" : "Créer la bannière"}
           </Button>
         </form>
       </Modal>
