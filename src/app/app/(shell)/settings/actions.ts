@@ -26,6 +26,39 @@ import { ACCENT_THEMES } from "@/lib/constants";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { AccentTheme } from "@/types/database.types";
 
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
+export async function uploadAvatarAction(formData: FormData): Promise<ActionResult<{ url: string }>> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { success: false, error: "Aucune image fournie." };
+  if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+    return { success: false, error: "Format non supporté (JPG, PNG ou WebP)." };
+  }
+  if (file.size > MAX_AVATAR_BYTES) return { success: false, error: "Image trop lourde (max 5 Mo)." };
+
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `${userData.user.id}/${Date.now()}.${ext}`;
+  const { error: uploadError } = await supabase.storage
+    .from("avatars")
+    .upload(path, file, { contentType: file.type, upsert: true });
+  if (uploadError) return { success: false, error: "Le téléversement a échoué." };
+
+  const { data: publicUrl } = supabase.storage.from("avatars").getPublicUrl(path);
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_url: publicUrl.publicUrl })
+    .eq("id", userData.user.id);
+  if (error) return { success: false, error: toFriendlyAuthError(error.message) };
+
+  return { success: true, data: { url: publicUrl.publicUrl } };
+}
+
 export async function updateProfileAction(input: {
   firstName: string;
   lastName: string;

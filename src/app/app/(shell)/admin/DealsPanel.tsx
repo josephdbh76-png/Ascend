@@ -7,6 +7,7 @@ import { Field, Input, Textarea } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { formatCurrency } from "@/lib/utils";
+import { AdminImageUpload } from "./AdminImageUpload";
 import { createDealAction, setDealActiveAction, deleteDealAction } from "./actions";
 import type { DealRow } from "@/services/deal.service";
 
@@ -17,6 +18,7 @@ const EMPTY_FORM = {
   originalPrice: "",
   dealPrice: "",
   externalUrl: "",
+  coverImageUrl: null as string | null,
 };
 
 export function DealsPanel({ deals: initial }: { deals: DealRow[] }) {
@@ -36,6 +38,7 @@ export function DealsPanel({ deals: initial }: { deals: DealRow[] }) {
         originalPriceCents: Math.round(Number(form.originalPrice) * 100),
         dealPriceCents: Math.round(Number(form.dealPrice) * 100),
         externalUrl: form.externalUrl,
+        coverImageUrl: form.coverImageUrl,
       });
       if (!result.success) return toast.show(result.error, "error");
       setDeals((prev) => [result.data, ...prev]);
@@ -87,7 +90,12 @@ export function DealsPanel({ deals: initial }: { deals: DealRow[] }) {
               key={d.id}
               className="flex flex-col items-start gap-3 rounded-md border border-border-strong bg-card-elevated p-4 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-3">
+                {d.coverImageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={d.coverImageUrl} alt="" className="h-10 w-10 shrink-0 rounded object-cover" />
+                )}
+                <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="truncate text-sm font-medium text-text-primary">{d.title}</p>
                   {!d.isActive && (
@@ -99,6 +107,7 @@ export function DealsPanel({ deals: initial }: { deals: DealRow[] }) {
                 <p className="truncate text-xs text-text-muted">
                   {d.influencerName} — {formatCurrency(d.dealPriceCents)} au lieu de {formatCurrency(d.originalPriceCents)}
                 </p>
+                </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <Button variant="secondary" size="sm" onClick={() => toggleActive(d)} disabled={pending}>
@@ -129,6 +138,11 @@ export function DealsPanel({ deals: initial }: { deals: DealRow[] }) {
           <Field label="Nom de l'influenceur">
             <Input value={form.influencerName} onChange={(e) => setForm({ ...form, influencerName: e.target.value })} required />
           </Field>
+          <AdminImageUpload
+            value={form.coverImageUrl}
+            onChange={(url) => setForm({ ...form, coverImageUrl: url })}
+            hint="Photo de l'influenceur ou visuel de la formation. Optionnel — recommandé pour que les membres le reconnaissent."
+          />
           <div className="grid grid-cols-2 gap-3">
             <Field label="Prix normal (€)">
               <Input

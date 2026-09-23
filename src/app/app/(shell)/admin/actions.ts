@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isCurrentUserAdmin, adminSetTier, adminSetIsAdmin } from "@/services/admin.service";
 import { syncPurchasableTitleStripeProducts } from "@/services/title.service";
 import { approveRevenueDeclaration, rejectRevenueDeclaration } from "@/services/revenue.service";
@@ -25,6 +26,13 @@ import {
   type InfluencerCommissionRow,
 } from "@/services/influencer.service";
 import { createDeal, setDealActive, deleteDeal, type DealRow, type CreateDealInput } from "@/services/deal.service";
+import {
+  createBanner,
+  setBannerActive,
+  deleteBanner,
+  type DashboardBannerRow,
+  type CreateBannerInput,
+} from "@/services/banner.service";
 import { setEmailTypeEnabledPlatformWide } from "@/services/notification.service";
 import type { CampaignAudience, EmailTemplateRow } from "@/lib/emailCampaignDisplay";
 import type { ActionResult } from "@/app/(auth)/actions";
@@ -336,4 +344,66 @@ export async function setEmailTypeEnabledAction(emailKey: string, enabled: boole
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }
+}
+
+export async function createBannerAction(input: CreateBannerInput): Promise<ActionResult<DashboardBannerRow>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  if (!input.imageUrl || !input.title.trim()) return { success: false, error: "Image et titre obligatoires." };
+
+  try {
+    const banner = await createBanner(input);
+    revalidatePath("/app/admin");
+    revalidatePath("/app/dashboard");
+    return { success: true, data: banner };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function setBannerActiveAction(bannerId: string, isActive: boolean): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    await setBannerActive(bannerId, isActive);
+    revalidatePath("/app/admin");
+    revalidatePath("/app/dashboard");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function deleteBannerAction(bannerId: string): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    await deleteBanner(bannerId);
+    revalidatePath("/app/admin");
+    revalidatePath("/app/dashboard");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+const MAX_ADMIN_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_ADMIN_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
+/** Shared upload used by both deal cover images and dashboard banners. */
+export async function uploadAdminImageAction(formData: FormData): Promise<ActionResult<{ url: string }>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { success: false, error: "Aucune image fournie." };
+  if (!ALLOWED_ADMIN_IMAGE_TYPES.includes(file.type)) {
+    return { success: false, error: "Format non supporté (JPG, PNG ou WebP)." };
+  }
+  if (file.size > MAX_ADMIN_IMAGE_BYTES) return { success: false, error: "Image trop lourde (max 5 Mo)." };
+
+  const admin = createAdminClient();
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `${crypto.randomUUID()}.${ext}`;
+  const { error: uploadError } = await admin.storage.from("admin-media").upload(path, file, { contentType: file.type });
+  if (uploadError) return { success: false, error: "Le téléversement a échoué." };
+
+  const { data } = admin.storage.from("admin-media").getPublicUrl(path);
+  return { success: true, data: { url: data.publicUrl } };
 }

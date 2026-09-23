@@ -807,6 +807,24 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["title_listings"]["Row"]>;
         Relationships: [];
       };
+      dashboard_banners: {
+        Row: {
+          id: string;
+          image_url: string;
+          title: string;
+          subtitle: string | null;
+          link_url: string | null;
+          display_order: number;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["dashboard_banners"]["Row"], "id">> & {
+          image_url: string;
+          title: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["dashboard_banners"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

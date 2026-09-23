@@ -19,8 +19,13 @@ export function DealsSection({ deals }: { deals: DealRow[] }) {
               href={d.externalUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex flex-col gap-2 rounded-lg border border-gold/30 bg-gold/5 p-4 transition-colors hover:bg-gold/10"
+              className="flex flex-col gap-2 overflow-hidden rounded-lg border border-gold/30 bg-gold/5 transition-colors hover:bg-gold/10"
             >
+              {d.coverImageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={d.coverImageUrl} alt="" className="h-32 w-full object-cover" />
+              )}
+              <div className="flex flex-col gap-2 p-4 pt-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[11px] font-semibold text-gold">
                   -{discountPercent}%
@@ -32,6 +37,7 @@ export function DealsSection({ deals }: { deals: DealRow[] }) {
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="text-sm font-semibold text-gold">{formatCurrency(d.dealPriceCents)}</span>
                 <span className="text-xs text-text-muted line-through">{formatCurrency(d.originalPriceCents)}</span>
+              </div>
               </div>
             </a>
           );

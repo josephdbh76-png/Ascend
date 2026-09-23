@@ -138,6 +138,7 @@ export default async function SettingsPage() {
             country: profile.country ?? "FR",
             city: profile.city ?? "",
           }}
+          initialAvatarUrl={profile.avatarUrl}
         />
       </Card>
 

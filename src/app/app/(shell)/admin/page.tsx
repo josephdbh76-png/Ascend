@@ -6,6 +6,7 @@ import { getCampaignHistory, listEmailTemplates } from "@/services/email-campaig
 import { listTransactionalEmailPreviews } from "@/lib/transactionalEmailPreviews";
 import { listInfluencers } from "@/services/influencer.service";
 import { listAllDealsForAdmin } from "@/services/deal.service";
+import { listAllBannersForAdmin } from "@/services/banner.service";
 import { listEmailToggleGroups } from "@/services/notification.service";
 import { createClient } from "@/lib/supabase/server";
 import { AdminUsersTable } from "./AdminUsersTable";
@@ -17,6 +18,7 @@ import { EmailCampaignPanel } from "./EmailCampaignPanel";
 import { TransactionalEmailPreviews } from "./TransactionalEmailPreviews";
 import { InfluencerProgramPanel } from "./InfluencerProgramPanel";
 import { DealsPanel } from "./DealsPanel";
+import { BannersPanel } from "./BannersPanel";
 import { EmailToggleGroupsPanel } from "./EmailToggleGroupsPanel";
 import { Card } from "@/components/ui/Card";
 
@@ -30,7 +32,7 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (!(await isCurrentUserAdmin())) redirect("/app/dashboard");
 
-  const [users, pendingRevenueReviews, campaignHistory, emailTemplates, influencers, deals, emailToggleGroups] =
+  const [users, pendingRevenueReviews, campaignHistory, emailTemplates, influencers, deals, banners, emailToggleGroups] =
     await Promise.all([
       listUsersForAdmin(),
       getPendingRevenueReviews(),
@@ -38,6 +40,7 @@ export default async function AdminPage() {
       listEmailTemplates(),
       listInfluencers(),
       listAllDealsForAdmin(),
+      listAllBannersForAdmin(),
       listEmailToggleGroups(),
     ]);
 
@@ -108,6 +111,17 @@ export default async function AdminPage() {
           </p>
         </div>
         <DealsPanel deals={deals} />
+      </Card>
+
+      <Card className="flex flex-col gap-3 p-5" elevated>
+        <div>
+          <h2 className="text-sm font-semibold text-text-primary">Bannière du tableau de bord</h2>
+          <p className="text-xs text-text-secondary">
+            Actualités ASCEND, bons plans de la semaine — affichées en haut du tableau de bord de tous les
+            membres.
+          </p>
+        </div>
+        <BannersPanel banners={banners} />
       </Card>
 
       <Card className="flex flex-col gap-1 p-5" elevated>

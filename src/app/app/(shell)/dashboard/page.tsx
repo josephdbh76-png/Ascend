@@ -19,6 +19,8 @@ import { getActiveChallengesWithProgress } from "@/services/challenge.service";
 import { getLatestUnreadOfType } from "@/services/notification.service";
 import { getProfileViewCount } from "@/services/profileView.service";
 import { getRecentFollowerCount } from "@/services/network.service";
+import { listActiveBanners } from "@/services/banner.service";
+import { DashboardBannerCarousel } from "@/components/dashboard/DashboardBannerCarousel";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -65,6 +67,7 @@ export default async function DashboardPage() {
     { count: memberCount },
     profileViews,
     recentFollowers,
+    banners,
   ] = await Promise.all([
     getRevenueHistory(user.id, 12),
     getCurrentRevenue(user.id),
@@ -75,6 +78,7 @@ export default async function DashboardPage() {
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("is_demo", false),
     getProfileViewCount(user.id, 7),
     getRecentFollowerCount(user.id, 7),
+    listActiveBanners(),
   ]);
 
   const growth = calculateMonthlyGrowth(current?.amountCents ?? null, previous?.amountCents ?? null);
@@ -151,6 +155,8 @@ export default async function DashboardPage() {
             : "Voici l'évolution de ton activité."}
         </p>
       </div>
+
+      <DashboardBannerCarousel banners={banners} />
 
       <ActivationChecklist
         items={[
