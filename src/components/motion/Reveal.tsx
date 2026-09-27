@@ -1,5 +1,6 @@
 "use client";
 
+import { createElement } from "react";
 import { motion, type HTMLMotionProps } from "framer-motion";
 import type { ReactNode, ElementType } from "react";
 import { fadeUp, viewportOnce } from "@/lib/motion";
@@ -22,8 +23,11 @@ export function Reveal({
   const reduced = useReducedMotionSafe();
 
   if (reduced) {
-    const Tag = as as ElementType;
-    return <Tag className={className}>{children}</Tag>;
+    // JSX's generic children-type inference for a dynamically-cast
+    // ElementType can collapse to `never` depending on what else is
+    // loaded into the global JSX namespace (e.g. react-three/fiber's
+    // intrinsic elements) — createElement sidesteps that entirely.
+    return createElement(as as ElementType, { className }, children);
   }
 
   const MotionTag = motionTags[as] ?? motion.div;

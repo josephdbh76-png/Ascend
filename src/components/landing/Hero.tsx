@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { motion } from "framer-motion";
 import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 import { ArrowRight, CheckCircle2, TrendingUp, ArrowUp, Award } from "lucide-react";
@@ -8,12 +9,15 @@ import { Badge } from "@/components/ui/Badge";
 import { CountUp } from "@/components/motion/CountUp";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { staggerContainer, fadeUp, easeOut } from "@/lib/motion";
+import { HeroGem } from "@/components/landing/hero3d/HeroGem";
 
 export function Hero() {
   const reduced = useReducedMotionSafe();
+  const sectionRef = useRef<HTMLElement>(null);
 
   return (
-    <section className="border-b border-border">
+    <section ref={sectionRef} className="relative overflow-hidden border-b border-border">
+      <HeroGem containerRef={sectionRef} />
       <div className="mx-auto max-w-[1200px] px-4 pb-24 pt-20 sm:px-6 lg:px-8 lg:pt-28">
         <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-[1.05fr_0.95fr]">
           <motion.div
