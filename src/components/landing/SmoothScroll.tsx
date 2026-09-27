@@ -16,9 +16,14 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (reduced) return;
 
+    // Kept deliberately subtle — a long duration fights the trackpad's
+    // own native momentum (which is already smooth on macOS) and reads
+    // as lag rather than polish. This is just enough to soften a raw
+    // mouse-wheel notch without slowing the scroll down.
     const lenis = new Lenis({
-      duration: 1.1,
-      easing: (t) => 1 - Math.pow(1 - t, 3),
+      duration: 0.55,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      syncTouch: false,
     });
 
     let frameId: number;
