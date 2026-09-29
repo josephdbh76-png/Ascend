@@ -9,7 +9,7 @@ import { CountUp } from "@/components/motion/CountUp";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { staggerContainer, fadeUp, easeOut } from "@/lib/motion";
 
-export function Hero() {
+export function Hero({ foundingSpotsLeft }: { foundingSpotsLeft: number | null }) {
   const reduced = useReducedMotionSafe();
 
   return (
@@ -51,6 +51,12 @@ export function Hero() {
             <motion.p variants={fadeUp} className="mt-4 text-xs text-text-muted">
               Création gratuite · Aucune carte bancaire
             </motion.p>
+            {foundingSpotsLeft != null && foundingSpotsLeft > 0 && (
+              <motion.p variants={fadeUp} className="mt-2 flex items-center gap-1.5 text-xs font-medium text-gold">
+                <Award className="h-3.5 w-3.5" />
+                Plus que {foundingSpotsLeft} places de membre fondateur sur 500
+              </motion.p>
+            )}
           </motion.div>
 
           <motion.div

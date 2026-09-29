@@ -7,20 +7,7 @@ import { createNotificationForUser } from "@/services/notification.service";
 import { getAppUrl } from "@/lib/utils";
 import type { TitleRarity } from "@/types/database.types";
 
-// Sliding commission scale: 10% at 50€ or below, down to 5% at 1000€ or
-// above, linearly interpolated in between — lower cut on higher-value
-// sales, same spirit as a payment processor's own volume pricing.
-const COMMISSION_LOW_CENTS = 5000;
-const COMMISSION_HIGH_CENTS = 100000;
-const COMMISSION_LOW_RATE = 0.1;
-const COMMISSION_HIGH_RATE = 0.05;
-
-export function commissionRateForPrice(priceCents: number): number {
-  if (priceCents <= COMMISSION_LOW_CENTS) return COMMISSION_LOW_RATE;
-  if (priceCents >= COMMISSION_HIGH_CENTS) return COMMISSION_HIGH_RATE;
-  const t = (priceCents - COMMISSION_LOW_CENTS) / (COMMISSION_HIGH_CENTS - COMMISSION_LOW_CENTS);
-  return COMMISSION_LOW_RATE + t * (COMMISSION_HIGH_RATE - COMMISSION_LOW_RATE);
-}
+import { commissionCentsForPrice } from "@/lib/marketplaceCommission";
 
 export interface SellerAccountStatus {
   connected: boolean;
@@ -292,7 +279,7 @@ export async function createListingCheckoutSession(buyerId: string, buyerEmail: 
     throw new Error("Le vendeur n'a pas terminé la configuration de son compte de paiement.");
   }
 
-  const commissionCents = Math.round(listing.price_cents * commissionRateForPrice(listing.price_cents));
+  const commissionCents = commissionCentsForPrice(listing.price_cents);
   const titleName = (listing.titles as unknown as { name: string } | null)?.name ?? listing.title_id;
   const appUrl = getAppUrl();
   const stripe = getStripe();
@@ -351,7 +338,7 @@ export async function finalizeListingSale(
   }
   if (listing.status !== "active") return "unavailable"; // sold to someone else or withdrawn meanwhile
 
-  const commissionCents = Math.round(listing.price_cents * commissionRateForPrice(listing.price_cents));
+  const commissionCents = commissionCentsForPrice(listing.price_cents);
 
   // Conditional on still being active: of two buyers paying at once, only
   // one row update wins — the other gets refunded by the caller.

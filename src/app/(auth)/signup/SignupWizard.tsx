@@ -20,7 +20,7 @@ import {
 
 const STEPS = ["Compte", "Activité", "Questions", "Bio", "Connexion"] as const;
 
-export function SignupWizard() {
+export function SignupWizard({ foundingSpotsLeft }: { foundingSpotsLeft: number | null }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const plan = searchParams.get("plan");
@@ -155,7 +155,12 @@ export function SignupWizard() {
             <form onSubmit={submitAccount} className="flex flex-col gap-4">
               <div>
                 <h1 className="text-xl font-semibold text-text-primary">Crée ton compte</h1>
-                <p className="mt-1 text-sm text-text-secondary">Gratuit pendant la bêta. Aucune carte bancaire.</p>
+                <p className="mt-1 text-sm text-text-secondary">Gratuit, sans carte bancaire.</p>
+                {foundingSpotsLeft != null && foundingSpotsLeft > 0 && !ref && (
+                  <p className="mt-2 text-xs font-medium text-gold">
+                    Plus que {foundingSpotsLeft} places de membre fondateur sur 500.
+                  </p>
+                )}
                 {ref && (
                   <p className="mt-2 text-xs text-gold">Invité(e) par @{ref}</p>
                 )}

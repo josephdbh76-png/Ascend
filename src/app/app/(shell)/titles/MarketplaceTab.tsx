@@ -10,6 +10,11 @@ import { useToast } from "@/components/ui/Toast";
 import { cn, formatCurrency, timeAgo } from "@/lib/utils";
 import { TITLE_ICONS, TITLE_RARITY_STYLES, TITLE_RARITY_LABELS } from "@/lib/titleDisplay";
 import { createListingAction, cancelListingAction } from "./actions";
+import { commissionCentsForPrice, commissionRateForPrice } from "@/lib/marketplaceCommission";
+
+function formatPercentRate(rate: number): string {
+  return `${(rate * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`;
+}
 import type { SellerAccountStatus, TradeableOwnedTitle, MarketplaceListing } from "@/services/marketplace.service";
 
 function TitleBadge({ icon, rarity }: { icon: string; rarity: keyof typeof TITLE_RARITY_STYLES }) {
@@ -41,13 +46,13 @@ export function MarketplaceTab({
   const [pending, startTransition] = useTransition();
   const toast = useToast();
 
+  const priceCents = Math.round((Number(price) || 0) * 100);
   const activeMyListings = listings.filter((l) => l.status === "active");
   const soldMyListings = listings.filter((l) => l.status === "sold");
 
   function submitListing(e: React.FormEvent) {
     e.preventDefault();
     if (!modalTitle) return;
-    const priceCents = Math.round(Number(price) * 100);
     startTransition(async () => {
       const result = await createListingAction(modalTitle.userTitleId, priceCents);
       if (!result.success) return toast.show(result.error, "error");
@@ -85,12 +90,13 @@ export function MarketplaceTab({
 
   return (
     <div className="flex flex-col gap-8">
-      {!sellerStatus.payoutsEnabled && (
+      {/* Only owners of resellable titles need a seller account; buyers never do. */}
+      {!sellerStatus.payoutsEnabled && items.length > 0 && (
         <div className="flex flex-col items-start gap-3 rounded-md border border-gold/30 bg-gold/5 p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-text-secondary">
             {sellerStatus.connected
               ? "Configuration de ton compte de paiement en attente. Termine-la pour pouvoir vendre."
-              : "Configure un compte de paiement (Stripe) pour pouvoir vendre tes titres et recevoir de l'argent."}
+              : "Pour vendre tes titres, configure ton compte vendeur Stripe (vérification d'identité, une seule fois). Les paiements arrivent ensuite directement sur ton compte bancaire."}
           </p>
           <Button href="/api/marketplace/connect" size="sm" className="shrink-0">
             {sellerStatus.connected ? "Terminer la configuration" : "Configurer mon compte vendeur"}
@@ -154,7 +160,7 @@ export function MarketplaceTab({
                   <div>
                     <p className="text-sm font-medium text-text-primary">{l.titleName}</p>
                     <p className="text-xs text-text-muted">
-                      {formatCurrency(l.priceCents)} —{" "}
+                      {formatCurrency(l.priceCents)} ·{" "}
                       {l.status === "sold" ? "Vendu" : l.status === "cancelled" ? "Annulée" : "En vente"}
                     </p>
                   </div>
@@ -173,7 +179,11 @@ export function MarketplaceTab({
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Marché</h2>
         {activeListings.length === 0 ? (
-          <EmptyState icon={ShoppingBag} title="Aucune annonce active pour l'instant." />
+          <EmptyState
+            icon={ShoppingBag}
+            title="Aucune annonce en ce moment."
+            description="Quand un membre met un titre en vente, il apparaît ici. Les titres épuisés ne s'obtiennent plus qu'à cet endroit."
+          />
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {activeListings.map((l) => (
@@ -201,9 +211,19 @@ export function MarketplaceTab({
 
       <Modal open={modalTitle !== null} onClose={() => setModalTitle(null)} title={`Vendre « ${modalTitle?.name ?? ""} »`}>
         <form onSubmit={submitListing} className="flex flex-col gap-4">
-          <Field label="Prix de vente (€)" hint="La commission ASCEND (5 à 10% selon le prix) est prélevée automatiquement.">
+          <Field label="Prix de vente (€)" hint="Commission ASCEND de 10 % jusqu'à 50 €, dégressive jusqu'à 5 % à partir de 1 000 €.">
             <Input type="number" min={1} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required autoFocus />
           </Field>
+          {priceCents >= 100 && (
+            <div className="flex items-center justify-between rounded-md border border-border-strong bg-card-elevated px-3.5 py-2.5 text-sm">
+              <span className="text-text-secondary">
+                Tu recevras <span className="text-text-muted">(commission {formatPercentRate(commissionRateForPrice(priceCents))})</span>
+              </span>
+              <span className="font-semibold tabular-nums text-text-primary">
+                {formatCurrency(priceCents - commissionCentsForPrice(priceCents))}
+              </span>
+            </div>
+          )}
           <Button type="submit" disabled={pending || !price || Number(price) <= 0} className="self-start">
             Publier l&apos;annonce
           </Button>

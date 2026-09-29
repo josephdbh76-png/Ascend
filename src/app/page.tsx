@@ -15,14 +15,22 @@ import { ChallengesPreview } from "@/components/landing/ChallengesPreview";
 import { Pricing } from "@/components/landing/Pricing";
 import { FAQ } from "@/components/landing/FAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
+import { createClient } from "@/lib/supabase/server";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient();
+  const { data: founding } = await supabase
+    .from("titles")
+    .select("remaining_supply")
+    .eq("id", "founding-member")
+    .maybeSingle();
+
   return (
     <div className="flex min-h-screen flex-col bg-bg-primary">
       <LandingStructuredData />
       <PublicNav />
       <main id="main-content">
-        <Hero />
+        <Hero foundingSpotsLeft={founding?.remaining_supply ?? null} />
         <TrustStrip />
         <Problem />
         <HowItWorks />
