@@ -40,7 +40,7 @@ export function OnboardingTour({
       key: "welcome",
       icon: Sparkles,
       title: `Bienvenue sur ASCEND${firstName ? `, ${firstName}` : ""} !`,
-      description: "On te fait visiter en 30 secondes — trois raisons d'y rester, deux qui n'attendent que toi.",
+      description: "Un tour rapide, 30 secondes, pour voir ce qui t'attend ici.",
     },
     {
       key: "dashboard",
@@ -62,19 +62,19 @@ export function OnboardingTour({
       key: "defis",
       icon: Flag,
       title: "Défis & Titres",
-      description: "De ta première vente à tes 100K€ mensuels — des défis à chaque étape, et des titres à collectionner.",
+      description: "De ta première vente à 100 000 € par mois, il y a un défi à chaque étape et des titres à collectionner.",
     },
     {
       key: "reseau",
       icon: Users,
-      eyebrow: "ELITE",
+      eyebrow: "PRO · ELITE",
       title: "Le réseau de fondateurs",
-      description: "Trouve des fondateurs de ton secteur et de ta ville, et échange avec eux. Réservé aux membres Elite.",
+      description: "Trouve des fondateurs de ton secteur et échange avec eux. La recherche par ville est réservée aux membres Elite.",
     },
     {
       key: "opportunites",
       icon: Compass,
-      eyebrow: "ELITE",
+      eyebrow: "PRO · ELITE",
       title: "Les opportunités",
       description: "Cofondateur, développeur, partenaire : tu reçois en priorité les annonces qui collent à tes compétences.",
     },
@@ -92,7 +92,7 @@ export function OnboardingTour({
     if (!isLast) return setStep((s) => s + 1);
     setOpen(false);
     markTutorialSeenAction();
-    if (!isVerified) router.push("/app/settings#revenus");
+    if (!isVerified) router.push("/app/settings#comptes-connectes");
   }
 
   return (

@@ -21,16 +21,16 @@ export function StatCard({
   className?: string;
 }) {
   return (
-    <Card className={cn("p-5", className)} elevated hover>
-      <div className="flex items-start justify-between">
-        <span className="text-xs font-medium uppercase tracking-wide text-text-muted">
+    <Card className={cn("p-4 sm:p-5", className)} elevated hover>
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-text-muted sm:text-xs">
           {label}
         </span>
-        {Icon && <Icon className={cn("h-4 w-4", accent ? "text-gold" : "text-text-muted")} />}
+        {Icon && <Icon className={cn("h-4 w-4 shrink-0", accent ? "text-gold" : "text-text-muted")} />}
       </div>
       <div
         className={cn(
-          "mt-2 text-2xl font-semibold tabular-nums tracking-tight",
+          "mt-2 text-xl font-semibold tabular-nums tracking-tight sm:text-2xl",
           accent ? "text-gold" : "text-text-primary",
         )}
       >

@@ -50,7 +50,7 @@ export default async function AnalyticsPage() {
           title="Vérifie tes revenus pour débloquer tes analyses."
           description="Les comparaisons se calculent à partir de revenus vérifiés. Connecte Stripe ou déclare tes revenus pour commencer."
           action={
-            <Button href="/app/settings#revenus" size="sm">
+            <Button href="/app/settings#comptes-connectes" size="sm">
               Vérifier mes revenus
             </Button>
           }

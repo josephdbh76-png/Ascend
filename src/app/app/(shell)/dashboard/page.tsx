@@ -157,7 +157,7 @@ export default async function DashboardPage() {
         <VerificationCTA foundingMemberNumber={profile.foundingMemberNumber} />
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
           label="Revenus mensuels"
           value={current ? <CurrencyCountUp value={current.amountCents} /> : "—"}
@@ -192,7 +192,7 @@ export default async function DashboardPage() {
 
       {benchmark && <BenchmarkCard stats={benchmark} />}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <StatCard
           label="Vues de ton profil (7 jours)"
           value={<PlainCountUp value={profileViews} />}

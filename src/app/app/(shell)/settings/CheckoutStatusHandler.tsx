@@ -33,10 +33,17 @@ export function CheckoutStatusHandler() {
     if (error) {
       toast.show(ERROR_MESSAGES[error] ?? "Impossible de finaliser le paiement pour le moment.", "error");
       router.replace(pathname);
-    } else if (checkout === "success" && !showModal) {
-      toast.show("Abonnement activé. Bienvenue !", "success");
-      router.replace(pathname);
+    } else if (checkout === "success") {
+      if (!showModal) {
+        toast.show("Abonnement activé. Bienvenue !", "success");
+        router.replace(pathname);
+      }
+      // The plan is switched by the Stripe webhook a few seconds after the
+      // redirect: refresh so the page shows the new plan without a reload.
+      setTimeout(() => router.refresh(), 2500);
+      setTimeout(() => router.refresh(), 7000);
     } else if (checkout === "cancelled") {
+      toast.show("Paiement annulé, rien n'a été débité.", "info");
       router.replace(pathname);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

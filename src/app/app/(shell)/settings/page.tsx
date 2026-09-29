@@ -95,6 +95,36 @@ export default async function SettingsPage() {
   const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
   const declarations = await getRevenueDeclarations(user.id, currentPeriod);
 
+  const connectedAccountsCard = (
+    <Card id="comptes-connectes" className="scroll-mt-6 p-6" elevated>
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-text-muted">Comptes connectés</h2>
+      {!profile.revenueVerified && (
+        <p className="mb-4 text-sm text-text-secondary">
+          Connecte une source de revenus pour être vérifié et apparaître au classement.
+        </p>
+      )}
+      <div className={profile.revenueVerified ? "mt-3" : undefined}>
+        <ConnectedAccounts
+          connected={source?.status === "connected"}
+          status={verificationStatus}
+          isCofounder={profile.isCofounder}
+          declarations={declarations}
+          shopifyConnected={shopifySource?.status === "connected"}
+          shopifyStatus={shopifyStatus}
+          shopifyDomain={shopifySource?.external_account_id ?? null}
+          bankConnected={bankSource?.status === "connected"}
+          bankStatus={bankStatus}
+          bankInstitutionName={bankSource?.external_account_id ?? null}
+          bankRevenueSourceId={bankSource?.id ?? null}
+          paypalConnected={paypalSource?.status === "connected"}
+          paypalStatus={paypalStatus}
+          lemonSqueezyConnected={lemonSqueezySource?.status === "connected"}
+          lemonSqueezyStatus={lemonSqueezyStatus}
+        />
+      </div>
+    </Card>
+  );
+
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
       <Suspense fallback={null}>
@@ -122,6 +152,8 @@ export default async function SettingsPage() {
           </Button>
         </Card>
       )}
+
+      {!profile.revenueVerified && connectedAccountsCard}
 
       <Card id="abonnement" className="scroll-mt-6 p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Abonnement</h2>
@@ -184,28 +216,7 @@ export default async function SettingsPage() {
         />
       </Card>
 
-      <Card id="comptes-connectes" className="scroll-mt-6 p-6" elevated>
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
-          Comptes connectés
-        </h2>
-        <ConnectedAccounts
-          connected={source?.status === "connected"}
-          status={verificationStatus}
-          isCofounder={profile.isCofounder}
-          declarations={declarations}
-          shopifyConnected={shopifySource?.status === "connected"}
-          shopifyStatus={shopifyStatus}
-          shopifyDomain={shopifySource?.external_account_id ?? null}
-          bankConnected={bankSource?.status === "connected"}
-          bankStatus={bankStatus}
-          bankInstitutionName={bankSource?.external_account_id ?? null}
-          bankRevenueSourceId={bankSource?.id ?? null}
-          paypalConnected={paypalSource?.status === "connected"}
-          paypalStatus={paypalStatus}
-          lemonSqueezyConnected={lemonSqueezySource?.status === "connected"}
-          lemonSqueezyStatus={lemonSqueezyStatus}
-        />
-      </Card>
+      {profile.revenueVerified && connectedAccountsCard}
 
       <Card className="p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">

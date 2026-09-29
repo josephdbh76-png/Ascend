@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Lock, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
-import { listConversations } from "@/services/message.service";
+import { listConversations, getUnreadMessageCount } from "@/services/message.service";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -22,6 +22,7 @@ export default async function MessagesPage() {
   const isPro = hasProAccess(subscription.tier);
 
   if (!isPro) {
+    const waiting = await getUnreadMessageCount(user.id);
     return (
       <div className="flex flex-col gap-6">
         <div>
@@ -30,12 +31,25 @@ export default async function MessagesPage() {
         </div>
         <EmptyState
           icon={Lock}
-          title="Réservé aux membres Pro et Elite."
-          description="Écris à n'importe quel membre depuis son profil : 10 messages par mois avec Pro, sans limite avec Elite."
+          title={
+            waiting > 0
+              ? `${waiting} message${waiting > 1 ? "s" : ""} t'attend${waiting > 1 ? "ent" : ""}.`
+              : "Réservé aux membres Pro et Elite."
+          }
+          description={
+            waiting > 0
+              ? "Des membres du réseau t'ont écrit. Passe Pro pour lire leurs messages et leur répondre."
+              : "Écris à n'importe quel membre depuis son profil : 10 messages par mois avec Pro, sans limite avec Elite."
+          }
           action={
-            <Button href="/api/stripe/checkout?tier=pro" size="sm">
-              Passer Pro
-            </Button>
+            <div className="flex flex-col items-center gap-2 sm:flex-row">
+              <Button href="/api/stripe/checkout?tier=pro" size="sm">
+                Passer Pro
+              </Button>
+              <Button href="/app/settings#abonnement" variant="ghost" size="sm">
+                Comparer les formules
+              </Button>
+            </div>
           }
         />
       </div>
