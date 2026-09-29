@@ -22,7 +22,7 @@ export function ProfileShowcase() {
             >
               <div
                 aria-hidden
-                className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-gold/10 blur-3xl motion-safe:animate-pulse"
+                className="pointer-events-none absolute -inset-16 -z-10 bg-[radial-gradient(closest-side,rgba(214,168,79,0.16),transparent)] motion-safe:animate-pulse"
               />
               <div className="rounded-lg border border-border bg-card p-6 transition-shadow duration-300 hover:shadow-[0_20px_50px_rgba(245,196,81,0.12)]">
                 <div className="flex items-center gap-4">

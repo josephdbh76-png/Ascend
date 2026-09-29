@@ -14,7 +14,7 @@ export async function Pricing() {
 
   return (
     <section id="tarifs" className="relative overflow-hidden border-b border-border">
-      <ParallaxBlob className="pointer-events-none absolute -right-40 top-0 -z-10 h-[450px] w-[450px] rounded-full bg-gold/10 blur-[100px]" />
+      <ParallaxBlob className="pointer-events-none absolute -right-40 top-0 -z-10 h-[650px] w-[650px] bg-[radial-gradient(closest-side,rgba(214,168,79,0.13),transparent)] will-change-transform" />
       <div className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 lg:px-8">
         <Reveal as="div" className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">

@@ -6,7 +6,7 @@ import { ParallaxBlob } from "@/components/landing/ParallaxBlob";
 export function FinalCTA() {
   return (
     <section className="relative overflow-hidden border-t border-border">
-      <ParallaxBlob className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[500px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/10 blur-[100px]" />
+      <ParallaxBlob className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[700px] w-[900px] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(closest-side,rgba(214,168,79,0.13),transparent)] will-change-transform" />
       <Reveal as="div" className="mx-auto max-w-[1200px] px-4 py-24 text-center sm:px-6 lg:px-8">
         <h2 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
           Prêt à voir jusqu&apos;où tu peux monter ?

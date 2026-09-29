@@ -1,7 +1,6 @@
 import { PublicNav } from "@/components/layout/PublicNav";
 import { Footer } from "@/components/layout/Footer";
 import { LandingStructuredData } from "@/components/landing/LandingStructuredData";
-import { SmoothScroll } from "@/components/landing/SmoothScroll";
 import { Hero } from "@/components/landing/Hero";
 import { TrustStrip } from "@/components/landing/TrustStrip";
 import { Problem } from "@/components/landing/Problem";
@@ -19,28 +18,26 @@ import { FinalCTA } from "@/components/landing/FinalCTA";
 
 export default function LandingPage() {
   return (
-    <SmoothScroll>
-      <div className="flex min-h-screen flex-col bg-bg-primary">
-        <LandingStructuredData />
-        <PublicNav />
-        <main id="main-content">
-          <Hero />
-          <TrustStrip />
-          <Problem />
-          <HowItWorks />
-          <Features />
-          <LeaderboardPreview />
-          <ProfileShowcase />
-          <AchievementsPreview />
-          <TitlesPreview />
-          <CommunityPreview />
-          <ChallengesPreview />
-          <Pricing />
-          <FAQ />
-          <FinalCTA />
-        </main>
-        <Footer />
-      </div>
-    </SmoothScroll>
+    <div className="flex min-h-screen flex-col bg-bg-primary">
+      <LandingStructuredData />
+      <PublicNav />
+      <main id="main-content">
+        <Hero />
+        <TrustStrip />
+        <Problem />
+        <HowItWorks />
+        <Features />
+        <LeaderboardPreview />
+        <ProfileShowcase />
+        <AchievementsPreview />
+        <TitlesPreview />
+        <CommunityPreview />
+        <ChallengesPreview />
+        <Pricing />
+        <FAQ />
+        <FinalCTA />
+      </main>
+      <Footer />
+    </div>
   );
 }
