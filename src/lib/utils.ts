@@ -30,6 +30,7 @@ export function formatCurrencyRange(minCents: number, maxCents: number, currency
       notation: "compact",
       maximumFractionDigits: 0,
     }).format(v / 100);
+  if (minCents <= 0) return `Moins de ${fmt(maxCents)}`;
   return `${fmt(minCents)}–${fmt(maxCents)}`;
 }
 

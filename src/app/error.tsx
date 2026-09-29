@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/Button";
+import { LEGAL } from "@/lib/legal";
 
 export default function GlobalError({
   error,
@@ -21,9 +22,19 @@ export default function GlobalError({
       <p className="max-w-sm text-sm text-text-secondary">
         Réessaie dans un instant. Si le problème persiste, actualise la page ou reviens plus tard.
       </p>
-      <Button onClick={reset} className="mt-2">
-        Réessayer
-      </Button>
+      <div className="mt-2 flex gap-2">
+        <Button onClick={reset}>Réessayer</Button>
+        <Button href="/app/dashboard" variant="secondary">
+          Tableau de bord
+        </Button>
+      </div>
+      <p className="text-xs text-text-muted">
+        Toujours bloqué ? Écris-nous à{" "}
+        <a href={`mailto:${LEGAL.contactEmail}`} className="underline hover:text-text-primary">
+          {LEGAL.contactEmail}
+        </a>
+        {error.digest ? ` en indiquant le code ${error.digest}.` : "."}
+      </p>
     </div>
   );
 }
