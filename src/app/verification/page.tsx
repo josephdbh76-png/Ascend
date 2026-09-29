@@ -15,7 +15,7 @@ const METHODS = [
     icon: CreditCard,
     title: "Stripe",
     description:
-      "Connecte ton compte Stripe en lecture seule : ASCEND récupère tes revenus mensuels agrégés directement depuis les paiements réellement encaissés — jamais un chiffre que tu tapes toi-même.",
+      "Connecte ton compte Stripe en lecture seule : ASCEND récupère tes revenus mensuels agrégés directement depuis les paiements réellement encaissés, pas depuis un chiffre que tu saisis toi-même.",
   },
   {
     icon: ShoppingBag,
@@ -27,13 +27,13 @@ const METHODS = [
     icon: Landmark,
     title: "Compte bancaire",
     description:
-      "Connecte ton compte bancaire via un agrégateur agréé (accès en lecture seule, tes identifiants bancaires ne sont jamais vus par ASCEND) et indique toi-même quels virements entrants sont ton revenu professionnel — le reste (virements personnels, remboursements) n'est jamais compté.",
+      "Connecte ton compte bancaire via un agrégateur agréé (accès en lecture seule, tes identifiants bancaires ne sont jamais vus par ASCEND) et indique toi-même quels virements entrants sont ton revenu professionnel. Le reste (virements personnels, remboursements) n'est pas compté.",
   },
   {
     icon: FileCheck2,
     title: "Déclaration manuelle avec preuve",
     description:
-      "Sans Stripe ni Shopify, tu peux déclarer un revenu à la main — mais chaque déclaration doit être accompagnée d'un justificatif (facture, export comptable, capture bancaire) et est examinée manuellement par un administrateur avant d'être comptée.",
+      "Sans Stripe ni Shopify, tu peux déclarer un revenu à la main, mais chaque déclaration doit être accompagnée d'un justificatif (facture, export comptable, capture bancaire) et est examinée manuellement par un administrateur avant d'être comptée.",
   },
   {
     icon: UserCheck,
@@ -58,7 +58,7 @@ export default function VerificationInfoPage() {
             </h1>
             <p className="mt-4 text-base text-text-secondary">
               N&apos;importe qui peut écrire un chiffre sur un profil LinkedIn ou dans un post Twitter.
-              Sur ASCEND, chaque badge « vérifié » correspond à une donnée réellement contrôlée — jamais
+              Sur ASCEND, chaque badge « vérifié » correspond à une donnée réellement contrôlée, jamais
               une simple déclaration sur l&apos;honneur.
             </p>
           </Reveal>

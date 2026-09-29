@@ -31,7 +31,7 @@ export default async function MessagesPage() {
         <EmptyState
           icon={Lock}
           title="Réservé aux membres Pro et Elite."
-          description="Envoie et reçois des messages depuis n'importe quel profil — Pro donne 10 messages par mois, Elite un accès illimité."
+          description="Écris à n'importe quel membre depuis son profil : 10 messages par mois avec Pro, sans limite avec Elite."
           action={
             <Button href="/api/stripe/checkout?tier=pro" size="sm">
               Passer Pro

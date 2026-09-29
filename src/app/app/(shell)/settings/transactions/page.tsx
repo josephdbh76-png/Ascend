@@ -34,7 +34,7 @@ export default async function BankTransactionsPage() {
         </Link>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight text-text-primary">Mes transactions bancaires</h1>
         <p className="mt-1 text-sm text-text-secondary">
-          Coche les virements entrants qui correspondent à ton revenu professionnel — le reste (virements
+          Coche les virements entrants qui correspondent à ton revenu professionnel. Le reste (virements
           personnels, remboursements...) n&apos;est jamais compté.
         </p>
       </div>

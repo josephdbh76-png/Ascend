@@ -22,7 +22,7 @@ function buildDigestBody(firstName: string | null, signal: WeeklySignal): string
   if (signal.currentRank != null && signal.rankMovement) {
     lines.push(
       signal.rankMovement > 0
-        ? `Tu as gagné ${signal.rankMovement} place${signal.rankMovement > 1 ? "s" : ""} au classement mondial cette semaine — te voilà #${signal.currentRank}.`
+        ? `Tu as gagné ${signal.rankMovement} place${signal.rankMovement > 1 ? "s" : ""} au classement mondial cette semaine. Te voilà #${signal.currentRank}.`
         : `Tu es passé de #${signal.currentRank + signal.rankMovement} à #${signal.currentRank} au classement mondial cette semaine.`,
     );
   }

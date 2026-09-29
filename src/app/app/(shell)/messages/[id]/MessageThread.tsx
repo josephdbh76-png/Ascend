@@ -111,7 +111,7 @@ export function MessageThread({
             <p className="text-xs text-text-secondary">
               Première prise de contact avec {thread.otherUser.firstName} : tu ne peux envoyer{" "}
               <span className="font-medium text-text-primary">qu&apos;un seul message</span> tant
-              qu&apos;iel n&apos;a pas répondu ou accepté ta demande — sauf si vous vous suivez
+              qu&apos;iel n&apos;a pas répondu ou accepté ta demande, sauf si vous vous suivez
               mutuellement.
             </p>
           </div>
@@ -148,7 +148,7 @@ export function MessageThread({
       {awaitingReply ? (
         <div className="flex items-center gap-2 rounded-md border border-border-strong bg-card-elevated px-4 py-3 text-xs text-text-muted">
           <Lock className="h-3.5 w-3.5" />
-          En attente d&apos;une réponse — tu ne peux envoyer qu&apos;un seul message tant que{" "}
+          En attente d&apos;une réponse : tu ne peux envoyer qu&apos;un seul message tant que{" "}
           {thread.otherUser.firstName} n&apos;a pas répondu ou accepté.
         </div>
       ) : remaining != null && remaining <= 0 ? (

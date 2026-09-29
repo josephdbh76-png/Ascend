@@ -492,6 +492,31 @@ export async function deleteAccountAction(): Promise<ActionResult> {
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
   const admin = createAdminClient();
+
+  // Stop billing before the account disappears: otherwise Stripe keeps
+  // charging a member who no longer exists on ASCEND.
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select("stripe_subscription_id")
+    .eq("user_id", userData.user.id)
+    .maybeSingle();
+  if (sub?.stripe_subscription_id) {
+    try {
+      const { getStripe } = await import("@/lib/stripe");
+      const stripe = getStripe();
+      const live = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
+      if (live.status !== "canceled" && live.status !== "incomplete_expired") {
+        await stripe.subscriptions.cancel(sub.stripe_subscription_id);
+      }
+    } catch (err) {
+      console.error("Subscription cancel on account deletion failed:", err);
+      return {
+        success: false,
+        error: "Impossible de résilier ton abonnement pour le moment. Réessaie dans quelques minutes, ou résilie-le d'abord depuis « Gérer mon abonnement ».",
+      };
+    }
+  }
+
   const { error } = await admin.auth.admin.deleteUser(userData.user.id);
   if (error) return { success: false, error: toFriendlyAuthError(error.message) };
 

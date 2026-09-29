@@ -123,8 +123,8 @@ export const CHALLENGE_DEFINITIONS = [
   { id: "first-10k-month", title: "Premier 10K", description: "Atteins 10 000 € de revenus mensuels pour la première fois.", type: "revenue_threshold", target: 1000000 },
   { id: "growth-30", title: "+30 % de croissance", description: "Fais croître tes revenus mensuels d'au moins 30 %.", type: "growth_threshold", target: 30 },
   { id: "consistency-30", title: "30 jours de régularité", description: "Garde ta source de revenus connectée et vérifiée pendant 30 jours d'affilée.", type: "consistency", target: 30 },
-  { id: "international-customer", title: "Premier client international", description: "Bientôt disponible — suis ton premier client hors de ton pays.", type: "coming_soon", target: 1 },
-  { id: "launch-something-new", title: "Nouveau lancement", description: "Bientôt disponible — enregistre le lancement d'un nouveau produit ou d'une fonctionnalité.", type: "coming_soon", target: 1 },
+  { id: "international-customer", title: "Premier client international", description: "Bientôt disponible : ton premier client hors de ton pays.", type: "coming_soon", target: 1 },
+  { id: "launch-something-new", title: "Nouveau lancement", description: "Bientôt disponible : le lancement d'un nouveau produit ou d'une fonctionnalité.", type: "coming_soon", target: 1 },
 ] as const;
 
 /**
@@ -163,7 +163,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Comment fonctionne la vérification des revenus ?",
-    a: "Connecte Stripe et ASCEND récupère tes vraies données de transaction côté serveur — vérifié automatiquement, instantanément. Pas de Stripe ? Déclare tes revenus manuellement avec une preuve (facture, export comptable...) : un administrateur la vérifie avant qu'elle ne compte comme un revenu vérifié.",
+    a: "Connecte Stripe et ASCEND récupère tes vraies données de transaction, et la vérification est automatique et immédiate. Pas de Stripe ? Déclare tes revenus manuellement avec une preuve (facture, export comptable...) : un administrateur la vérifie avant qu'elle ne compte comme un revenu vérifié.",
   },
   {
     q: "ASCEND peut-il toucher à mon argent ?",
@@ -175,7 +175,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Mes données financières sont-elles en sécurité ?",
-    a: "Tes données de revenus sont protégées par une sécurité au niveau de la base de données — toi seul peux accéder à tes connexions et chiffres bruts. Les pages publiques ne montrent que ce que tes réglages de confidentialité autorisent.",
+    a: "Tes données de revenus sont protégées par une sécurité au niveau de la base de données : toi seul peux accéder à tes connexions et chiffres bruts. Les pages publiques ne montrent que ce que tes réglages de confidentialité autorisent.",
   },
   {
     q: "Que se passe-t-il après la bêta ?",

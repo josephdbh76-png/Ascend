@@ -96,7 +96,7 @@ export function NewOpportunityModal({ isElite }: { isElite: boolean }) {
             />
           </Field>
 
-          <Field label="Activité concernée" hint="Optionnel — laisse vide si ça concerne toutes les activités.">
+          <Field label="Activité concernée" hint="Optionnel. Laisse vide si ça concerne toutes les activités.">
             <Select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
               <option value="">Toutes les activités</option>
               {BUSINESS_CATEGORIES.map((c) => (

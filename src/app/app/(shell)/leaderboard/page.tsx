@@ -4,6 +4,8 @@ import { getLeaderboard, getUserRank } from "@/services/leaderboard.service";
 import { LeaderboardControls } from "@/components/leaderboard/LeaderboardControls";
 import { LeaderboardTable } from "@/components/leaderboard/LeaderboardTable";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { ArrowRight } from "lucide-react";
 import { formatCurrency, formatCurrencyRange, formatPercent } from "@/lib/utils";
 import type { LeaderboardScope } from "@/types/database.types";
 
@@ -23,9 +25,12 @@ export default async function LeaderboardPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const rows = await getLeaderboard(scope, scopeValue, 50, 0);
-  const yourRank = user ? await getUserRank(user.id, scope, scopeValue) : null;
+  const [rows, yourRank] = await Promise.all([
+    getLeaderboard(scope, scopeValue, 50, 0),
+    user ? getUserRank(user.id, scope, scopeValue) : Promise.resolve(null),
+  ]);
   const isOnPage = rows.some((r) => r.is_current_user);
+  const openTopTenSpots = Math.max(0, 10 - rows.length);
 
   return (
     <div className="flex flex-col gap-6">
@@ -37,6 +42,22 @@ export default async function LeaderboardPage({
       </div>
 
       <LeaderboardControls scope={scope} scopeValue={scopeValue} />
+
+      {user && !yourRank && (
+        <Card className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between" elevated>
+          <div>
+            <p className="text-sm font-semibold text-text-primary">Tu n&apos;apparais pas encore dans ce classement.</p>
+            <p className="mt-0.5 text-sm text-text-secondary">
+              {openTopTenSpots > 0
+                ? `Il reste ${openTopTenSpots} place${openTopTenSpots > 1 ? "s" : ""} dans le top 10. Vérifie tes revenus pour prendre la tienne.`
+                : "Vérifie tes revenus pour découvrir ton rang et commencer à grimper."}
+            </p>
+          </div>
+          <Button href="/app/settings#comptes-connectes" size="sm" className="shrink-0">
+            Vérifier mes revenus <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </Card>
+      )}
 
       {yourRank && !isOnPage && (
         <Card className="flex items-center justify-between p-4" elevated>

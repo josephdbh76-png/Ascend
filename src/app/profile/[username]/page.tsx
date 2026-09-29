@@ -10,6 +10,8 @@ import { TitleCard } from "@/components/titles/TitleCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AppShell } from "@/components/layout/AppShell";
 import { PublicNav } from "@/components/layout/PublicNav";
+import { Footer } from "@/components/layout/Footer";
+import { Button } from "@/components/ui/Button";
 import { getProfile } from "@/services/profile.service";
 import { getNotifications, getUnreadCount } from "@/services/notification.service";
 import { getUserTitles } from "@/services/title.service";
@@ -18,7 +20,7 @@ import { recordProfileView } from "@/services/profileView.service";
 import { getUnreadMessageCount } from "@/services/message.service";
 import { isCurrentUserAdmin } from "@/services/admin.service";
 import { formatCurrency, formatCurrencyRange } from "@/lib/utils";
-import { Award, Trophy, Gem, TrendingUp } from "lucide-react";
+import { Award, Trophy, Gem, TrendingUp, ArrowRight } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -71,8 +73,13 @@ export default async function PublicProfilePage({
   }
 
   const isOwner = user?.id === profile.userId;
-  if (user && !isOwner) await recordProfileView(profile.userId, user.id);
-  const viewerProfile = user ? await getProfile(user.id) : null;
+  const [viewerProfile, titles, followCounts, following] = await Promise.all([
+    user ? getProfile(user.id) : Promise.resolve(null),
+    getUserTitles(profile.userId),
+    getFollowCounts(profile.userId),
+    user && !isOwner ? checkIsFollowing(user.id, profile.userId) : Promise.resolve(false),
+    user && !isOwner ? recordProfileView(profile.userId, user.id) : Promise.resolve(),
+  ]);
   const [notifications, unreadCount, viewerIsAdmin, viewerUnreadMessages] = viewerProfile
     ? await Promise.all([
         getNotifications(user!.id, 8),
@@ -81,10 +88,7 @@ export default async function PublicProfilePage({
         getUnreadMessageCount(user!.id),
       ])
     : [[], 0, false, 0];
-  const titles = await getUserTitles(profile.userId);
   const isCreator = profile.isCofounder;
-  const followCounts = await getFollowCounts(profile.userId);
-  const following = user && !isOwner ? await checkIsFollowing(user.id, profile.userId) : false;
 
   const body = (
     <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
@@ -168,6 +172,22 @@ export default async function PublicProfilePage({
           </div>
         )}
       </section>
+
+      {!user && (
+        <section className="flex flex-col items-center gap-4 rounded-lg border border-gold/30 bg-gold/5 px-6 py-8 text-center">
+          <h2 className="text-lg font-semibold text-text-primary">
+            Et toi, tu te situes où à côté de {profile.firstName ?? `@${profile.username}`} ?
+          </h2>
+          <p className="max-w-md text-sm text-text-secondary">
+            Crée ton profil gratuitement, vérifie tes revenus et découvre ta place au classement. Les 500
+            premiers inscrits reçoivent le titre de Membre fondateur.
+          </p>
+          <Button href="/signup" size="lg">
+            Créer mon profil gratuit <ArrowRight className="h-4 w-4" />
+          </Button>
+          <p className="text-xs text-text-muted">Sans carte bancaire · 2 minutes</p>
+        </section>
+      )}
     </div>
   );
 
@@ -198,7 +218,8 @@ export default async function PublicProfilePage({
   return (
     <div className="flex min-h-screen flex-col bg-bg-primary">
       <PublicNav />
-      <main id="main-content">{body}</main>
+      <main id="main-content" className="flex-1">{body}</main>
+      <Footer />
     </div>
   );
 }

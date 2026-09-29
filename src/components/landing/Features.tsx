@@ -6,10 +6,10 @@ const FEATURES = [
   {
     icon: ShieldCheck,
     title: "Revenus vérifiés",
-    description: "Vérifie tes revenus via Stripe, ou déclare-les manuellement avec preuve à l'appui — pas des captures d'écran.",
+    description: "Vérifie tes revenus via Stripe, PayPal, Shopify ou ta banque, ou déclare-les avec un justificatif. Les captures d'écran ne comptent pas.",
   },
   { icon: Trophy, title: "Classement", description: "Classements mondial, pays et catégorie, mis à jour à partir de données réelles." },
-  { icon: Flag, title: "Défis", description: "De la première vente aux 10K€ mensuels — des défis pour chaque étape, pas seulement les plus avancés." },
+  { icon: Flag, title: "Défis", description: "De la première vente aux 10 000 € mensuels, il y a un défi pour chaque étape." },
   { icon: Award, title: "Accomplissements", description: "Des récompenses collectibles qui retracent ton parcours." },
   { icon: Gem, title: "Titres", description: "Débloque des titres selon tes performances, ou obtiens un titre exclusif en édition limitée." },
   {
@@ -21,7 +21,7 @@ const FEATURES = [
   {
     icon: Compass,
     title: "Opportunités",
-    description: "Cofondateur, développeur, partenaire — un matching intelligent te propose les meilleures offres du réseau.",
+    description: "Cofondateur, développeur, partenaire : tu reçois en priorité les annonces qui collent à tes compétences.",
     elite: true,
   },
 ];

@@ -55,7 +55,7 @@ export async function connectShopifyWithCredentials(userId: string, shop: string
   const token = await getShopifyAccessToken(shop, clientId, clientSecret);
   if (!token) {
     throw new Error(
-      "Impossible d'obtenir un accès avec ces identifiants — vérifie que l'app est bien installée sur cette boutique.",
+      "Impossible d'obtenir un accès avec ces identifiants. Vérifie que l'app est bien installée sur cette boutique.",
     );
   }
 
@@ -131,7 +131,7 @@ export async function syncShopifyRevenue(userId: string, revenueSourceId: string
   const credentials = await getStoredShopifyCredentials(revenueSourceId);
   const accessToken = credentials ? await getShopifyAccessToken(shop, credentials.clientId, credentials.clientSecret) : null;
   if (!accessToken) {
-    const message = "Impossible d'obtenir un accès Shopify — reconnecte ta boutique depuis les réglages.";
+    const message = "Impossible d'obtenir un accès Shopify. Reconnecte ta boutique depuis les réglages.";
     await supabase
       .from("verifications")
       .update({ status: "error", error_message: message, last_checked_at: new Date().toISOString() })

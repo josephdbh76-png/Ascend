@@ -52,7 +52,11 @@ export function OnboardingTour({
       key: "classement",
       icon: Trophy,
       title: "Le classement",
-      description: `Rejoins ${memberCount > 0 ? `${memberCount} autres fondateurs` : "les fondateurs"} déjà classés — mondial, par pays, par activité.`,
+      // Small numbers read as "empty", not "exclusive": only show the count once it's impressive.
+      description:
+        memberCount >= 100
+          ? `Mesure-toi à ${memberCount} fondateurs, au niveau mondial, par pays et par activité.`
+          : "Les premières places se prennent maintenant : les premiers vérifiés s'installent en tête, au niveau mondial, par pays et par activité.",
     },
     {
       key: "defis",
@@ -65,14 +69,14 @@ export function OnboardingTour({
       icon: Users,
       eyebrow: "ELITE",
       title: "Le réseau de fondateurs",
-      description: "Recherche et connecte-toi avec des fondateurs de ton secteur — réservé aux membres Elite.",
+      description: "Trouve des fondateurs de ton secteur et de ta ville, et échange avec eux. Réservé aux membres Elite.",
     },
     {
       key: "opportunites",
       icon: Compass,
       eyebrow: "ELITE",
       title: "Les opportunités",
-      description: "Cofondateur, développeur, partenaire — un matching intelligent te propose les meilleures offres du réseau.",
+      description: "Cofondateur, développeur, partenaire : tu reçois en priorité les annonces qui collent à tes compétences.",
     },
   ];
 

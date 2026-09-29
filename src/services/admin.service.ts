@@ -1,9 +1,10 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SubscriptionTier, SubscriptionStatus } from "@/types/database.types";
 
-export async function isCurrentUserAdmin(): Promise<boolean> {
+export const isCurrentUserAdmin = cache(async (): Promise<boolean> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -12,7 +13,7 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
 
   const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle();
   return profile?.is_admin ?? false;
-}
+});
 
 export interface AdminUserRow {
   id: string;

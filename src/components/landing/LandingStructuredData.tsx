@@ -16,7 +16,7 @@ export function LandingStructuredData() {
     name: "ASCEND",
     url: appUrl,
     logo: `${appUrl}/icon.svg`,
-    description: "Le réseau de performance des entrepreneurs ambitieux — revenus vérifiés, classement et réputation.",
+    description: "Le réseau de performance des entrepreneurs ambitieux : revenus vérifiés, classement et réputation.",
   };
 
   const website = {

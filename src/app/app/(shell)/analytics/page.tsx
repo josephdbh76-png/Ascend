@@ -36,7 +36,7 @@ export default async function AnalyticsPage() {
     <div>
       <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Analyses avancées</h1>
       <p className="mt-1 text-sm text-text-secondary">
-        Des statistiques réelles, calculées sur les entreprises vérifiées du réseau — jamais de chiffres inventés.
+        Des statistiques calculées uniquement sur les entreprises vérifiées du réseau.
       </p>
     </div>
   );
@@ -48,7 +48,7 @@ export default async function AnalyticsPage() {
         <EmptyState
           icon={ShieldCheck}
           title="Vérifie tes revenus pour débloquer tes analyses."
-          description="Les benchmarks se calculent à partir de revenus vérifiés — connecte Stripe ou déclare tes revenus pour commencer."
+          description="Les comparaisons se calculent à partir de revenus vérifiés. Connecte Stripe ou déclare tes revenus pour commencer."
           action={
             <Button href="/app/settings#revenus" size="sm">
               Vérifier mes revenus

@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       billing_address_collection: "required",
       invoice_creation: { enabled: true },
       custom_text: {
-        submit: { message: "Paiement sécurisé et chiffré par Stripe. Une facture te sera envoyée par email." },
+        submit: { message: "En payant, tu demandes la livraison immédiate du titre sur ton profil et renonces à ton droit de rétractation (art. L221-28 du Code de la consommation). Paiement sécurisé par Stripe. Une facture t'est envoyée par email." },
       },
       success_url: `${appUrl}/app/titles?purchase=success`,
       cancel_url: `${appUrl}/app/titles?purchase=cancelled`,

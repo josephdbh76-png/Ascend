@@ -78,7 +78,7 @@ export async function syncLemonSqueezyRevenue(userId: string, revenueSourceId: s
 
   const apiKey = apiKeyOverride ?? (await getStoredLemonSqueezyKey(revenueSourceId));
   if (!apiKey) {
-    const message = "Impossible d'obtenir un accès Lemon Squeezy — reconnecte ton compte depuis les réglages.";
+    const message = "Impossible d'obtenir un accès Lemon Squeezy. Reconnecte ton compte depuis les réglages.";
     await supabase
       .from("verifications")
       .update({ status: "error", error_message: message, last_checked_at: new Date().toISOString() })

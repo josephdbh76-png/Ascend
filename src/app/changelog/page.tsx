@@ -23,7 +23,7 @@ export default function ChangelogPage() {
             </div>
             <h1 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">Nouveautés</h1>
             <p className="mt-4 text-base text-text-secondary">
-              ASCEND est en bêta et évolue vite. Voici ce qui vient d&apos;arriver — et ce qui s&apos;en
+              ASCEND est en bêta et évolue vite. Voici ce qui vient d&apos;arriver, et ce qui s&apos;en
               vient.
             </p>
           </Reveal>

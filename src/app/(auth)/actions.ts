@@ -216,7 +216,7 @@ export async function completeOnboardingAction(): Promise<ActionResult> {
 
   const { data: existingProfile } = await supabase
     .from("profiles")
-    .select("onboarding_step, first_name, email_notifications_enabled")
+    .select("onboarding_step, first_name, email_notifications_enabled, founding_member_number")
     .eq("id", userData.user.id)
     .maybeSingle();
   const alreadyDone = existingProfile?.onboarding_step === "done";
@@ -237,7 +237,10 @@ export async function completeOnboardingAction(): Promise<ActionResult> {
     (await isEmailTypeEnabledPlatformWide("welcome"))
   ) {
     try {
-      const content = welcomeEmailContent(existingProfile?.first_name ?? null);
+      const content = welcomeEmailContent(
+        existingProfile?.first_name ?? null,
+        existingProfile?.founding_member_number ?? null,
+      );
       await getResend().emails.send({
         from: resendFromAddress(),
         to: userData.user.email,

@@ -71,7 +71,7 @@ export function BusinessSettingsForm({
         </Field>
         <Field
           label="Compétences"
-          hint="Séparées par des virgules — utilisées pour te suggérer les opportunités les plus pertinentes."
+          hint="Séparées par des virgules. Elles servent à te proposer les opportunités qui te correspondent."
         >
           <Input
             value={form.skills}

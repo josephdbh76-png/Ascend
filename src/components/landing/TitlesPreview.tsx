@@ -30,7 +30,7 @@ export async function TitlesPreview() {
             Ton profil mérite un statut.
           </h2>
           <p className="mt-4 text-sm text-text-secondary">
-            Certains titres se débloquent en progressant. D&apos;autres sont extrêmement limités — un
+            Certains titres se débloquent en progressant. D&apos;autres sont extrêmement limités : un
             seul entrepreneur au monde pourra les porter.
           </p>
         </Reveal>

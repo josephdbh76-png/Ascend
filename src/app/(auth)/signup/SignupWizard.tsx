@@ -302,7 +302,7 @@ export function SignupWizard() {
             <div className="flex flex-col gap-4">
               <div>
                 <h1 className="text-xl font-semibold text-text-primary">Ajoute une courte bio</h1>
-                <p className="mt-1 text-sm text-text-secondary">Optionnel — tu pourras toujours l&apos;ajouter plus tard.</p>
+                <p className="mt-1 text-sm text-text-secondary">Optionnel, tu pourras l&apos;ajouter plus tard.</p>
               </div>
               <Field label="Bio" htmlFor="bio" hint={`${bio.length}/280`}>
                 <Textarea

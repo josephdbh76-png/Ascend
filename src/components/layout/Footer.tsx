@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LEGAL } from "@/lib/legal";
 
 export function Footer() {
   return (
@@ -27,17 +28,20 @@ export function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Mentions légales</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Légal</h4>
             <ul className="mt-3 space-y-2 text-sm text-text-secondary">
+              <li><Link href="/legal/mentions" className="hover:text-text-primary">Mentions légales</Link></li>
+              <li><Link href="/legal/terms" className="hover:text-text-primary">CGU / CGV</Link></li>
               <li><Link href="/legal/privacy" className="hover:text-text-primary">Confidentialité</Link></li>
-              <li><Link href="/legal/terms" className="hover:text-text-primary">Conditions</Link></li>
               <li><Link href="/legal/cookies" className="hover:text-text-primary">Cookies</Link></li>
             </ul>
           </div>
         </div>
         <div className="mt-10 flex flex-col gap-2 border-t border-border pt-6 text-xs text-text-muted sm:flex-row sm:items-center sm:justify-between">
           <span>© {new Date().getFullYear()} ASCEND. Tous droits réservés.</span>
-          <span>Bêta privée — les données affichées sur cette page sont fictives, à titre d&apos;illustration.</span>
+          <a href={`mailto:${LEGAL.contactEmail}`} className="hover:text-text-primary">
+            Une question ? {LEGAL.contactEmail}
+          </a>
         </div>
       </div>
     </footer>

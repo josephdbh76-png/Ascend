@@ -41,7 +41,7 @@ export function ManualRevenueCard({ declarations }: { declarations: RevenueDecla
     startTransition(async () => {
       const result = await submitRevenueDeclarationAction(formData);
       if (!result.success) return toast.show(result.error, "error");
-      toast.show("Déclaration envoyée — en attente de vérification par un administrateur.", "success");
+      toast.show("Déclaration envoyée. Un administrateur la vérifie sous peu.", "success");
       setOpen(false);
       setAmount("");
       setLabel("");
@@ -63,7 +63,7 @@ export function ManualRevenueCard({ declarations }: { declarations: RevenueDecla
         <div>
           <p className="text-sm font-medium text-text-primary">Déclaration manuelle</p>
           <p className="mt-1 text-xs text-text-muted">
-            Pour les entrepreneurs sans Stripe. Une déclaration par contrat ou par client — chacune est
+            Pour les entrepreneurs sans Stripe. Une déclaration par contrat ou par client : chacune est
             vérifiée séparément. Une preuve est obligatoire.
           </p>
         </div>
@@ -105,7 +105,7 @@ export function ManualRevenueCard({ declarations }: { declarations: RevenueDecla
 
       <Modal open={open} onClose={() => setOpen(false)} title="Déclarer un revenu">
         <form onSubmit={submit} className="flex flex-col gap-4">
-          <Field label="Description" hint="Optionnel — ex : « Contrat Acme Corp »">
+          <Field label="Description" hint="Optionnel, par exemple « Contrat Acme Corp »">
             <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Contrat, client, mission..." />
           </Field>
           <Field label="Montant (€)" htmlFor="amount">
@@ -118,7 +118,7 @@ export function ManualRevenueCard({ declarations }: { declarations: RevenueDecla
               placeholder="1200"
             />
           </Field>
-          <Field label="Preuve" hint="Obligatoire — PDF, PNG, JPEG ou WebP, 5 Mo maximum.">
+          <Field label="Preuve" hint="Obligatoire. PDF, PNG, JPEG ou WebP, 5 Mo maximum.">
             <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border-strong bg-card px-3.5 py-2.5 text-sm text-text-muted hover:border-gold/50 hover:text-text-secondary">
               <Upload className="h-4 w-4" />
               {fileName ?? "Choisir un fichier"}

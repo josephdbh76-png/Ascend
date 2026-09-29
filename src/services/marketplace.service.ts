@@ -317,6 +317,7 @@ export async function createListingCheckoutSession(buyerId: string, buyerEmail: 
     // Short window: the listing stays buyable by others meanwhile, and a
     // late payment on a gone listing is refunded by the webhook.
     expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+    custom_text: { submit: { message: "En payant, tu demandes la livraison immédiate du titre sur ton profil et renonces à ton droit de rétractation (art. L221-28 du Code de la consommation). Paiement sécurisé par Stripe." } },
     success_url: `${appUrl}/app/titles?marketplace_purchase=success`,
     cancel_url: `${appUrl}/app/titles?marketplace_purchase=cancelled`,
     metadata: { kind: "title_listing_purchase", listing_id: listingId, buyer_id: buyerId },
@@ -388,7 +389,7 @@ export async function finalizeListingSale(
     userId: listing.seller_id,
     type: "achievement_unlocked",
     title: "Titre vendu",
-    body: `Ton titre « ${title?.name ?? listing.title_id} » a été vendu — le paiement arrive sur ton compte connecté.`,
+    body: `Ton titre « ${title?.name ?? listing.title_id} » a été vendu. Le paiement arrive sur ton compte vendeur.`,
     metadata: { title_id: listing.title_id },
   });
 

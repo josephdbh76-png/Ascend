@@ -1,7 +1,7 @@
 import "server-only";
 import { getAppUrl } from "@/lib/utils";
 
-const DEFAULT_SIGNATURE = "— L'équipe ASCEND";
+const DEFAULT_SIGNATURE = "L'équipe ASCEND";
 
 /**
  * Shared visual wrapper for every ASCEND email — campaigns and

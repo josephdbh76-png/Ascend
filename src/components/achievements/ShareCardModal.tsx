@@ -353,11 +353,11 @@ export function ShareCardModal({
       } else {
         await download();
         await navigator.clipboard?.writeText(caption).catch(() => undefined);
-        toast.show("Partage non supporté par ce navigateur — image téléchargée, légende copiée.", "info");
+        toast.show("Ce navigateur ne permet pas le partage direct : l'image est téléchargée et la légende copiée.", "info");
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
-      toast.show("Impossible de partager depuis ce navigateur — essaie de télécharger l'image.", "error");
+      toast.show("Impossible de partager depuis ce navigateur. Télécharge plutôt l'image.", "error");
     } finally {
       setBusy(false);
     }
@@ -369,7 +369,7 @@ export function ShareCardModal({
       const blob = await toBlob();
       if (!blob) throw new Error("no blob");
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      toast.show("Image copiée — ouverture d'Instagram...", "info");
+      toast.show("Image copiée, ouverture d'Instagram…", "info");
       window.location.href = "instagram-stories://share";
     } catch {
       toast.show(

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal/LegalPage";
+import { LEGAL } from "@/lib/legal";
 import { ManageCookiesButton } from "@/components/legal/ManageCookiesButton";
 
 export const metadata: Metadata = {
@@ -10,10 +11,7 @@ export const metadata: Metadata = {
 export default function CookiePolicyPage() {
   return (
     <LegalPage title="Politique de cookies">
-      <p>
-        Ceci est une politique de cookies provisoire. Elle n&apos;a pas encore été validée par un conseil
-        juridique et sera remplacée par une version définitive avant la disponibilité générale.
-      </p>
+      <p className="text-xs text-text-muted">Dernière mise à jour : {LEGAL.lastUpdated}</p>
 
       <h2 className="text-base font-semibold text-text-primary">Cookies strictement nécessaires</h2>
       <p>
@@ -24,7 +22,7 @@ export default function CookiePolicyPage() {
       <h2 className="text-base font-semibold text-text-primary">Cookies d&apos;analyse</h2>
       <p>
         Avec ton accord uniquement, ASCEND utilise PostHog pour comprendre l&apos;usage du produit de
-        façon anonymisée (pages visitées, fonctionnalités utilisées) — jamais de contenu personnel ou de
+        façon anonymisée (pages visitées, fonctionnalités utilisées), sans jamais de contenu personnel ni de
         montants de revenus. Ces cookies ne sont posés qu&apos;après avoir cliqué sur &quot;Accepter&quot;
         dans la bannière affichée lors de ta première visite.
       </p>

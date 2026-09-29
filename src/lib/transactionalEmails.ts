@@ -76,11 +76,14 @@ export function transactionalEmailContent(
   }
 }
 
-export function welcomeEmailContent(firstName: string | null): TransactionalEmailContent {
-  const name = firstName ? firstName : "";
+export function welcomeEmailContent(firstName: string | null, foundingMemberNumber: number | null = null): TransactionalEmailContent {
+  const greeting = firstName ? `Salut ${firstName},` : "Salut,";
+  const founding = foundingMemberNumber
+    ? `\n\nTu es le membre fondateur n°${foundingMemberNumber}. Ton titre de fondateur apparaîtra sur ton profil dès que tes revenus seront vérifiés.`
+    : "";
   return {
-    subject: "Bienvenue sur ASCEND",
-    body: `Salut ${name},\n\nTon compte ASCEND est prêt. Connecte Stripe (ou déclare tes revenus manuellement) pour vérifier tes performances et débloquer ton rang dans le classement.\n\nÀ très vite sur ASCEND.`,
+    subject: foundingMemberNumber ? `Bienvenue sur ASCEND, membre fondateur n°${foundingMemberNumber}` : "Bienvenue sur ASCEND",
+    body: `${greeting}\n\nTon compte ASCEND est prêt.${founding}\n\nProchaine étape : connecte ta source de revenus (Stripe, PayPal, Shopify, Lemon Squeezy ou ta banque) ou déclare-les avec un justificatif. Ton rang au classement apparaît juste après.\n\nÀ très vite sur ASCEND.`,
     ctaLabel: "Aller sur mon tableau de bord",
     ctaPath: "/app/dashboard",
   };

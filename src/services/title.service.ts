@@ -226,7 +226,7 @@ export async function grantPurchasedTitle(userId: string, titleId: string): Prom
       userId,
       type: "achievement_unlocked",
       title: "Titre débloqué",
-      body: `Ton paiement a été confirmé — « ${def?.name ?? titleId} » est maintenant sur ton profil.`,
+      body: `Paiement confirmé : « ${def?.name ?? titleId} » est maintenant sur ton profil.`,
       metadata: { title_id: titleId },
     });
   }

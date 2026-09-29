@@ -74,7 +74,7 @@ export function ProfileShowcase() {
               Un profil public que tu auras envie de partager
             </h2>
             <p className="mt-4 text-sm text-text-secondary">
-              Choisis exactement le niveau de détail à révéler — montant exact, fourchette, ou
+              Choisis exactement ce que tu montres : montant exact, fourchette, ou
               entièrement privé. Ton classement, tes accomplissements et ta vérification restent
               toujours visibles.
             </p>

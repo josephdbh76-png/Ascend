@@ -25,7 +25,7 @@ export function ReferralCard({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.show("Impossible de copier — copie le lien manuellement.", "error");
+      toast.show("Impossible de copier. Copie le lien à la main.", "error");
     }
   }
 

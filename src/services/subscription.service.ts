@@ -1,10 +1,11 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SubscriptionInfo } from "@/types";
 import type { SubscriptionTier } from "@/types/database.types";
 
-export async function getSubscription(userId: string): Promise<SubscriptionInfo> {
+export const getSubscription = cache(async (userId: string): Promise<SubscriptionInfo> => {
   const supabase = await createClient();
   const [{ data, error }, { data: profile }] = await Promise.all([
     supabase
@@ -30,7 +31,7 @@ export async function getSubscription(userId: string): Promise<SubscriptionInfo>
     trialUsed: data?.trial_used ?? false,
     trialEndsAt: data?.trial_ends_at ?? null,
   };
-}
+});
 
 export function hasProAccess(tier: SubscriptionTier): boolean {
   return tier === "pro" || tier === "elite";

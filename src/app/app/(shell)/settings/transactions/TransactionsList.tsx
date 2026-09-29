@@ -54,7 +54,7 @@ export function TransactionsList({ initial }: { initial: BankTransactionRow[] })
     return (
       <EmptyState
         title="Aucune transaction pour l'instant."
-        description="La synchronisation initiale peut prendre quelques instants — reviens sur cette page dans un moment, ou resynchronise depuis les réglages."
+        description="La première synchronisation peut prendre quelques instants. Reviens sur cette page dans un moment, ou relance-la depuis les réglages."
       />
     );
   }

@@ -51,13 +51,8 @@ export default async function DashboardPage() {
   const profile = await getProfile(user.id);
   if (!profile) return null;
 
-  const { data: business } = await supabase
-    .from("businesses")
-    .select("name, category")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
   const [
+    { data: business },
     history,
     { current, previous },
     verificationStatus,
@@ -69,6 +64,7 @@ export default async function DashboardPage() {
     recentFollowers,
     banners,
   ] = await Promise.all([
+    supabase.from("businesses").select("name, category").eq("user_id", user.id).maybeSingle(),
     getRevenueHistory(user.id, 12),
     getCurrentRevenue(user.id),
     getVerificationStatus(user.id),
@@ -84,12 +80,13 @@ export default async function DashboardPage() {
   const growth = calculateMonthlyGrowth(current?.amountCents ?? null, previous?.amountCents ?? null);
   const isVerified = verificationStatus === "verified";
 
-  const globalRank = isVerified ? await getUserRank(user.id, "global", "") : null;
-  const countryRank =
-    isVerified && profile.country ? await getUserRank(user.id, "country", profile.country) : null;
+  const [globalRank, countryRank, benchmark] = await Promise.all([
+    isVerified ? getUserRank(user.id, "global", "") : Promise.resolve(null),
+    isVerified && profile.country ? getUserRank(user.id, "country", profile.country) : Promise.resolve(null),
+    isVerified ? getBenchmarkStats(user.id) : Promise.resolve(null),
+  ]);
   const movement =
     isVerified && globalRank ? await getRankMovement(user.id, "global", "", globalRank.rank) : null;
-  const benchmark = isVerified ? await getBenchmarkStats(user.id) : null;
 
   const milestone = nextRevenueMilestone(current?.amountCents ?? null);
   const remainingToMilestone = current ? milestone.targetCents - current.amountCents : milestone.targetCents;
@@ -103,17 +100,6 @@ export default async function DashboardPage() {
       ? Math.round(current.amountCents / current.transactionCount)
       : null;
 
-  let foundingSupply: number | null = null;
-  let remainingFoundingSlots: number | null = null;
-  if (!isVerified) {
-    const { data: foundingTitle } = await supabase
-      .from("titles")
-      .select("supply, remaining_supply")
-      .eq("id", "founding-member")
-      .maybeSingle();
-    foundingSupply = foundingTitle?.supply ?? null;
-    remainingFoundingSlots = foundingTitle?.remaining_supply ?? null;
-  }
 
   let unlockedAchievement: { id: string; name: string; description: string; rarity: AchievementRarity } | null = null;
   if (unreadAchievement) {
@@ -147,7 +133,7 @@ export default async function DashboardPage() {
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
-          {timeOfDayGreeting()}, {profile.firstName ?? profile.username} 👋
+          {timeOfDayGreeting()}, {profile.firstName ?? profile.username}
         </h1>
         <p className="mt-1 text-sm text-text-secondary">
           {business
@@ -161,14 +147,14 @@ export default async function DashboardPage() {
       <ActivationChecklist
         items={[
           { label: "Ajoute une bio et le nom de ton activité", done: !!profile.bio && !!business?.name, href: "/app/settings" },
-          { label: "Vérifie tes revenus", done: isVerified, href: "/app/settings" },
+          { label: "Vérifie tes revenus", done: isVerified, href: "/app/settings#comptes-connectes" },
           { label: "Ajoute tes compétences", done: profile.skills.length > 0, href: "/app/settings" },
           { label: "Débloque ton premier accomplissement", done: achievements.length > 0, href: "/app/achievements" },
         ]}
       />
 
       {!isVerified && (
-        <VerificationCTA remainingFoundingSlots={remainingFoundingSlots} foundingSupply={foundingSupply} />
+        <VerificationCTA foundingMemberNumber={profile.foundingMemberNumber} />
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -356,9 +342,9 @@ export default async function DashboardPage() {
 }
 
 function timeOfDayGreeting() {
-  const h = new Date().getHours();
-  if (h < 18) return "Bonjour";
-  return "Bonsoir";
+  // Rendered on the server (UTC): use the members' time zone, not the machine's.
+  const h = Number(new Intl.DateTimeFormat("fr-FR", { hour: "numeric", hourCycle: "h23", timeZone: "Europe/Paris" }).format(new Date()));
+  return h >= 5 && h < 18 ? "Bonjour" : "Bonsoir";
 }
 
 function rankMovementLabel(movement: number) {

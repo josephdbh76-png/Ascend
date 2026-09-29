@@ -24,8 +24,8 @@ export function CommunityPreview() {
             Les bonnes personnes accélèrent les bons projets.
           </h2>
           <p className="mt-4 text-sm text-text-secondary">
-            Réseau et Opportunités sont réservés aux membres Elite — recherche des fondateurs de ton
-            secteur et trouve les bonnes collaborations, avec un matching pensé pour ton activité.
+            Recherche des fondateurs de ton secteur et trouve les bonnes collaborations. Accessible dès la
+            formule Pro, sans limite et avec la recherche par ville en Elite.
           </p>
         </Reveal>
 
@@ -35,7 +35,7 @@ export function CommunityPreview() {
               <h3 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
                 <Users className="h-4 w-4 text-gold" /> Réseau
               </h3>
-              <Badge variant="gold">Elite</Badge>
+              <Badge variant="gold">Pro · Elite</Badge>
             </div>
             {FOUNDERS.map((f) => (
               <RevealItem
@@ -63,7 +63,7 @@ export function CommunityPreview() {
               <h3 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
                 <Compass className="h-4 w-4 text-gold" /> Opportunités
               </h3>
-              <Badge variant="gold">Elite</Badge>
+              <Badge variant="gold">Pro · Elite</Badge>
             </div>
             {OPPORTUNITIES.map((o) => (
               <RevealItem

@@ -13,7 +13,7 @@ export function SubscriptionCard({ subscription }: { subscription: SubscriptionI
       {isTrialing && (
         <div className="flex items-center gap-2 rounded-md border border-gold/30 bg-gold/5 px-3.5 py-2.5 text-sm text-gold">
           <Clock className="h-4 w-4 shrink-0" />
-          Essai Elite en cours — se termine le {new Date(trialEndsAt!).toLocaleDateString("fr-FR")}, puis
+          Essai Elite en cours, jusqu&apos;au {new Date(trialEndsAt!).toLocaleDateString("fr-FR")}, puis
           facturation automatique sauf annulation.
         </div>
       )}
@@ -24,7 +24,7 @@ export function SubscriptionCard({ subscription }: { subscription: SubscriptionI
         <div className="flex flex-col gap-2 rounded-md border border-border-strong bg-card-elevated p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-text-secondary">
             {status === "past_due"
-              ? "Ton dernier paiement a échoué — mets à jour ton moyen de paiement pour garder tes avantages."
+              ? "Ton dernier paiement a échoué. Mets à jour ton moyen de paiement pour garder tes avantages."
               : currentPeriodEnd
                 ? `Renouvellement le ${new Date(currentPeriodEnd).toLocaleDateString("fr-FR")}.`
                 : "Abonnement actif."}

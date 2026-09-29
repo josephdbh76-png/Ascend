@@ -41,7 +41,7 @@ export function MyOpportunities({ opportunities }: { opportunities: MyOpportunit
       <EmptyState
         icon={Compass}
         title="Tu n'as encore publié aucune opportunité."
-        description="Cherche un cofondateur, un développeur, un partenaire — publie une annonce pour la rendre visible aux membres Elite."
+        description="Tu cherches un cofondateur, un développeur ou un partenaire ? Publie une annonce, elle sera visible par les membres Elite."
       />
     );
   }

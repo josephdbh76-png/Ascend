@@ -73,7 +73,7 @@ export function ProfileSettingsForm({
           <Button type="button" variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}>
             {uploadingAvatar ? "Envoi..." : "Changer la photo"}
           </Button>
-          <p className="mt-1 text-xs text-text-muted">JPG, PNG ou WebP — 5 Mo max.</p>
+          <p className="mt-1 text-xs text-text-muted">JPG, PNG ou WebP, 5 Mo max.</p>
         </div>
         <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={onAvatarSelected} />
       </div>

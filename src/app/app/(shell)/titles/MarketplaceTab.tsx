@@ -89,7 +89,7 @@ export function MarketplaceTab({
         <div className="flex flex-col items-start gap-3 rounded-md border border-gold/30 bg-gold/5 p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-text-secondary">
             {sellerStatus.connected
-              ? "Configuration de ton compte de paiement en attente — termine-la pour pouvoir vendre."
+              ? "Configuration de ton compte de paiement en attente. Termine-la pour pouvoir vendre."
               : "Configure un compte de paiement (Stripe) pour pouvoir vendre tes titres et recevoir de l'argent."}
           </p>
           <Button href="/api/marketplace/connect" size="sm" className="shrink-0">
@@ -191,7 +191,7 @@ export function MarketplaceTab({
                   <Clock className="h-3 w-3" /> Mis en vente {timeAgo(l.createdAt)}
                 </p>
                 <Button href={`/api/marketplace/checkout?listing=${l.id}`} size="sm">
-                  Acheter — {formatCurrency(l.priceCents)}
+                  Acheter · {formatCurrency(l.priceCents)}
                 </Button>
               </div>
             ))}

@@ -46,7 +46,7 @@ export default async function AchievementsPage() {
       <section>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Trophées</h2>
         {(trophyRows?.length ?? 0) === 0 ? (
-          <EmptyState icon={Trophy} title="Pas encore de trophée." description="Les trophées sont rares — ils récompensent le classement, la croissance et le prestige de saison." />
+          <EmptyState icon={Trophy} title="Pas encore de trophée." description="Les trophées sont rares : ils récompensent le classement, la croissance et les saisons." />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {(trophyRows ?? [])

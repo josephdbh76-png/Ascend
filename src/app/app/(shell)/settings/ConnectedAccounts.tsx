@@ -195,7 +195,7 @@ function ShopifyConnection({
       const result = await connectShopifyAction(shop, clientId, clientSecret);
       if (!result.success) return toast.show(result.error, "error");
       if (result.data.isFirstVerification) return router.push("/app/verification");
-      toast.show(`Shopify connecté — ${result.data.monthsSynced} mois de revenus synchronisés.`, "success");
+      toast.show(`Shopify connecté : ${result.data.monthsSynced} mois de revenus synchronisés.`, "success");
       router.refresh();
     });
   }
@@ -337,7 +337,7 @@ function PayPalConnection({
       const result = await connectPayPalAction(clientId, clientSecret);
       if (!result.success) return toast.show(result.error, "error");
       if (result.data.isFirstVerification) return router.push("/app/verification");
-      toast.show(`PayPal connecté — ${result.data.monthsSynced} mois de revenus synchronisés.`, "success");
+      toast.show(`PayPal connecté : ${result.data.monthsSynced} mois de revenus synchronisés.`, "success");
       router.refresh();
     });
   }
@@ -376,8 +376,8 @@ function PayPalConnection({
           <div className="rounded border border-border bg-card p-3 text-xs leading-relaxed text-text-muted">
             <p className="font-medium text-text-secondary">Comment connecter ton compte :</p>
             <p className="mt-1.5 rounded border border-gold/30 bg-gold/5 p-2 text-gold">
-              Nécessite un compte PayPal <span className="font-medium">Business</span> — un compte Personnel
-              n&apos;a pas accès aux identifiants API en mode Live. Si besoin, passe ton compte en Business
+              Nécessite un compte PayPal <span className="font-medium">Business</span> (un compte Personnel
+              n&apos;a pas accès aux identifiants API en mode Live). Si besoin, passe ton compte en Business
               gratuitement depuis les paramètres PayPal avant de continuer.
             </p>
             <ol className="mt-1.5 list-decimal space-y-1 pl-4">
@@ -457,7 +457,7 @@ function LemonSqueezyConnection({
       const result = await connectLemonSqueezyAction(apiKey);
       if (!result.success) return toast.show(result.error, "error");
       if (result.data.isFirstVerification) return router.push("/app/verification");
-      toast.show(`Lemon Squeezy connecté — ${result.data.monthsSynced} mois de revenus synchronisés.`, "success");
+      toast.show(`Lemon Squeezy connecté : ${result.data.monthsSynced} mois de revenus synchronisés.`, "success");
       router.refresh();
     });
   }
@@ -627,7 +627,7 @@ function BankConnection({
       {!connected && showPicker && (
         <div className="flex flex-col gap-3 border-t border-border pt-3">
           <p className="text-xs text-text-muted">
-            Tu seras redirigé·e vers ta banque pour approuver l&apos;accès (lecture seule) — ASCEND ne voit
+            Tu seras redirigé·e vers ta banque pour approuver l&apos;accès (lecture seule). ASCEND ne voit
             jamais tes identifiants bancaires. Ensuite, tu choisis toi-même quelles transactions comptent
             comme du revenu.
           </p>

@@ -34,6 +34,7 @@ export function ProfileHeader({
   isCreator?: boolean;
 }) {
   const accent = ACCENT_THEMES.find((t) => t.id === profile.accentTheme) ?? ACCENT_THEMES[0];
+  const foundingNumber = profile.foundingMemberNumber ? String(profile.foundingMemberNumber).padStart(3, "0") : null;
   const revenueDisplay =
     profile.revenueVisibility === "exact" && profile.revenueDisplayCents != null
       ? `${formatCurrency(profile.revenueDisplayCents)} / mois`
@@ -71,9 +72,13 @@ export function ProfileHeader({
             <h1 className="text-xl font-semibold text-text-primary">
               {profile.firstName} {profile.lastName}
             </h1>
-            {profile.activeTitle && <Badge variant="gold">{profile.activeTitle.name}</Badge>}
-            {profile.foundingMemberNumber && (
-              <Badge variant="exclusive">Membre fondateur #{String(profile.foundingMemberNumber).padStart(3, "0")}</Badge>
+            {profile.activeTitle && !(foundingNumber && profile.activeTitle.name === "Membre fondateur") && (
+              <Badge variant="gold">{profile.activeTitle.name}</Badge>
+            )}
+            {foundingNumber && (
+              <Badge variant={profile.activeTitle?.name === "Membre fondateur" ? "gold" : "exclusive"}>
+                Membre fondateur n°{foundingNumber}
+              </Badge>
             )}
             {profile.isDemo && <Badge variant="demo">Démo</Badge>}
           </div>

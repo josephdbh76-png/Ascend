@@ -90,7 +90,7 @@ export function OpportunityCard({ opportunity }: { opportunity: OpportunityMatch
         </Button>
       </div>
 
-      <Modal open={applyOpen} onClose={() => setApplyOpen(false)} title={`Postuler — ${opportunity.title}`}>
+      <Modal open={applyOpen} onClose={() => setApplyOpen(false)} title={`Postuler : ${opportunity.title}`}>
         <form onSubmit={submitApplication} className="flex flex-col gap-4">
           <Field label="Ton message" hint="Présente-toi et explique pourquoi cette opportunité t'intéresse.">
             <Textarea

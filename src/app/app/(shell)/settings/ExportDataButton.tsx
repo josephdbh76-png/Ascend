@@ -32,7 +32,7 @@ export function ExportDataButton() {
         <p className="text-sm font-medium text-text-primary">Exporter mes données</p>
         <p className="mt-1 text-xs text-text-secondary">
           Télécharge un fichier JSON avec ton profil, ton activité, tes revenus, tes accomplissements et
-          titres — ton droit à la portabilité, en un clic.
+          titres. C&apos;est ton droit à la portabilité, en un clic.
         </p>
         <Button variant="secondary" size="sm" className="mt-3" onClick={exportData} disabled={pending}>
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}

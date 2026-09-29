@@ -37,7 +37,7 @@ export const PLANS: PlanDefinition[] = [
     features: [
       "Tout Pro",
       "Messages et opportunités illimités",
-      "Réseau de fondateurs — recherche par ville",
+      "Réseau de fondateurs, recherche par ville",
       "Bons plans exclusifs (formations à prix réduit)",
       "Support dédié",
     ],

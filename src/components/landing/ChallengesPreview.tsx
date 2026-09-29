@@ -25,7 +25,7 @@ export function ChallengesPreview() {
           </h2>
           <p className="mt-4 text-sm text-text-secondary">
             Des défis saisonniers, façon compétition d&apos;élite, qui récompensent la régularité, la
-            croissance et les premières fois — jamais les métriques de vanité.
+            croissance et les premières fois, pas les chiffres qui flattent l&apos;ego.
           </p>
         </Reveal>
 

@@ -28,7 +28,8 @@ export function DangerZone() {
           <p className="text-sm font-medium text-text-primary">Supprimer le compte</p>
           <p className="mt-1 text-xs text-text-secondary">
             Supprime définitivement ton profil, ton activité, ton historique de revenus et ton classement.
-            Cette action est irréversible.
+            Un abonnement en cours est résilié immédiatement, sans nouveau prélèvement. Cette action est
+            irréversible.
           </p>
           <Button variant="danger" size="sm" className="mt-3" onClick={() => setOpen(true)}>
             Supprimer mon compte

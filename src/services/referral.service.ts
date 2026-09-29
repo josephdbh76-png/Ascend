@@ -56,7 +56,7 @@ export async function rewardReferrerIfEligible(referredUserId: string): Promise<
     userId: referral.referrer_id,
     type: "referral_rewarded",
     title: "Un mois de Pro offert !",
-    body: "La personne que tu as parrainée vient d'être vérifiée sur ASCEND — tu viens de gagner 1 mois de Pro offert.",
+    body: "La personne que tu as parrainée vient d'être vérifiée sur ASCEND : tu gagnes 1 mois de Pro offert.",
   });
 }
 

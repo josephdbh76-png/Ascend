@@ -152,6 +152,7 @@ function FounderCard() {
           <Award className="h-3.5 w-3.5 text-gold" /> Top 50
         </motion.span>
       </motion.div>
+      <p className="mt-3 text-[11px] text-text-muted">Profil d&apos;exemple</p>
     </motion.div>
   );
 }

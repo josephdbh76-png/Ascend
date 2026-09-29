@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { RESERVED_USERNAMES } from "@/lib/constants";
 import { getUserAchievements } from "@/services/achievement.service";
@@ -6,7 +7,8 @@ import { getActiveTitle } from "@/services/title.service";
 import type { Profile, PublicProfile, EarnedTrophy, EarnedTitle } from "@/types";
 import type { PublicProfileRow } from "@/types/database.types";
 
-export async function getProfile(userId: string): Promise<Profile | null> {
+// cache(): the app layout and most pages read the viewer's profile in the same request.
+export const getProfile = cache(async (userId: string): Promise<Profile | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
   if (error) throw new Error(error.message);
@@ -32,7 +34,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     hasSeenTutorial: data.has_seen_tutorial,
     createdAt: data.created_at,
   };
-}
+});
 
 export function isUsernameFormatValid(username: string): boolean {
   return /^[a-z0-9_]{3,30}$/.test(username);
@@ -88,20 +90,19 @@ function mapPublicProfileRow(
   };
 }
 
-export async function getPublicProfileByUsername(username: string): Promise<PublicProfile | null> {
+// cache(): generateMetadata and the page both ask for the same profile in one request.
+export const getPublicProfileByUsername = cache(async (username: string): Promise<PublicProfile | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_public_profile", { p_username: username });
   if (error) throw new Error(error.message);
   const row = data?.[0];
   if (!row) return null;
 
-  const achievements = await getUserAchievements(row.user_id);
-  const activeTitle = await getActiveTitle(row.user_id);
-
-  const { data: trophyRows } = await supabase
-    .from("user_trophies")
-    .select("trophy_id, earned_at")
-    .eq("user_id", row.user_id);
+  const [achievements, activeTitle, { data: trophyRows }] = await Promise.all([
+    getUserAchievements(row.user_id),
+    getActiveTitle(row.user_id),
+    supabase.from("user_trophies").select("trophy_id, earned_at").eq("user_id", row.user_id),
+  ]);
 
   const trophyIds = (trophyRows ?? []).map((t) => t.trophy_id);
   const { data: trophyCatalog } = trophyIds.length
@@ -124,4 +125,4 @@ export async function getPublicProfileByUsername(username: string): Promise<Publ
     });
 
   return mapPublicProfileRow(row, achievements, trophies, activeTitle);
-}
+});

@@ -149,7 +149,7 @@ export function LeaderboardPreview() {
           </table>
         </Reveal>
         <p className="mt-3 text-xs text-text-muted">
-          Données d&apos;exemple à but illustratif — pas un classement réel.
+          Exemple illustratif, ce n&apos;est pas le classement réel.
         </p>
       </div>
     </section>

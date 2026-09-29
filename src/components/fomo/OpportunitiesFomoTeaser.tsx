@@ -66,8 +66,8 @@ export function OpportunitiesFomoTeaser({
           </p>
           <p className="mt-1 max-w-sm text-sm text-text-secondary">
             {topMatchType
-              ? `Dont une offre de type « ${opportunityTypeLabel(topMatchType)} » — réservé aux membres Elite.`
-              : "Cofondateur, développeur, partenaire, growth — réservé aux membres Elite."}
+              ? `Dont une offre de type « ${opportunityTypeLabel(topMatchType)} ». Accessible dès la formule Pro.`
+              : "Cofondateur, développeur, partenaire, growth. Accessible dès la formule Pro."}
           </p>
         </div>
         <Button onClick={() => setOpen(true)}>
@@ -80,16 +80,20 @@ export function OpportunitiesFomoTeaser({
         onClose={() => setOpen(false)}
         steps={analysisSteps(count)}
         resultHeadline={
-          topMatchScore != null ? "Une opportunité te correspond parfaitement !" : "De nouvelles opportunités chaque semaine"
+          topMatchScore == null
+            ? "De nouvelles opportunités arrivent sur le réseau"
+            : topMatchScore >= 80
+              ? "Une opportunité te correspond très bien"
+              : "Une opportunité correspond à ton profil"
         }
         resultScore={topMatchScore}
         resultScoreLabel={topMatchScore != null ? "de compatibilité" : undefined}
         resultSubtext={
           topMatchScore != null
-            ? "Passe Elite pour découvrir qui la propose et postuler dès aujourd'hui."
-            : "Passe Elite pour être alerté dès qu'une opportunité correspond à ton profil."
+            ? "Passe Pro pour découvrir qui la propose et postuler, ou Elite pour candidater sans limite."
+            : "Passe Pro pour parcourir les opportunités et postuler, ou Elite pour candidater sans limite."
         }
-        ctaLabel={topMatchScore != null ? "Débloquer cette opportunité" : "Devenir membre Elite"}
+        ctaLabel={topMatchScore != null ? "Débloquer cette opportunité" : "Voir les formules"}
         ctaHref="/app/settings#abonnement"
       />
     </div>

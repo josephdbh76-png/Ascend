@@ -8,13 +8,28 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     period: "Septembre 2026",
-    title: "Double authentification",
-    description: "Protège ton compte avec un code à usage unique en plus de ton mot de passe, via n'importe quelle application d'authentification.",
+    title: "Marché des titres",
+    description: "Revends tes titres exclusifs à d'autres membres au prix que tu fixes. Le paiement est sécurisé par Stripe et le titre change de propriétaire automatiquement.",
   },
   {
     period: "Septembre 2026",
-    title: "Programme de parrainage",
-    description: "Invite d'autres fondateurs avec ton lien personnel — dès qu'un filleul est vérifié, tu reçois un mois de Pro offert.",
+    title: "Bons plans Elite",
+    description: "Des formations et offres de créateurs à prix réduit, réservées aux membres Elite.",
+  },
+  {
+    period: "Septembre 2026",
+    title: "PayPal, Lemon Squeezy et banque",
+    description: "Vérifie tes revenus depuis PayPal Business, Lemon Squeezy ou directement depuis ton compte bancaire, en plus de Stripe et Shopify.",
+  },
+  {
+    period: "Septembre 2026",
+    title: "Photo de profil",
+    description: "Ajoute ta photo pour que les autres membres te reconnaissent dans le classement et le réseau.",
+  },
+  {
+    period: "Septembre 2026",
+    title: "Double authentification",
+    description: "Protège ton compte avec un code à usage unique en plus de ton mot de passe, via n'importe quelle application d'authentification.",
   },
   {
     period: "Septembre 2026",
@@ -44,7 +59,7 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     period: "Septembre 2026",
     title: "Réseau et opportunités",
-    description: "Recherche des fondateurs de ton secteur et découvre des opportunités de collaboration, réservés aux membres Elite.",
+    description: "Recherche des fondateurs de ton secteur et découvre des opportunités de collaboration, avec Pro et Elite.",
   },
   {
     period: "Août 2026",

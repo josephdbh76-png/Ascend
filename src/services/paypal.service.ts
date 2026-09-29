@@ -102,7 +102,7 @@ export async function syncPayPalRevenue(
 
   const accessToken = clientId && clientSecret ? await getPayPalAccessToken(clientId, clientSecret) : null;
   if (!accessToken) {
-    const message = "Impossible d'obtenir un accès PayPal — reconnecte ton compte depuis les réglages.";
+    const message = "Impossible d'obtenir un accès PayPal. Reconnecte ton compte depuis les réglages.";
     await supabase
       .from("verifications")
       .update({ status: "error", error_message: message, last_checked_at: new Date().toISOString() })
