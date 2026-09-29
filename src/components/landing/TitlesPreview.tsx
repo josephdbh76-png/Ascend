@@ -2,6 +2,7 @@ import { Gem, Medal, Flame, Crown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { createClient } from "@/lib/supabase/server";
+import { getFoundingSpotsLeft } from "@/services/founding.service";
 import { cn, formatCurrency } from "@/lib/utils";
 
 const TITLES = [
@@ -20,7 +21,13 @@ export async function TitlesPreview() {
       "id",
       TITLES.map((t): string | null => t.id).filter((id): id is string => id != null),
     );
-  const supplyById = new Map((supplyRows ?? []).map((r) => [r.id, r]));
+  const foundingLeft = await getFoundingSpotsLeft();
+  const supplyById = new Map(
+    (supplyRows ?? []).map((r) => [
+      r.id,
+      r.id === "founding-member" && foundingLeft != null ? { ...r, remaining_supply: foundingLeft } : r,
+    ]),
+  );
 
   return (
     <section className="border-b border-border bg-bg-secondary">
