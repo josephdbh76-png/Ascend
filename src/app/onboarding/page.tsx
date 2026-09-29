@@ -20,11 +20,18 @@ export default async function OnboardingPage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
+  const { data: survey } = await supabase
+    .from("signup_surveys")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg-primary px-4">
       <div className="w-full max-w-md">
         <OnboardingWizard
           startStep={profile.onboardingStep}
+          hasSurvey={!!survey}
           initial={{
             firstName: profile.firstName ?? "",
             lastName: profile.lastName ?? "",

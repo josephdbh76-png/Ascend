@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import { BUSINESS_CATEGORIES, COUNTRIES } from "@/lib/constants";
 import { track } from "@/lib/analytics";
+import { SignupSurvey } from "@/components/onboarding/SignupSurvey";
 import {
   createAccountAction,
   saveProfileStepAction,
@@ -16,7 +17,7 @@ import {
   completeOnboardingAction,
 } from "../actions";
 
-const STEPS = ["Compte", "Activité", "Bio", "Connexion"] as const;
+const STEPS = ["Compte", "Activité", "Questions", "Bio", "Connexion"] as const;
 
 export function SignupWizard() {
   const router = useRouter();
@@ -294,7 +295,9 @@ export function SignupWizard() {
             </form>
           )}
 
-          {step === 2 && (
+          {step === 2 && <SignupSurvey onDone={next} />}
+
+          {step === 3 && (
             <div className="flex flex-col gap-4">
               <div>
                 <h1 className="text-xl font-semibold text-text-primary">Ajoute une courte bio</h1>
@@ -316,7 +319,7 @@ export function SignupWizard() {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <div className="flex flex-col gap-4">
               <div>
                 <h1 className="text-xl font-semibold text-text-primary">Vérifie tes performances</h1>

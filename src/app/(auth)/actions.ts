@@ -1,6 +1,14 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  DISCOVERY_SOURCES,
+  MAIN_GOALS,
+  PAYMENT_PLATFORMS,
+  REVENUE_RANGES,
+  isValidOption,
+} from "@/lib/signupSurvey";
 import {
   signupAccountSchema,
   signupProfileSchema,
@@ -149,6 +157,60 @@ export async function saveBioStepAction(input: { bio?: string }): Promise<Action
 
   if (error) return { success: false, error: toFriendlyAuthError(error.message) };
   return { success: true, data: undefined };
+}
+
+export async function saveSignupSurveyAction(input: {
+  discoverySource: string;
+  referrerName?: string;
+  paymentPlatforms: string[];
+  monthlyRevenueRange: string;
+  mainGoal: string;
+}): Promise<ActionResult> {
+  if (
+    !isValidOption(DISCOVERY_SOURCES, input.discoverySource) ||
+    !isValidOption(REVENUE_RANGES, input.monthlyRevenueRange) ||
+    !isValidOption(MAIN_GOALS, input.mainGoal) ||
+    input.paymentPlatforms.length === 0 ||
+    !input.paymentPlatforms.every((p) => isValidOption(PAYMENT_PLATFORMS, p))
+  ) {
+    return { success: false, error: "Réponds à chaque question pour continuer." };
+  }
+
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  const { error } = await supabase.from("signup_surveys").upsert(
+    {
+      user_id: userData.user.id,
+      discovery_source: input.discoverySource,
+      referrer_name: input.referrerName?.trim().slice(0, 80) || null,
+      payment_platforms: [...new Set(input.paymentPlatforms)],
+      monthly_revenue_range: input.monthlyRevenueRange,
+      main_goal: input.mainGoal,
+    },
+    { onConflict: "user_id" },
+  );
+  // Never block signup on the questionnaire — losing one answer beats losing the member.
+  if (error) console.error("Signup survey save failed:", error.message);
+  return { success: true, data: undefined };
+}
+
+/** Position of this member among real (non-demo) members, by signup order. */
+export async function getMemberNumberAction(): Promise<number | null> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return null;
+
+  const admin = createAdminClient();
+  const { data: me } = await admin.from("profiles").select("created_at").eq("id", userData.user.id).maybeSingle();
+  if (!me) return null;
+  const { count } = await admin
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("is_demo", false)
+    .lte("created_at", me.created_at);
+  return count ?? null;
 }
 
 export async function completeOnboardingAction(): Promise<ActionResult> {

@@ -771,6 +771,27 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["deals"]["Row"]>;
         Relationships: [];
       };
+      signup_surveys: {
+        Row: {
+          user_id: string;
+          discovery_source: string;
+          referrer_name: string | null;
+          payment_platforms: string[];
+          monthly_revenue_range: string;
+          main_goal: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          discovery_source: string;
+          referrer_name?: string | null;
+          payment_platforms?: string[];
+          monthly_revenue_range: string;
+          main_goal: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["signup_surveys"]["Row"]>;
+        Relationships: [];
+      };
       seller_accounts: {
         Row: {
           user_id: string;

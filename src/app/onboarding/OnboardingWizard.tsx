@@ -7,16 +7,19 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import { BUSINESS_CATEGORIES, COUNTRIES } from "@/lib/constants";
 import { track } from "@/lib/analytics";
+import { SignupSurvey } from "@/components/onboarding/SignupSurvey";
 import { saveProfileStepAction, saveBioStepAction, completeOnboardingAction } from "../(auth)/actions";
 import type { OnboardingStep } from "@/types/database.types";
 
-const ORDER: OnboardingStep[] = ["profile", "business", "bio", "revenue", "done"];
+const SCREEN_FOR_STEP: Record<OnboardingStep, number> = { profile: 1, business: 1, bio: 3, revenue: 4, done: 4 };
 
 export function OnboardingWizard({
   startStep,
+  hasSurvey,
   initial,
 }: {
   startStep: OnboardingStep;
+  hasSurvey: boolean;
   initial: {
     firstName: string;
     lastName: string;
@@ -27,7 +30,8 @@ export function OnboardingWizard({
   };
 }) {
   const router = useRouter();
-  const [step, setStep] = useState(() => Math.max(1, ORDER.indexOf(startStep)));
+  const resumeAt = SCREEN_FOR_STEP[startStep];
+  const [step, setStep] = useState(() => (!hasSurvey && resumeAt > 2 ? 2 : resumeAt));
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +49,7 @@ export function OnboardingWizard({
     startTransition(async () => {
       const result = await saveProfileStepAction(profile);
       if (!result.success) return setError(result.error);
-      setStep(2);
+      setStep(hasSurvey ? 3 : 2);
     });
   }
 
@@ -55,7 +59,7 @@ export function OnboardingWizard({
       const result = await saveBioStepAction({ bio });
       if (!result.success) return setError(result.error);
       track("profile_completed");
-      setStep(3);
+      setStep(4);
     });
   }
 
@@ -120,7 +124,9 @@ export function OnboardingWizard({
         </div>
       )}
 
-      {step === 2 && (
+      {step === 2 && <SignupSurvey onDone={() => setStep(Math.max(3, resumeAt))} />}
+
+      {step === 3 && (
         <div className="flex flex-col gap-4">
           <div>
             <h1 className="text-xl font-semibold text-text-primary">Ajoute une courte bio</h1>
@@ -135,7 +141,7 @@ export function OnboardingWizard({
         </div>
       )}
 
-      {step === 3 && (
+      {step === 4 && (
         <div className="flex flex-col gap-4">
           <div>
             <h1 className="text-xl font-semibold text-text-primary">Vérifie tes performances</h1>

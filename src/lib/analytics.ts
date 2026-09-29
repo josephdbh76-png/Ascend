@@ -17,6 +17,7 @@ export type AnalyticsEvent =
   | "signup_started"
   | "signup_completed"
   | "profile_completed"
+  | "signup_survey_completed"
   | "stripe_connection_started"
   | "stripe_connection_completed"
   | "leaderboard_viewed"

@@ -20,6 +20,8 @@ import { InfluencerProgramPanel } from "./InfluencerProgramPanel";
 import { DealsPanel } from "./DealsPanel";
 import { BannersPanel } from "./BannersPanel";
 import { EmailToggleGroupsPanel } from "./EmailToggleGroupsPanel";
+import { SurveyPanel } from "./SurveyPanel";
+import { listSurveyResponses, summarizeSurvey, topReferrers } from "@/services/survey.service";
 import { Card } from "@/components/ui/Card";
 
 export const metadata: Metadata = { title: "Administration" };
@@ -32,7 +34,7 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (!(await isCurrentUserAdmin())) redirect("/app/dashboard");
 
-  const [users, pendingRevenueReviews, campaignHistory, emailTemplates, influencers, deals, banners, emailToggleGroups] =
+  const [users, pendingRevenueReviews, campaignHistory, emailTemplates, influencers, deals, banners, emailToggleGroups, surveyResponses] =
     await Promise.all([
       listUsersForAdmin(),
       getPendingRevenueReviews(),
@@ -42,6 +44,7 @@ export default async function AdminPage() {
       listAllDealsForAdmin(),
       listAllBannersForAdmin(),
       listEmailToggleGroups(),
+      listSurveyResponses(),
     ]);
 
   return (
@@ -52,6 +55,20 @@ export default async function AdminPage() {
           Gère les formules d&apos;abonnement et les droits d&apos;administration de tous les membres.
         </p>
       </div>
+      <Card className="flex flex-col gap-3 p-5" elevated>
+        <div>
+          <h2 className="text-sm font-semibold text-text-primary">Questionnaire d&apos;inscription</h2>
+          <p className="text-xs text-text-secondary">
+            Comment les membres nous découvrent, où ils encaissent, leur niveau et ce qu&apos;ils viennent chercher.
+          </p>
+        </div>
+        <SurveyPanel
+          total={surveyResponses.length}
+          tallies={summarizeSurvey(surveyResponses)}
+          referrers={topReferrers(surveyResponses)}
+        />
+      </Card>
+
       <Card className="flex flex-col items-start gap-3 p-5 sm:flex-row sm:items-center sm:justify-between" elevated>
         <div>
           <h2 className="text-sm font-semibold text-text-primary">Titres payants</h2>
