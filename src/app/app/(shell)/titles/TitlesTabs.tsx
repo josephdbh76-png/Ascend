@@ -35,13 +35,17 @@ export function TitlesTabs({
   activeListings: MarketplaceListing[];
   recentSales: MarketplaceListing[];
 }) {
-  const [tab, setTab] = useState("owned");
+  // A new member owns nothing yet: open on the collection they can act on.
+  const initialTab = owned.length > 0 ? "owned" : "exclusive";
+  const [tab, setTab] = useState(initialTab);
   const ownedIds = new Set(owned.map((o) => o.id));
   const ownedByid = new Map(owned.map((o) => [o.id, o]));
 
   const ownedTitles = catalog.filter((t) => ownedIds.has(t.id));
   const availableTitles = catalog.filter((t) => t.type === "earned" && !ownedIds.has(t.id));
-  const exclusiveTitles = catalog.filter((t) => t.type === "purchasable");
+  const exclusiveTitles = catalog
+    .filter((t) => t.type === "purchasable")
+    .sort((a, b) => (b.price_cents ?? 0) - (a.price_cents ?? 0));
 
   const lists: Record<string, TitleRow[]> = {
     owned: ownedTitles,
@@ -53,7 +57,14 @@ export function TitlesTabs({
 
   return (
     <div className="flex flex-col gap-6">
-      <Tabs items={TABS} defaultValue="owned" onChange={setTab} className="sm:w-fit" />
+      <Tabs items={TABS} defaultValue={initialTab} onChange={setTab} className="sm:w-fit" />
+
+      {tab === "exclusive" && exclusiveTitles.length > 0 && (
+        <p className="rounded-md border border-gold/25 bg-gold/5 px-4 py-3 text-xs text-text-secondary">
+          Éditions limitées. Une fois épuisé, un titre ne se trouve plus que sur le
+          Marché, revendu par son propriétaire au prix qu&apos;il fixe.
+        </p>
+      )}
 
       {tab === "market" ? (
         <MarketplaceTab
@@ -83,6 +94,7 @@ export function TitlesTabs({
               priceCents={t.price_cents}
               supply={t.supply}
               remainingSupply={t.remaining_supply}
+              tradeable={t.tradeable}
               owned={ownedIds.has(t.id)}
               isActive={ownedByid.get(t.id)?.isActive}
               completionRate={completionRates?.[t.id]}

@@ -23,7 +23,8 @@ export type NotificationType =
   | "new_application"
   | "application_status_changed"
   | "revenue_review_completed"
-  | "referral_rewarded";
+  | "referral_rewarded"
+  | "payment_refunded";
 export type TitleRarity = "common" | "rare" | "epic" | "legendary" | "exclusive";
 export type TitleType = "earned" | "purchasable";
 export type SubscriptionTier = "free" | "pro" | "elite";

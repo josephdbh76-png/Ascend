@@ -154,6 +154,7 @@ export interface TitleRow {
   supply: number | null;
   remaining_supply: number | null;
   requirement: Record<string, unknown>;
+  tradeable: boolean;
 }
 
 export interface EarnedTitle {

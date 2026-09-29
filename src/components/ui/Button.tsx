@@ -34,6 +34,15 @@ export function Button({ variant = "primary", size = "md", className, children, 
   const classes = cn(base, variants[variant], sizes[size], className);
 
   if (href && !disabled) {
+    // API routes create Stripe sessions/accounts on GET: a <Link> would
+    // prefetch them on sight, creating real objects for every page view.
+    if (href.startsWith("/api/")) {
+      return (
+        <a href={href} className={classes}>
+          {children}
+        </a>
+      );
+    }
     return (
       <Link href={href} className={classes}>
         {children}

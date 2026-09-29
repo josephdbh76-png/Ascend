@@ -189,9 +189,17 @@ export async function markCommissionPaid(commissionId: string): Promise<void> {
 // is a no-op. amount_total is what the customer paid on this first
 // invoice, already net of their 10% discount, so the commission is
 // computed on real money collected, not list price.
+/**
+ * One-time commission on the referred member's first real payment. Called
+ * from checkout completion and from invoice.paid: with a free trial the
+ * checkout total is 0 and the first payment only happens at trial end.
+ * The unique constraint on stripe_subscription_id keeps it to one per sub.
+ */
 export async function recordInfluencerCommissionIfApplicable(
-  session: Stripe.Checkout.Session,
   subscription: Stripe.Subscription,
+  paidAmountCents: number | null,
+  currency: string | null,
+  sourceId: string,
 ): Promise<void> {
   // Callers must retrieve the subscription with `expand: ["discounts"]` —
   // without it, each entry is just a discount id string, not an object we
@@ -202,7 +210,7 @@ export async function recordInfluencerCommissionIfApplicable(
   if (!promotionCodeId) return;
 
   const userId = subscription.metadata?.user_id;
-  if (!userId || session.amount_total == null) return;
+  if (!userId || !paidAmountCents) return;
 
   const admin = createAdminClient();
   const { data: influencer } = await admin
@@ -212,20 +220,19 @@ export async function recordInfluencerCommissionIfApplicable(
     .maybeSingle();
   if (!influencer || influencer.status !== "active") return;
 
-  const amountCents = Math.round(session.amount_total * influencer.commission_rate);
+  const amountCents = Math.round(paidAmountCents * influencer.commission_rate);
   if (amountCents <= 0) return;
 
-  // ignoreDuplicates + the unique constraint on stripe_subscription_id
-  // makes this safe if Stripe redelivers the completion webhook.
-  await admin.from("influencer_commissions").upsert(
+  const { error } = await admin.from("influencer_commissions").upsert(
     {
       influencer_id: influencer.id,
       user_id: userId,
       stripe_subscription_id: subscription.id,
-      stripe_checkout_session_id: session.id,
+      stripe_checkout_session_id: sourceId,
       amount_cents: amountCents,
-      currency: session.currency ?? "eur",
+      currency: currency ?? "eur",
     },
     { onConflict: "stripe_subscription_id", ignoreDuplicates: true },
   );
+  if (error) throw new Error(`influencer commission failed: ${error.message}`);
 }

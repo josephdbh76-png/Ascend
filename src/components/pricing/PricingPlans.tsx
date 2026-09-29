@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -59,7 +59,7 @@ export function PricingPlans({
         >
           Annuel
           <Badge variant="gold" className="text-[9px]">
-            -{annualSavingsPercent(PLANS[2].monthlyCents, PLANS[2].annualCents!)}%
+            jusqu&apos;à -{Math.max(...PLANS.filter((p) => p.annualCents != null).map((p) => annualSavingsPercent(p.monthlyCents, p.annualCents!)))}%
           </Badge>
         </button>
       </div>
@@ -92,7 +92,7 @@ export function PricingPlans({
                 {isCurrent ? (
                   <Badge variant="gold">Actuel</Badge>
                 ) : (
-                  plan.highlighted && <Badge variant="gold">Populaire</Badge>
+                  plan.highlighted && <Badge variant="gold">Recommandé</Badge>
                 )}
               </div>
 
@@ -103,9 +103,14 @@ export function PricingPlans({
                 {plan.tier === "free"
                   ? "Pour toujours"
                   : interval === "year"
-                    ? `par an — soit ${formatCurrency(annualMonthlyEquivalentCents(plan.annualCents!))}/mois`
+                    ? `par an, soit ${formatCurrency(annualMonthlyEquivalentCents(plan.annualCents!))}/mois`
                     : "par mois"}
               </p>
+              {interval === "year" && plan.annualCents != null && (
+                <p className="mt-1 text-xs font-medium text-success">
+                  {Math.round(12 - plan.annualCents / plan.monthlyCents)} mois offerts
+                </p>
+              )}
 
               <ul className="mt-6 flex flex-1 flex-col gap-2.5">
                 {plan.features.map((f) => (
@@ -140,6 +145,14 @@ export function PricingPlans({
           );
         })}
       </div>
+
+      <p className="mx-auto mt-6 flex max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-center text-xs text-text-muted">
+        <span className="flex items-center gap-1.5">
+          <ShieldCheck className="h-3.5 w-3.5 text-gold" /> Paiement sécurisé par Stripe
+        </span>
+        <span>Sans engagement, résiliable en 2 clics</span>
+        <span>Tarif bêta conservé tant que ton abonnement reste actif</span>
+      </p>
     </div>
   );
 }

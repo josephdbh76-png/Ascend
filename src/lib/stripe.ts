@@ -71,6 +71,28 @@ export function parseBillingInterval(value: string | null): BillingInterval {
 // the existing configuration in place instead of creating duplicates.
 const PORTAL_HEADLINE = "Gère ton abonnement ASCEND en toute simplicité.";
 
+/** Lets members switch Pro/Elite and monthly/annual themselves, prorated. */
+async function subscriptionUpdateFeature(
+  stripe: Stripe,
+): Promise<Stripe.BillingPortal.ConfigurationUpdateParams.Features.SubscriptionUpdate> {
+  const priceIds = BILLABLE_TIERS.flatMap((tier) =>
+    (["month", "year"] as const).map((interval) => process.env[PRICE_ENV_VARS[tier][interval]]).filter(Boolean),
+  ) as string[];
+  const byProduct = new Map<string, string[]>();
+  for (const id of priceIds) {
+    const price = await stripe.prices.retrieve(id);
+    const product = typeof price.product === "string" ? price.product : price.product.id;
+    byProduct.set(product, [...(byProduct.get(product) ?? []), id]);
+  }
+  if (byProduct.size === 0) return { enabled: false };
+  return {
+    enabled: true,
+    default_allowed_updates: ["price"],
+    proration_behavior: "create_prorations",
+    products: [...byProduct].map(([product, prices]) => ({ product, prices })),
+  };
+}
+
 export async function getOrCreatePortalConfigurationId(): Promise<string> {
   const stripe = getStripe();
   const appUrl = getAppUrl();
@@ -102,7 +124,7 @@ export async function getOrCreatePortalConfigurationId(): Promise<string> {
           ],
         },
       },
-      subscription_update: { enabled: false },
+      subscription_update: await subscriptionUpdateFeature(stripe),
     },
   };
 

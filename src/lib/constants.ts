@@ -166,6 +166,10 @@ export const FAQ_ITEMS = [
     a: "Connecte Stripe et ASCEND récupère tes vraies données de transaction côté serveur — vérifié automatiquement, instantanément. Pas de Stripe ? Déclare tes revenus manuellement avec une preuve (facture, export comptable...) : un administrateur la vérifie avant qu'elle ne compte comme un revenu vérifié.",
   },
   {
+    q: "ASCEND peut-il toucher à mon argent ?",
+    a: "Non. ASCEND lit uniquement tes transactions pour calculer tes revenus : aucun paiement, remboursement ni virement n'est jamais effectué depuis ton compte. Tu peux couper l'accès à tout moment depuis les Réglages, ou directement depuis ton tableau de bord Stripe.",
+  },
+  {
     q: "Puis-je masquer mes revenus exacts ?",
     a: "Oui. Dans les Réglages, choisis d'afficher ton revenu exact, une fourchette de 10 000 €, ou de le garder entièrement privé. Ton classement peut rester visible sans exposer le montant.",
   },
@@ -175,7 +179,11 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Que se passe-t-il après la bêta ?",
-    a: "Les fonctionnalités du compte Gratuit resteront gratuites pour toujours. Pro et Elite sont déjà disponibles dès aujourd'hui, résiliables à tout moment depuis les Réglages.",
+    a: "Les fonctionnalités du compte Gratuit resteront gratuites. Pro et Elite sont déjà disponibles, résiliables à tout moment depuis les Réglages, et si tu t'abonnes pendant la bêta, ton tarif ne bouge pas tant que ton abonnement reste actif.",
+  },
+  {
+    q: "À quoi servent les titres ?",
+    a: "Un titre s'affiche sur ton profil public, à côté de ton nom. Certains se gagnent (classement, croissance, régularité), d'autres sont vendus en édition limitée. Une fois épuisés, les titres exclusifs ne s'obtiennent plus qu'auprès des membres qui les possèdent, sur le Marché.",
   },
   {
     q: "Puis-je essayer Elite gratuitement ?",

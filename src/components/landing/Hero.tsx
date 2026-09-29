@@ -13,7 +13,7 @@ export function Hero() {
   const reduced = useReducedMotionSafe();
 
   return (
-    <section className="border-b border-border">
+    <section className="overflow-x-clip border-b border-border">
       <div className="mx-auto max-w-[1200px] px-4 pb-24 pt-20 sm:px-6 lg:px-8 lg:pt-28">
         <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-[1.05fr_0.95fr]">
           <motion.div

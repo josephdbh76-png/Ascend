@@ -25,13 +25,22 @@ export function PurchaseStatusToast() {
     const marketplaceError = searchParams.get("marketplace_error");
     const marketplacePurchase = searchParams.get("marketplace_purchase");
 
+    // The title is granted by the Stripe webhook, usually a few seconds after
+    // the redirect back here: refresh a couple of times to pick it up.
+    const pickUpGrant = () => {
+      setTimeout(() => router.refresh(), 2500);
+      setTimeout(() => router.refresh(), 7000);
+    };
+
     if (error) {
       toast.show(ERROR_MESSAGES[error] ?? "Achat impossible pour le moment.", "error");
       router.replace(pathname);
     } else if (purchase === "success") {
-      toast.show("Paiement confirmé — ton titre arrive dans quelques secondes.", "success");
+      toast.show("Paiement confirmé. Ton titre apparaît dans quelques secondes.", "success");
       router.replace(pathname);
-    } else if (purchase === "cancelled") {
+      pickUpGrant();
+    } else if (purchase === "cancelled" || marketplacePurchase === "cancelled") {
+      toast.show("Paiement annulé, rien n'a été débité.", "info");
       router.replace(pathname);
     } else if (sellerError) {
       toast.show(`Configuration du compte vendeur impossible : ${sellerError}`, "error");
@@ -43,10 +52,9 @@ export function PurchaseStatusToast() {
       toast.show(`Achat impossible : ${marketplaceError}`, "error");
       router.replace(pathname);
     } else if (marketplacePurchase === "success") {
-      toast.show("Achat confirmé — le titre arrive sur ton profil dans quelques secondes.", "success");
+      toast.show("Achat confirmé. Le titre arrive sur ton profil dans quelques secondes.", "success");
       router.replace(pathname);
-    } else if (marketplacePurchase === "cancelled") {
-      router.replace(pathname);
+      pickUpGrant();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

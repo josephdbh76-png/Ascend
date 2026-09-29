@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getStripe, priceIdForTier, parseBillableTier, parseBillingInterval } from "@/lib/stripe";
 import { getOrCreateStripeCustomerId, isTrialEligible } from "@/services/subscription.service";
 import { getAppUrl } from "@/lib/utils";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const TRIAL_DAYS = 14;
 
@@ -30,6 +31,17 @@ export async function GET(request: NextRequest) {
       `/api/stripe/checkout?tier=${tier}&interval=${interval}${trialRequested ? "&trial=1" : ""}`,
     );
     return NextResponse.redirect(loginUrl);
+  }
+
+  // A second Checkout would open a second, parallel subscription (double
+  // billing). Plan changes on an existing one go through the billing portal.
+  const { data: current } = await createAdminClient()
+    .from("subscriptions")
+    .select("tier, status, stripe_subscription_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (current?.stripe_subscription_id && current.tier !== "free" && current.status !== "canceled") {
+    return NextResponse.redirect(new URL("/api/stripe/portal", appUrl));
   }
 
   try {

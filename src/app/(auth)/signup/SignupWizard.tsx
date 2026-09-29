@@ -1,5 +1,6 @@
 "use client";
 
+import { hardNavigate } from "@/lib/hardNavigate";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -94,10 +95,10 @@ export function SignupWizard() {
       if (!result.success) return setError(result.error);
       track("signup_completed");
       if (plan === "pro" || plan === "elite") {
-        router.push(`/api/stripe/checkout?tier=${plan}&interval=${interval}${trial ? "&trial=1" : ""}`);
+        hardNavigate(`/api/stripe/checkout?tier=${plan}&interval=${interval}${trial ? "&trial=1" : ""}`);
       } else if (connect) {
         track("stripe_connection_started");
-        router.push("/api/stripe/connect");
+        hardNavigate("/api/stripe/connect");
       } else {
         router.push("/app/dashboard");
         router.refresh();

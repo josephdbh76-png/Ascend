@@ -25,10 +25,9 @@ export const PLANS: PlanDefinition[] = [
       "Tout Gratuit",
       "Analyses avancées",
       "Profil personnalisable (thèmes)",
-      "Messages limités (10/mois)",
-      "Opportunités limitées (5 candidatures/mois)",
+      "10 messages par mois",
+      "5 candidatures aux opportunités par mois",
     ],
-    highlighted: true,
   },
   {
     tier: "elite",
@@ -42,6 +41,7 @@ export const PLANS: PlanDefinition[] = [
       "Bons plans exclusifs (formations à prix réduit)",
       "Support dédié",
     ],
+    highlighted: true,
   },
 ];
 

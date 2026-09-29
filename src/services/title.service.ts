@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createNotification } from "@/services/notification.service";
+import { createNotification, createNotificationForUser } from "@/services/notification.service";
 import { getStripe } from "@/lib/stripe";
 import type { TitleRow, EarnedTitle } from "@/types";
 import type { TitleRarity } from "@/types/database.types";
@@ -221,7 +221,8 @@ export async function grantPurchasedTitle(userId: string, titleId: string): Prom
 
   if (data) {
     const { data: def } = await admin.from("titles").select("name").eq("id", titleId).maybeSingle();
-    await createNotification({
+    // Webhook context: no user session, so the RLS-scoped createNotification would be rejected.
+    await createNotificationForUser({
       userId,
       type: "achievement_unlocked",
       title: "Titre débloqué",

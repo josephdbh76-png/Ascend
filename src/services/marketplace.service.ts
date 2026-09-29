@@ -275,6 +275,13 @@ export async function createListingCheckoutSession(buyerId: string, buyerEmail: 
     .maybeSingle();
   if (!listing || listing.status !== "active") throw new Error("Cette annonce n'est plus disponible.");
   if (listing.seller_id === buyerId) throw new Error("Tu ne peux pas acheter ton propre titre.");
+  const { data: alreadyOwned } = await admin
+    .from("user_titles")
+    .select("id")
+    .eq("user_id", buyerId)
+    .eq("title_id", listing.title_id)
+    .maybeSingle();
+  if (alreadyOwned) throw new Error("Tu possèdes déjà ce titre.");
 
   const { data: sellerAccount } = await admin
     .from("seller_accounts")
@@ -307,6 +314,9 @@ export async function createListingCheckoutSession(buyerId: string, buyerEmail: 
       application_fee_amount: commissionCents,
       transfer_data: { destination: sellerAccount.stripe_account_id },
     },
+    // Short window: the listing stays buyable by others meanwhile, and a
+    // late payment on a gone listing is refunded by the webhook.
+    expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
     success_url: `${appUrl}/app/titles?marketplace_purchase=success`,
     cancel_url: `${appUrl}/app/titles?marketplace_purchase=cancelled`,
     metadata: { kind: "title_listing_purchase", listing_id: listingId, buyer_id: buyerId },
@@ -318,22 +328,33 @@ export async function createListingCheckoutSession(buyerId: string, buyerEmail: 
 }
 
 /** Called only from the Stripe webhook after a listing purchase is paid. */
-export async function finalizeListingSale(session: Stripe.Checkout.Session): Promise<void> {
+export async function finalizeListingSale(
+  session: Stripe.Checkout.Session,
+): Promise<"sold" | "already_processed" | "unavailable"> {
   const listingId = session.metadata?.listing_id;
   const buyerId = session.metadata?.buyer_id;
-  if (!listingId || !buyerId) return;
+  if (!listingId || !buyerId) return "already_processed";
 
   const admin = createAdminClient();
-  const { data: listing } = await admin
+  const { data: listing, error: readError } = await admin
     .from("title_listings")
-    .select("id, seller_id, user_title_id, title_id, price_cents, status")
+    .select("id, seller_id, user_title_id, title_id, price_cents, status, stripe_checkout_session_id")
     .eq("id", listingId)
     .maybeSingle();
-  if (!listing || listing.status !== "active") return; // already processed (webhook redelivery) or cancelled
+  if (readError) throw new Error(readError.message);
+  if (!listing) return "unavailable";
+  // Redelivery after a partial failure: finish the (idempotent) transfer, no second notification.
+  if (listing.stripe_checkout_session_id === session.id) {
+    await transferListedTitle(listing.user_title_id, buyerId, listing.title_id);
+    return "already_processed";
+  }
+  if (listing.status !== "active") return "unavailable"; // sold to someone else or withdrawn meanwhile
 
   const commissionCents = Math.round(listing.price_cents * commissionRateForPrice(listing.price_cents));
 
-  await admin
+  // Conditional on still being active: of two buyers paying at once, only
+  // one row update wins — the other gets refunded by the caller.
+  const { data: claimed, error: claimError } = await admin
     .from("title_listings")
     .update({
       status: "sold",
@@ -343,15 +364,12 @@ export async function finalizeListingSale(session: Stripe.Checkout.Session): Pro
       sold_at: new Date().toISOString(),
     })
     .eq("id", listingId)
-    .eq("status", "active");
+    .eq("status", "active")
+    .select("id");
+  if (claimError) throw new Error(claimError.message);
+  if (!claimed?.length) return "unavailable";
 
-  // Ownership transfer: the seller loses the title, the buyer gains it —
-  // a scarce collectible, never duplicated.
-  await admin.from("user_titles").delete().eq("id", listing.user_title_id);
-  await admin.from("user_titles").upsert(
-    { user_id: buyerId, title_id: listing.title_id, acquisition_type: "purchased" },
-    { onConflict: "user_id,title_id" },
-  );
+  await transferListedTitle(listing.user_title_id, buyerId, listing.title_id);
 
   const { data: title } = await admin.from("titles").select("name").eq("id", listing.title_id).maybeSingle();
 
@@ -373,4 +391,18 @@ export async function finalizeListingSale(session: Stripe.Checkout.Session): Pro
     body: `Ton titre « ${title?.name ?? listing.title_id} » a été vendu — le paiement arrive sur ton compte connecté.`,
     metadata: { title_id: listing.title_id },
   });
+
+  return "sold";
+}
+
+/** The seller loses the title, the buyer gains it: a scarce collectible, never duplicated. */
+async function transferListedTitle(sellerUserTitleId: string, buyerId: string, titleId: string) {
+  const admin = createAdminClient();
+  const { error: removeError } = await admin.from("user_titles").delete().eq("id", sellerUserTitleId);
+  if (removeError) throw new Error(removeError.message);
+  const { error: grantError } = await admin.from("user_titles").upsert(
+    { user_id: buyerId, title_id: titleId, acquisition_type: "purchased" },
+    { onConflict: "user_id,title_id" },
+  );
+  if (grantError) throw new Error(grantError.message);
 }

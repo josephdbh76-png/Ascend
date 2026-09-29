@@ -1,5 +1,6 @@
 "use client";
 
+import { hardNavigate } from "@/lib/hardNavigate";
 import { useRef, useState } from "react";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -34,8 +35,7 @@ export function MfaChallengeForm() {
       // router.push left this page idle (button re-enabled) until it
       // arrived, so people clicked again. Keeping `pending` on until the
       // page unloads makes the wait visible.
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-      window.location.assign("/app/dashboard");
+      hardNavigate("/app/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Code invalide.");
       setCode("");

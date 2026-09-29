@@ -17,35 +17,48 @@ const TABS = [
   { value: "croissance", label: "Croissance" },
 ];
 
-const DATASETS: Record<string, { rank: number; name: string; business: string; revenue: number; growth: number; isYou?: boolean }[]> = {
+type Row = { rank: number; name: string; business: string; revenue: number; growth: number; isYou?: boolean };
+
+const PEOPLE = {
+  thomas: { name: "Thomas Dubois", business: "SaaS", revenue: 18254000, growth: 12.5 },
+  lucas: { name: "Lucas Martin", business: "E-commerce", revenue: 14123000, growth: 28.4 },
+  emma: { name: "Emma Laurent", business: "SaaS", revenue: 12689000, growth: 9.7 },
+  julien: { name: "Julien Moreau", business: "Agence", revenue: 9820000, growth: 15.1 },
+  sofia: { name: "Sofia Rossi", business: "E-commerce", revenue: 8410000, growth: 22.3 },
+  maxime: { name: "Maxime Roux", business: "SaaS", revenue: 7125000, growth: 6.8 },
+  chloe: { name: "Chloé Bernard", business: "E-commerce", revenue: 6150000, growth: 18.9 },
+  you: { name: "Toi", business: "SaaS", revenue: 2482000, growth: 34.2, isYou: true },
+};
+
+const DATASETS: Record<string, Row[]> = {
   global: [
-    { rank: 1, name: "Thomas Dubois", business: "SaaS", revenue: 18254000, growth: 12.5 },
-    { rank: 2, name: "Lucas Martin", business: "E-commerce", revenue: 14123000, growth: 28.4 },
-    { rank: 3, name: "Emma Laurent", business: "SaaS", revenue: 12689000, growth: 9.7 },
-    { rank: 4, name: "Julien Moreau", business: "Agence", revenue: 9820000, growth: 15.1 },
-    { rank: 47, name: "Toi", business: "SaaS", revenue: 2482000, growth: 34.2, isYou: true },
+    { rank: 1, ...PEOPLE.thomas },
+    { rank: 2, ...PEOPLE.lucas },
+    { rank: 3, ...PEOPLE.emma },
+    { rank: 4, ...PEOPLE.julien },
+    { rank: 47, ...PEOPLE.you },
   ],
   france: [
-    { rank: 1, name: "Thomas Dubois", business: "SaaS", revenue: 18254000, growth: 12.5 },
-    { rank: 2, name: "Lucas Martin", business: "E-commerce", revenue: 14123000, growth: 28.4 },
-    { rank: 3, name: "Emma Laurent", business: "SaaS", revenue: 12689000, growth: 9.7 },
-    { rank: 8, name: "Toi", business: "SaaS", revenue: 2482000, growth: 34.2, isYou: true },
+    { rank: 1, ...PEOPLE.thomas },
+    { rank: 2, ...PEOPLE.lucas },
+    { rank: 3, ...PEOPLE.julien },
+    { rank: 8, ...PEOPLE.you },
   ],
   saas: [
-    { rank: 1, name: "Thomas Dubois", business: "SaaS", revenue: 18254000, growth: 12.5 },
-    { rank: 2, name: "Emma Laurent", business: "SaaS", revenue: 12689000, growth: 9.7 },
-    { rank: 3, name: "Sofia Rossi", business: "SaaS", revenue: 8410000, growth: 22.3 },
-    { rank: 19, name: "Toi", business: "SaaS", revenue: 2482000, growth: 34.2, isYou: true },
+    { rank: 1, ...PEOPLE.thomas },
+    { rank: 2, ...PEOPLE.emma },
+    { rank: 3, ...PEOPLE.maxime },
+    { rank: 19, ...PEOPLE.you },
   ],
   ecommerce: [
-    { rank: 1, name: "Lucas Martin", business: "E-commerce", revenue: 14123000, growth: 28.4 },
-    { rank: 2, name: "Julien Moreau", business: "E-commerce", revenue: 9820000, growth: 15.1 },
-    { rank: 3, name: "Sofia Rossi", business: "E-commerce", revenue: 8410000, growth: 22.3 },
+    { rank: 1, ...PEOPLE.lucas },
+    { rank: 2, ...PEOPLE.sofia },
+    { rank: 3, ...PEOPLE.chloe },
   ],
   croissance: [
-    { rank: 1, name: "Lucas Martin", business: "E-commerce", revenue: 14123000, growth: 28.4 },
-    { rank: 2, name: "Toi", business: "SaaS", revenue: 2482000, growth: 34.2, isYou: true },
-    { rank: 3, name: "Sofia Rossi", business: "Conseil", revenue: 8410000, growth: 22.3 },
+    { rank: 1, ...PEOPLE.you },
+    { rank: 2, ...PEOPLE.lucas },
+    { rank: 3, ...PEOPLE.sofia },
   ],
 };
 

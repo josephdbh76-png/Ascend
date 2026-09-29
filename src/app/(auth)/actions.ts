@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import {
   DISCOVERY_SOURCES,
   MAIN_GOALS,
@@ -196,21 +195,18 @@ export async function saveSignupSurveyAction(input: {
   return { success: true, data: undefined };
 }
 
-/** Position of this member among real (non-demo) members, by signup order. */
+/** The member's official founding number (same one shown on the profile), null past the first 500. */
 export async function getMemberNumberAction(): Promise<number | null> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return null;
 
-  const admin = createAdminClient();
-  const { data: me } = await admin.from("profiles").select("created_at").eq("id", userData.user.id).maybeSingle();
-  if (!me) return null;
-  const { count } = await admin
+  const { data: me } = await supabase
     .from("profiles")
-    .select("id", { count: "exact", head: true })
-    .eq("is_demo", false)
-    .lte("created_at", me.created_at);
-  return count ?? null;
+    .select("founding_member_number")
+    .eq("id", userData.user.id)
+    .maybeSingle();
+  return me?.founding_member_number ?? null;
 }
 
 export async function completeOnboardingAction(): Promise<ActionResult> {

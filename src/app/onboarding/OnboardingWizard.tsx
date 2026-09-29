@@ -1,5 +1,6 @@
 "use client";
 
+import { hardNavigate } from "@/lib/hardNavigate";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
@@ -71,7 +72,7 @@ export function OnboardingWizard({
       track("signup_completed");
       if (connect) {
         track("stripe_connection_started");
-        router.push("/api/stripe/connect");
+        hardNavigate("/api/stripe/connect");
       } else {
         router.push("/app/dashboard");
         router.refresh();

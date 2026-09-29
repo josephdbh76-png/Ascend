@@ -91,7 +91,7 @@ export interface AnnualPriceSyncResult {
 
 const ANNUAL_AMOUNTS_CENTS: Record<"pro" | "elite", number> = {
   pro: 19000, // 19€ × 10 months — 2 months free
-  elite: 44100, // 49€ × 9 months — 3 months free
+  elite: 35100, // 39€ × 9 months — 3 months free
 };
 
 /**

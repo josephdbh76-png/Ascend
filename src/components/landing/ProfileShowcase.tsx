@@ -11,7 +11,7 @@ export function ProfileShowcase() {
   const reduced = useReducedMotionSafe();
 
   return (
-    <section className="border-b border-border bg-bg-secondary">
+    <section className="overflow-x-clip border-b border-border bg-bg-secondary">
       <div className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           <Reveal as="div" className="order-2 lg:order-1">
