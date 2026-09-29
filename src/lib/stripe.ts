@@ -124,19 +124,30 @@ export async function getOrCreatePortalConfigurationId(): Promise<string> {
           ],
         },
       },
-      subscription_update: await subscriptionUpdateFeature(stripe),
+      subscription_update: await subscriptionUpdateFeature(stripe).catch(() => ({ enabled: false })),
     },
+  };
+
+  // If Stripe rejects the plan-switch settings (e.g. a retired price), the
+  // portal must still open for cancellation, invoices and card updates.
+  const withoutPlanSwitch: Stripe.BillingPortal.ConfigurationUpdateParams = {
+    ...params,
+    features: { ...params.features, subscription_update: { enabled: false } },
   };
 
   const existing = await stripe.billingPortal.configurations.list({ limit: 100 });
   const match = existing.data.find((c) => c.business_profile?.headline === PORTAL_HEADLINE);
   if (match) {
-    await stripe.billingPortal.configurations.update(match.id, params);
+    await stripe.billingPortal.configurations
+      .update(match.id, params)
+      .catch(() => stripe.billingPortal.configurations.update(match.id, withoutPlanSwitch));
     return match.id;
   }
 
-  const created = await stripe.billingPortal.configurations.create(
-    params as Stripe.BillingPortal.ConfigurationCreateParams,
-  );
+  const created = await stripe.billingPortal.configurations
+    .create(params as Stripe.BillingPortal.ConfigurationCreateParams)
+    .catch(() =>
+      stripe.billingPortal.configurations.create(withoutPlanSwitch as Stripe.BillingPortal.ConfigurationCreateParams),
+    );
   return created.id;
 }
