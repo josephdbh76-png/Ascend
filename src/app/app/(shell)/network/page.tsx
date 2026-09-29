@@ -31,16 +31,15 @@ export default async function NetworkPage({
   const cityFilter = isElite ? params.city : undefined;
   const hasFilters = !!(params.q || cityFilter || params.category);
 
-  const results = isPro && user
-    ? await searchNetwork({ query: params.q, city: cityFilter, category: params.category }, user.id)
-    : [];
-
-  const [trending, newest] = isPro && user && !hasFilters
-    ? await Promise.all([getTrendingFounders(user.id), getNewestFounders(user.id)])
-    : [[], []];
-
-  const teaser = !isPro && user ? await getNetworkTeaser(user.id) : null;
-  const deals = isElite ? await listActiveDeals() : [];
+  const [results, trending, newest, teaser, deals] = await Promise.all([
+    isPro && user && hasFilters
+      ? searchNetwork({ query: params.q, city: cityFilter, category: params.category }, user.id)
+      : Promise.resolve([]),
+    isPro && user && !hasFilters ? getTrendingFounders(user.id) : Promise.resolve([]),
+    isPro && user && !hasFilters ? getNewestFounders(user.id) : Promise.resolve([]),
+    !isPro && user ? getNetworkTeaser(user.id) : Promise.resolve(null),
+    isElite ? listActiveDeals() : Promise.resolve([]),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">

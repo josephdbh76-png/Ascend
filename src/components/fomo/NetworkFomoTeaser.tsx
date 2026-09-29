@@ -12,13 +12,16 @@ function categoryLabel(value: string) {
 
 const GHOST_ROWS = ["w-40", "w-36", "w-44", "w-32", "w-40", "w-36"];
 
+// Below this, a raw member count reads as "empty" rather than "exclusive".
+const SHOW_COUNT_FROM = 50;
+
 function analysisSteps(totalActive: number): AnalysisStep[] {
   return [
     { key: "profile", icon: UserSearch, label: "Analyse de ton profil et de ton secteur…", duration: 1200 },
     {
       key: "scan",
       icon: Search,
-      label: totalActive > 0 ? `Scan de ${totalActive} fondateurs actifs…` : "Scan du réseau ASCEND…",
+      label: totalActive >= SHOW_COUNT_FROM ? `Scan de ${totalActive} fondateurs actifs…` : "Scan du réseau ASCEND…",
       duration: 1300,
     },
     { key: "match", icon: Users, label: "Recherche des profils les plus pertinents…", duration: 1100 },
@@ -36,6 +39,7 @@ export function NetworkFomoTeaser({
 }) {
   const [open, setOpen] = useState(false);
   const hasCategoryMatch = category != null && sameCategoryCount > 0;
+  const showCount = totalActive >= SHOW_COUNT_FROM;
 
   return (
     <div className="relative">
@@ -57,12 +61,12 @@ export function NetworkFomoTeaser({
         </div>
         <div>
           <p className="text-lg font-semibold text-text-primary">
-            {totalActive > 0 ? `${totalActive} fondateurs sur ASCEND` : "Le réseau des fondateurs ASCEND"}
+            {showCount ? `${totalActive} fondateurs sur ASCEND` : "Le réseau des fondateurs ASCEND"}
           </p>
           <p className="mt-1 max-w-sm text-sm text-text-secondary">
             {hasCategoryMatch
-              ? `Dont ${sameCategoryCount} en ${categoryLabel(category!)} — recherche, suis et échange avec eux.`
-              : "Recherche par nom ou activité, et connecte-toi avec eux — réservé aux membres Pro et Elite."}
+              ? `Dont ${sameCategoryCount} dans ton secteur (${categoryLabel(category!)}). Recherche-les, suis-les et échange avec eux dès la formule Pro.`
+              : "Recherche des fondateurs par nom ou par activité et échange avec eux, dès la formule Pro."}
           </p>
         </div>
         <Button onClick={() => setOpen(true)}>
@@ -77,12 +81,12 @@ export function NetworkFomoTeaser({
         resultIcon={Users}
         resultHeadline={
           hasCategoryMatch
-            ? `${sameCategoryCount} fondateurs ${categoryLabel(category!)} près de toi !`
+            ? `${sameCategoryCount} fondateur${sameCategoryCount > 1 ? "s" : ""} dans ton secteur`
             : "Des fondateurs t'attendent sur ASCEND"
         }
         resultScore={hasCategoryMatch ? sameCategoryCount : null}
         resultScoreFormat={(n) => `${Math.round(n)}`}
-        resultSubtext="Passe Pro pour parcourir le réseau et suivre des fondateurs — Elite ajoute la recherche par ville."
+        resultSubtext="Passe Pro pour parcourir le réseau et suivre des fondateurs. Elite ajoute la recherche par ville."
         ctaLabel="Débloquer le Réseau"
         ctaHref="/app/settings#abonnement"
       />

@@ -21,6 +21,8 @@ import { getProfileViewCount } from "@/services/profileView.service";
 import { getRecentFollowerCount } from "@/services/network.service";
 import { listActiveBanners } from "@/services/banner.service";
 import { DashboardBannerCarousel } from "@/components/dashboard/DashboardBannerCarousel";
+import { AutoRevenueSync } from "@/components/dashboard/AutoRevenueSync";
+import { isRevenueSyncStale } from "@/lib/revenueSync";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -63,6 +65,7 @@ export default async function DashboardPage() {
     profileViews,
     recentFollowers,
     banners,
+    { data: connectedSources },
   ] = await Promise.all([
     supabase.from("businesses").select("name, category").eq("user_id", user.id).maybeSingle(),
     getRevenueHistory(user.id, 12),
@@ -75,7 +78,14 @@ export default async function DashboardPage() {
     getProfileViewCount(user.id, 7),
     getRecentFollowerCount(user.id, 7),
     listActiveBanners(),
+    supabase
+      .from("revenue_sources")
+      .select("last_synced_at")
+      .eq("user_id", user.id)
+      .eq("status", "connected")
+      .in("provider", ["stripe", "shopify", "paypal", "lemonsqueezy"]),
   ]);
+  const hasStaleSource = (connectedSources ?? []).some((s) => isRevenueSyncStale(s.last_synced_at));
 
   const growth = calculateMonthlyGrowth(current?.amountCents ?? null, previous?.amountCents ?? null);
   const isVerified = verificationStatus === "verified";
@@ -116,6 +126,7 @@ export default async function DashboardPage() {
       <Suspense fallback={null}>
         <StripeStatusToast />
       </Suspense>
+      {hasStaleSource && <AutoRevenueSync />}
 
       {!profile.hasSeenTutorial && (
         <OnboardingTour firstName={profile.firstName} memberCount={memberCount ?? 0} isVerified={isVerified} />
