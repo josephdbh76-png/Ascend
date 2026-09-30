@@ -57,7 +57,17 @@ export function NetworkResults({ results }: { results: NetworkProfileRow[] }) {
                 <CheckCircle2 className="h-3 w-3" /> Vérifié
               </span>
             )}
-            {r.businessName && <span>{r.businessName} · {categoryLabel(r.businessCategory)}</span>}
+            {r.businessName && (
+              <span>
+                {r.businessName} · {r.businessLabel ?? categoryLabel(r.businessCategory)}
+                {r.otherActivities.length > 0 && (
+                  <span className="text-text-muted" title={r.otherActivities.join(", ")}>
+                    {" "}
+                    · +{r.otherActivities.length} activité{r.otherActivities.length > 1 ? "s" : ""}
+                  </span>
+                )}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center justify-between text-xs text-text-muted">

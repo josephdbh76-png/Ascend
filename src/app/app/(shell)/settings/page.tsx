@@ -17,6 +17,9 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ProfileSettingsForm } from "./ProfileSettingsForm";
 import { BusinessSettingsForm } from "./BusinessSettingsForm";
+import { ExtraBusinessesForm } from "./ExtraBusinessesForm";
+import { TrainingsManager } from "./TrainingsManager";
+import { listOwnerTrainings } from "@/services/training.service";
 import { PrivacySettingsForm } from "./PrivacySettingsForm";
 import { MarketingConsentToggle } from "./MarketingConsentToggle";
 import { AccentThemeForm } from "./AccentThemeForm";
@@ -41,6 +44,7 @@ export default async function SettingsPage() {
 
   const [
     { data: business },
+    { data: extraBusinesses },
     { data: privacy },
     { data: marketing },
     { data: source },
@@ -55,12 +59,15 @@ export default async function SettingsPage() {
     lemonSqueezyStatus,
     subscription,
     isAdmin,
+    trainings,
   ] = await Promise.all([
+    supabase.from("businesses").select("*").eq("user_id", user.id).maybeSingle(),
     supabase
-      .from("businesses")
-      .select("name, category, website, siret, legal_name")
+      .from("extra_businesses")
+      .select("id, name, category, custom_category, description, website")
       .eq("user_id", user.id)
-      .maybeSingle(),
+      .order("position")
+      .order("created_at"),
     supabase.from("privacy_settings").select("*").eq("user_id", user.id).maybeSingle(),
     supabase
       .from("profiles")
@@ -89,6 +96,7 @@ export default async function SettingsPage() {
     getLemonSqueezyVerificationStatus(user.id),
     getSubscription(user.id),
     isCurrentUserAdmin(),
+    listOwnerTrainings(user.id).catch(() => []),
   ]);
 
   const now = new Date();
@@ -182,17 +190,38 @@ export default async function SettingsPage() {
       </Card>
 
       <Card className="p-6" elevated>
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Activité</h2>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Activité principale</h2>
         <BusinessSettingsForm
           initial={{
             name: business?.name ?? "",
             category: business?.category ?? "saas",
+            customCategory: business?.custom_category ?? "",
+            description: business?.description ?? "",
             website: business?.website ?? "",
             skills: profile.skills.join(", "),
             siret: business?.siret ?? "",
             legalName: business?.legal_name ?? null,
           }}
         />
+      </Card>
+
+      <Card id="activites" className="scroll-mt-6 p-6" elevated>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">Autres activités</h2>
+        <ExtraBusinessesForm
+          initial={(extraBusinesses ?? []).map((b) => ({
+            id: b.id,
+            name: b.name,
+            category: b.category,
+            customCategory: b.custom_category,
+            description: b.description,
+            website: b.website,
+          }))}
+        />
+      </Card>
+
+      <Card id="formations" className="scroll-mt-6 p-6" elevated>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">Mes formations</h2>
+        <TrainingsManager initial={trainings} />
       </Card>
 
       <Card className="p-6" elevated>
@@ -223,6 +252,18 @@ export default async function SettingsPage() {
           Sécurité
         </h2>
         <SecuritySettings />
+      </Card>
+
+      <Card className="p-6" elevated>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">Aide</h2>
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-text-secondary">
+            Besoin de reprendre tes repères ? La visite guidée te remontre l&apos;essentiel en 45 secondes.
+          </p>
+          <Button href="/app/dashboard?visite=1" variant="secondary" size="sm" className="shrink-0">
+            Revoir la visite guidée
+          </Button>
+        </div>
       </Card>
 
       <Card className="p-6" elevated>

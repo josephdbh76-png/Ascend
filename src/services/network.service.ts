@@ -13,6 +13,10 @@ export interface NetworkProfileRow {
   country: string | null;
   businessName: string;
   businessCategory: string;
+  /** Wording chosen by the member for the main activity. */
+  businessLabel: string | null;
+  /** Names of the member's other activities. */
+  otherActivities: string[];
   revenueVerified: boolean;
   followerCount: number;
   isFollowing: boolean;
@@ -41,12 +45,23 @@ async function buildRows(
   if (profiles.length === 0) return [];
   const ids = profiles.map((p) => p.id);
 
-  let businessQuery = supabase.from("businesses").select("user_id, name, category").in("user_id", ids);
-  if (categoryFilter) businessQuery = businessQuery.eq("category", categoryFilter);
-  const { data: businesses } = await businessQuery;
+  // select("*"): custom_category only exists once migration 060 has run.
+  const [{ data: businesses }, { data: extras }] = await Promise.all([
+    supabase.from("businesses").select("*").in("user_id", ids),
+    supabase.from("extra_businesses").select("user_id, name, category").in("user_id", ids).order("position"),
+  ]);
   const businessByUser = new Map((businesses ?? []).map((b) => [b.user_id, b]));
+  const extrasByUser = new Map<string, { name: string; category: string }[]>();
+  for (const e of extras ?? []) extrasByUser.set(e.user_id, [...(extrasByUser.get(e.user_id) ?? []), e]);
 
-  const matchedIds = categoryFilter ? ids.filter((id) => businessByUser.has(id)) : ids;
+  // A founder matches a category through the main activity or any other one.
+  const matchedIds = categoryFilter
+    ? ids.filter(
+        (id) =>
+          businessByUser.get(id)?.category === categoryFilter ||
+          (extrasByUser.get(id) ?? []).some((e) => e.category === categoryFilter),
+      )
+    : ids;
   if (matchedIds.length === 0) return [];
 
   const activeTitleByUser = await getActiveTitlesByUserIds(matchedIds);
@@ -77,12 +92,55 @@ async function buildRows(
         country: p.country,
         businessName: b?.name ?? "",
         businessCategory: b?.category ?? "",
+        businessLabel: b?.custom_category?.trim() || null,
+        otherActivities: (extrasByUser.get(id) ?? []).map((e) => e.name),
         revenueVerified: p.revenue_verified,
         followerCount: followerCountMap.get(id) ?? 0,
         isFollowing: followingSet.has(id),
         activeTitle: activeTitleByUser.get(id) ?? null,
       };
     });
+}
+
+function cleanTerm(term: string | undefined): string {
+  // Characters with a meaning in PostgREST filter strings are dropped.
+  return (term ?? "").replace(/[%,()"\\*:]/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+}
+
+/**
+ * Matches names and bio, skills, and every activity a member presents
+ * (name, own wording, description), not only the main business.
+ */
+async function idsMatching(term: string): Promise<string[]> {
+  const supabase = await createClient();
+  const pattern = `%${term}%`;
+  const capitalized = term.charAt(0).toUpperCase() + term.slice(1).toLowerCase();
+  const [byProfile, bySkill, byBusiness, byExtra] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id")
+      .or(`username.ilike.${pattern},first_name.ilike.${pattern},last_name.ilike.${pattern},bio.ilike.${pattern}`)
+      .limit(80),
+    supabase.from("profiles").select("id").overlaps("skills", [term, term.toLowerCase(), capitalized]).limit(40),
+    supabase
+      .from("businesses")
+      .select("user_id")
+      .or(`name.ilike.${pattern},custom_category.ilike.${pattern},description.ilike.${pattern}`)
+      .limit(80),
+    supabase
+      .from("extra_businesses")
+      .select("user_id")
+      .or(`name.ilike.${pattern},custom_category.ilike.${pattern},description.ilike.${pattern}`)
+      .limit(80),
+  ]);
+  return [
+    ...new Set([
+      ...(byProfile.data ?? []).map((r) => r.id),
+      ...(bySkill.data ?? []).map((r) => r.id),
+      ...(byBusiness.data ?? []).map((r) => r.user_id),
+      ...(byExtra.data ?? []).map((r) => r.user_id),
+    ]),
+  ];
 }
 
 export async function searchNetwork(
@@ -93,12 +151,11 @@ export async function searchNetwork(
 
   let profileQuery = supabase.from("profiles").select(PROFILE_COLUMNS).limit(60);
 
-  const query = params.query?.trim();
+  const query = cleanTerm(params.query);
   if (query) {
-    const escaped = query.replace(/[%,]/g, "");
-    profileQuery = profileQuery.or(
-      `username.ilike.%${escaped}%,first_name.ilike.%${escaped}%,last_name.ilike.%${escaped}%`,
-    );
+    const ids = await idsMatching(query);
+    if (ids.length === 0) return [];
+    profileQuery = profileQuery.in("id", ids.slice(0, 200));
   }
   const city = params.city?.trim();
   if (city) profileQuery = profileQuery.ilike("city", `%${city.replace(/[%,]/g, "")}%`);

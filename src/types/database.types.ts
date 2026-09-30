@@ -37,7 +37,11 @@ export type NotificationType =
   | "revenue_review_completed"
   | "referral_rewarded"
   | "payment_refunded"
-  | "season_reward";
+  | "season_reward"
+  | "training_review_completed";
+export type TrainingStatus = "pending" | "published" | "rejected" | "archived";
+export type TrainingFormat = "online" | "live" | "coaching" | "in_person";
+export type TrainingAudience = "members" | "elite";
 export type TitleRarity = "common" | "rare" | "epic" | "legendary" | "exclusive";
 export type TitleType = "earned" | "purchasable";
 export type SubscriptionTier = "free" | "pro" | "elite";
@@ -425,6 +429,61 @@ export interface Database {
           category: string;
         };
         Update: Partial<Database["public"]["Tables"]["extra_businesses"]["Row"]>;
+        Relationships: [];
+      };
+      trainings: {
+        Row: {
+          id: string;
+          owner_id: string | null;
+          creator_name: string | null;
+          title: string;
+          summary: string;
+          description: string;
+          theme: string;
+          format: TrainingFormat;
+          duration_label: string | null;
+          price_cents: number;
+          member_price_cents: number | null;
+          promo_code: string | null;
+          audience: TrainingAudience;
+          external_url: string;
+          cover_image_url: string | null;
+          status: TrainingStatus;
+          rejection_reason: string | null;
+          is_pinned: boolean;
+          legacy_deal_id: string | null;
+          published_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["trainings"]["Row"], "id">> & {
+          title: string;
+          summary: string;
+          description: string;
+          theme: string;
+          format: TrainingFormat;
+          price_cents: number;
+          external_url: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["trainings"]["Row"]>;
+        Relationships: [];
+      };
+      training_events: {
+        Row: {
+          id: number;
+          training_id: string;
+          viewer_key: string;
+          kind: "view" | "click";
+          event_day: string;
+          created_at: string;
+        };
+        Insert: {
+          training_id: string;
+          viewer_key: string;
+          kind: "view" | "click";
+          event_day?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["training_events"]["Row"]>;
         Relationships: [];
       };
       metrics_access_tokens: {
@@ -990,6 +1049,10 @@ export interface Database {
       get_season_standings: {
         Args: { p_season_id: string; p_limit?: number };
         Returns: SeasonStandingRow[];
+      };
+      get_training_stats: {
+        Args: { p_since: string };
+        Returns: { training_id: string; views: number; clicks: number }[];
       };
       get_user_season_standing: {
         Args: { p_season_id: string; p_user_id: string };

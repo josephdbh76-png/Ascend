@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/verification" },
   title: "Comment fonctionne la vérification",
   description: "Comment ASCEND vérifie que les revenus et l'identité affichés sur un profil sont réels.",
 };

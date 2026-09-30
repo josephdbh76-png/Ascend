@@ -1,5 +1,7 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { getActiveTitlesByUserIds } from "@/services/title.service";
 import type { LeaderboardScope, LeaderboardRow } from "@/types/database.types";
 
@@ -63,3 +65,24 @@ export async function getRankMovement(
   if (!data) return null;
   return data.rank - currentRank; // positive = moved up
 }
+
+/**
+ * Leaderboard as a logged-out visitor sees it, without cookies so public
+ * pages can be generated statically and refreshed on a timer.
+ */
+export const getPublicLeaderboard = cache(
+  async (scope: LeaderboardScope, scopeValue: string, limit = 50): Promise<LeaderboardRow[]> => {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase.rpc("get_leaderboard", {
+      p_scope: scope,
+      p_scope_value: scope === "global" ? "" : scopeValue,
+      p_limit: limit,
+      p_offset: 0,
+    });
+    if (error) {
+      console.error("Public leaderboard failed:", error.message);
+      return [];
+    }
+    return (data ?? []).filter((r) => !r.is_demo);
+  },
+);

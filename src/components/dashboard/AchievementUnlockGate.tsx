@@ -7,12 +7,14 @@ import type { AchievementRarity } from "@/types/database.types";
 
 export function AchievementUnlockGate({
   notificationId,
+  achievementId,
   achievementName,
   achievementDescription,
   achievementRarity,
   username,
 }: {
   notificationId: string;
+  achievementId: string;
   achievementName: string;
   achievementDescription: string;
   achievementRarity: AchievementRarity;
@@ -24,6 +26,7 @@ export function AchievementUnlockGate({
   return (
     <AchievementUnlockModal
       notificationId={notificationId}
+      achievementId={achievementId}
       achievementName={achievementName}
       achievementDescription={achievementDescription}
       achievementRarity={achievementRarity}

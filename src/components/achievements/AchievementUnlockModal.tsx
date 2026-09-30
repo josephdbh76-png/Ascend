@@ -73,6 +73,7 @@ function ConfettiBurst({ accent }: { accent: string }) {
 
 export function AchievementUnlockModal({
   notificationId,
+  achievementId,
   achievementName,
   achievementDescription,
   achievementRarity,
@@ -80,6 +81,7 @@ export function AchievementUnlockModal({
   onDismiss,
 }: {
   notificationId: string;
+  achievementId: string;
   achievementName: string;
   achievementDescription: string;
   achievementRarity: AchievementRarity;
@@ -202,9 +204,8 @@ export function AchievementUnlockModal({
 
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.65, duration: 0.4 }}>
               <ShareCardButton
-                title={achievementName}
-                name={`@${username}`}
-                rarity={achievementRarity}
+                target={{ kind: "achievement", username, id: achievementId }}
+                itemName={achievementName}
                 zIndexClassName="z-[110]"
               />
             </motion.div>

@@ -1,14 +1,25 @@
+// Stored values never change (leaderboards and benchmarks group by them);
+// labels can. Members add their own wording on top (custom_category).
 export const BUSINESS_CATEGORIES = [
   { value: "saas", label: "SaaS" },
   { value: "ecommerce", label: "E-commerce" },
+  { value: "fashion", label: "Mode et vêtements" },
   { value: "agency", label: "Agence" },
   { value: "ai", label: "IA" },
-  { value: "creator", label: "Créateur" },
-  { value: "consulting", label: "Conseil" },
-  { value: "marketplace", label: "Marketplace" },
   { value: "app", label: "Application" },
+  { value: "marketplace", label: "Marketplace" },
+  { value: "creator", label: "Créateur de contenu" },
+  { value: "education", label: "Formation et coaching" },
+  { value: "consulting", label: "Conseil" },
+  { value: "freelance", label: "Freelance" },
+  { value: "beauty", label: "Beauté et bien-être" },
+  { value: "food", label: "Restauration et food" },
+  { value: "realestate", label: "Immobilier" },
+  { value: "local", label: "Artisanat et commerce local" },
   { value: "other", label: "Autre" },
 ] as const;
+
+export const MAX_EXTRA_BUSINESSES = 5;
 
 export type BusinessCategory = (typeof BUSINESS_CATEGORIES)[number]["value"];
 

@@ -18,18 +18,20 @@ const RARITY_LABELS: Record<AchievementRarity, string> = {
 };
 
 export function AchievementCard({
+  id,
   name,
   description,
   rarity,
   earnedAt,
-  shareName,
+  shareUsername,
 }: {
+  id: string;
   name: string;
   description: string;
   rarity: AchievementRarity;
   earnedAt: string | null;
-  /** Display name to print on the shareable card — omit to hide the share button (e.g. on someone else's profile). */
-  shareName?: string;
+  /** Owner's username: shows the share button. Omit on someone else's profile. */
+  shareUsername?: string;
 }) {
   const earned = !!earnedAt;
   return (
@@ -59,7 +61,7 @@ export function AchievementCard({
       {earned && earnedAt && (
         <div className="flex flex-col items-start gap-2">
           <p className="text-[11px] text-text-muted">Débloqué {timeAgo(earnedAt)}</p>
-          {shareName && <ShareCardButton title={name} name={shareName} rarity={rarity} />}
+          {shareUsername && <ShareCardButton target={{ kind: "achievement", username: shareUsername, id }} itemName={name} />}
         </div>
       )}
     </div>

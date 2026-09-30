@@ -6,18 +6,18 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { setActiveTitleAction } from "@/app/app/(shell)/titles/actions";
+import { ShareCardButton } from "@/components/achievements/ShareCardButton";
 import { TITLE_ICONS as ICONS, TITLE_RARITY_STYLES as RARITY_STYLES, TITLE_RARITY_LABELS as RARITY_LABELS } from "@/lib/titleDisplay";
+import { normalizeRequirement, describeCondition } from "@/lib/conditions";
 import type { TitleRarity } from "@/types/database.types";
 
 function requirementLabel(requirement: Record<string, unknown>): string | null {
-  const type = requirement.type as string | undefined;
-  if (type === "rank_threshold") return `Condition : classement top ${requirement.rank}`;
-  if (type === "revenue_threshold") return `Condition : ${formatCurrency(requirement.cents as number)} de revenus mensuels`;
-  if (type === "growth_threshold") return `Condition : +${requirement.percent} % de croissance`;
-  if (type === "founding_member") return "Condition : faire partie des 500 premiers membres";
-  if (type === "verification") return "Condition : vérifier ta première source de revenus";
-  if (type === "consistency") return `Condition : ${requirement.days} jours de revenus vérifiés d'affilée`;
-  return null;
+  const condition = normalizeRequirement(requirement);
+  if (!condition) return null;
+  if (condition.type === "season_reward") return "Récompense de fin de saison";
+  if (condition.type === "manual") return "Remis par l'équipe ASCEND";
+  const text = describeCondition(condition.type, condition.target);
+  return text ? `Condition : ${text.charAt(0).toLowerCase()}${text.slice(1)}` : null;
 }
 
 function supplyLabel(supply: number, remaining: number): string {
@@ -42,6 +42,7 @@ export function TitleCard({
   isActive,
   interactive = true,
   completionRate,
+  shareUsername,
 }: {
   id: string;
   name: string;
@@ -59,6 +60,8 @@ export function TitleCard({
   interactive?: boolean;
   /** % of (non-demo) members who own this title — social proof. */
   completionRate?: number;
+  /** Owner's username: shows the share button on an owned title. */
+  shareUsername?: string;
 }) {
   const Icon = ICONS[icon] ?? Gem;
   const [pending, startTransition] = useTransition();
@@ -116,7 +119,12 @@ export function TitleCard({
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold uppercase tracking-tight text-text-primary">{name}</h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-sm font-semibold uppercase tracking-tight text-text-primary">{name}</h3>
+          {owned && shareUsername && (
+            <ShareCardButton target={{ kind: "title", username: shareUsername, id }} itemName={name} label="Partager" />
+          )}
+        </div>
         <p className="mt-1 text-xs text-text-secondary">{description}</p>
         {requirement && requirementLabel(requirement) && (
           <p className="mt-2 text-[11px] text-text-muted">{requirementLabel(requirement)}</p>

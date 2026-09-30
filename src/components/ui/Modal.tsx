@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/lib/useFocusTrap";
@@ -31,10 +32,13 @@ export function Modal({
   }, [open, onClose]);
 
   useFocusTrap(dialogRef, open);
+  // Portaled to <body>: a transformed ancestor (hover lift on cards) would
+  // otherwise become the containing block of this fixed overlay and clip it.
+  const mounted = useSyncExternalStore(subscribeNothing, () => true, () => false);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  return createPortal(
     <div className={cn("fixed inset-0 flex items-center justify-center p-4", zIndexClassName)}>
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-up"
@@ -68,6 +72,11 @@ export function Modal({
         </div>
         <div className="mt-4 min-h-0 overflow-y-auto">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
+}
+
+function subscribeNothing() {
+  return () => {};
 }

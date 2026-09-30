@@ -13,25 +13,49 @@ const inter = Inter({
 });
 
 const DESCRIPTION =
-  "ASCEND est le réseau de performance des entrepreneurs ambitieux. Vérifie tes performances, grimpe au classement et construis ta réputation.";
+  "Vérifie tes revenus via Stripe, Shopify, PayPal ou ta banque et découvre ton rang parmi les entrepreneurs. Profil public, saisons, titres et réseau de fondateurs.";
+const DEFAULT_TITLE = "ASCEND · Le classement des entrepreneurs aux revenus vérifiés";
 
 export const metadata: Metadata = {
   metadataBase: new URL(getAppUrl()),
+  applicationName: "ASCEND",
   title: {
-    default: "ASCEND — Construis. Prouve. Progresse.",
+    default: DEFAULT_TITLE,
     template: "%s — ASCEND",
   },
   description: DESCRIPTION,
+  keywords: [
+    "classement entrepreneurs",
+    "revenus vérifiés",
+    "MRR vérifié",
+    "classement startups",
+    "fondateurs SaaS",
+    "e-commerce",
+    "build in public",
+    "réseau d'entrepreneurs",
+    "Stripe",
+    "Shopify",
+  ],
+  creator: "ASCEND",
+  publisher: "ASCEND",
+  category: "business",
+  formatDetection: { telephone: false, email: false, address: false },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
+  },
   openGraph: {
-    title: "ASCEND — Construis. Prouve. Progresse.",
+    title: DEFAULT_TITLE,
     description: DESCRIPTION,
     siteName: "ASCEND",
     type: "website",
     locale: "fr_FR",
+    url: "/",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ASCEND — Construis. Prouve. Progresse.",
+    title: DEFAULT_TITLE,
     description: DESCRIPTION,
   },
 };

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LoginForm } from "./LoginForm";
 
-export const metadata: Metadata = { title: "Se connecter" };
+export const metadata: Metadata = { title: "Se connecter", alternates: { canonical: "/login" } };
 
 export default function LoginPage() {
   return (

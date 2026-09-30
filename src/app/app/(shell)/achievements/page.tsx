@@ -22,7 +22,6 @@ export default async function AchievementsPage() {
     getProfile(user.id),
   ]);
   const earnedById = new Map(earned.map((e) => [e.id, e.earnedAt]));
-  const shareName = profile?.firstName ?? (profile?.username ? `@${profile.username}` : "Un fondateur ASCEND");
 
   const { data: trophyRows } = await supabase
     .from("user_trophies")
@@ -53,7 +52,16 @@ export default async function AchievementsPage() {
               .filter((t) => trophyById.has(t.trophy_id))
               .map((t) => {
                 const def = trophyById.get(t.trophy_id)!;
-                return <TrophyCard key={t.trophy_id} name={def.name} description={def.description} earnedAt={t.earned_at} />;
+                return (
+                  <TrophyCard
+                    key={t.trophy_id}
+                    id={def.id}
+                    name={def.name}
+                    description={def.description}
+                    earnedAt={t.earned_at}
+                    shareUsername={profile?.username}
+                  />
+                );
               })}
           </div>
         )}
@@ -67,11 +75,12 @@ export default async function AchievementsPage() {
           {catalog.map((a) => (
             <AchievementCard
               key={a.id}
+              id={a.id}
               name={a.name}
               description={a.description}
               rarity={a.rarity}
               earnedAt={earnedById.get(a.id) ?? null}
-              shareName={shareName}
+              shareUsername={profile?.username}
             />
           ))}
         </div>

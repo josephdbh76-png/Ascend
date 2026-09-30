@@ -20,6 +20,7 @@ import { getLatestUnreadOfType } from "@/services/notification.service";
 import { getProfileViewCount } from "@/services/profileView.service";
 import { getRecentFollowerCount } from "@/services/network.service";
 import { listActiveBanners } from "@/services/banner.service";
+import { getActiveSeason, getUserSeasonStanding } from "@/services/season.service";
 import { DashboardBannerCarousel } from "@/components/dashboard/DashboardBannerCarousel";
 import { AutoRevenueSync } from "@/components/dashboard/AutoRevenueSync";
 import { isRevenueSyncStale } from "@/lib/revenueSync";
@@ -34,7 +35,7 @@ import { StripeStatusToast } from "@/components/dashboard/StripeStatusToast";
 import { VerificationCTA } from "@/components/dashboard/VerificationCTA";
 import { AchievementUnlockGate } from "@/components/dashboard/AchievementUnlockGate";
 import { ActivationChecklist } from "@/components/dashboard/ActivationChecklist";
-import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
+import { ProductTour } from "@/components/onboarding/ProductTour";
 import { RankTransition } from "@/components/motion/RankTransition";
 import { CurrencyCountUp, PercentCountUp, PlainCountUp, RankCountUp } from "@/components/motion/CountUp";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
@@ -43,7 +44,7 @@ import type { AchievementRarity } from "@/types/database.types";
 
 export const metadata: Metadata = { title: "Tableau de bord" };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: PageProps<"/app/dashboard">) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -86,6 +87,15 @@ export default async function DashboardPage() {
       .in("provider", ["stripe", "shopify", "paypal", "lemonsqueezy"]),
   ]);
   const hasStaleSource = (connectedSources ?? []).some((s) => isRevenueSyncStale(s.last_synced_at));
+  const replayTour = (await searchParams).visite === "1";
+  const showTour = replayTour || !profile.hasSeenTutorial;
+  const season = await getActiveSeason();
+  const seasonStanding = season ? await getUserSeasonStanding(season.id, user.id) : null;
+  const seasonDaysLeft = season ? daysUntil(season.endsAt) : null;
+  const nextChallenges = challenges
+    .filter((c) => c.status !== "completed" && (!season || c.seasonId === season.id))
+    .sort((a, b) => b.progress - a.progress)
+    .slice(0, 3);
 
   const growth = calculateMonthlyGrowth(current?.amountCents ?? null, previous?.amountCents ?? null);
   const isVerified = verificationStatus === "verified";
@@ -128,13 +138,21 @@ export default async function DashboardPage() {
       </Suspense>
       {hasStaleSource && <AutoRevenueSync />}
 
-      {!profile.hasSeenTutorial && (
-        <OnboardingTour firstName={profile.firstName} memberCount={memberCount ?? 0} isVerified={isVerified} />
+      {showTour && (
+        <ProductTour
+          firstName={profile.firstName}
+          memberCount={memberCount ?? 0}
+          isVerified={isVerified}
+          seasonDaysLeft={seasonDaysLeft}
+          replay={replayTour}
+        />
       )}
 
-      {unlockedAchievement && (
+      {/* Never two overlays at once: the celebration waits for the next visit. */}
+      {unlockedAchievement && !showTour && (
         <AchievementUnlockGate
           notificationId={unreadAchievement!.id}
+          achievementId={unlockedAchievement.id}
           achievementName={unlockedAchievement.name}
           achievementDescription={unlockedAchievement.description}
           achievementRarity={unlockedAchievement.rarity}
@@ -299,22 +317,40 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="p-6" elevated hover>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Défis en cours</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+              {season ? season.name : "Défis en cours"}
+            </h2>
             <Link href="/app/challenges" className="text-xs font-medium text-gold hover:text-gold-light">
-              Tout voir
+              Voir la saison
             </Link>
           </div>
+          {season && (
+            <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <span className="text-2xl font-semibold tabular-nums text-gold">{seasonStanding ? `#${seasonStanding.rank}` : "—"}</span>
+              <span className="text-sm text-text-secondary">
+                {seasonStanding ? `${seasonStanding.points} points` : "Pas encore de points"}
+              </span>
+              {seasonDaysLeft != null && (
+                <span className="text-xs text-text-muted">
+                  Fin dans {seasonDaysLeft} jour{seasonDaysLeft > 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+          )}
           <div className="mt-4 flex flex-col gap-3">
-            {challenges.length === 0 ? (
-              <EmptyState title="Le prochain défi arrive bientôt." />
+            {nextChallenges.length === 0 ? (
+              <EmptyState title={challenges.length > 0 ? "Tous les défis de la saison sont réussis." : "Le prochain défi arrive bientôt."} />
             ) : (
-              challenges.slice(0, 3).map((c) => (
+              nextChallenges.map((c) => (
                 <div key={c.id} className="rounded-md border border-border bg-card p-4 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-gold/30">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-sm font-medium text-text-primary">{c.title}</span>
-                    <span className="text-xs text-text-muted">{c.progress.toFixed(0)} %</span>
+                    <span className="shrink-0 text-xs text-text-muted">
+                      {c.points > 0 && <span className="mr-2 font-semibold text-gold">+{c.points} pts</span>}
+                      {c.progress.toFixed(0)} %
+                    </span>
                   </div>
-                  <ProgressBar percent={c.progress} className="mt-2" goldFill={c.status === "completed"} />
+                  <ProgressBar percent={c.progress} className="mt-2" />
                 </div>
               ))
             )}
@@ -350,6 +386,10 @@ export default async function DashboardPage() {
       </div>
     </div>
   );
+}
+
+function daysUntil(iso: string) {
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000));
 }
 
 function timeOfDayGreeting() {

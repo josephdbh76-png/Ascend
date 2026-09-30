@@ -1,453 +1,290 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Download, Share2, ChevronLeft, ChevronRight, Camera, Loader2 } from "lucide-react";
+import { Check, Copy, Download, Link2, Loader2, Share2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import type { AchievementRarity } from "@/types/database.types";
+import { BrandIcon } from "@/components/share/BrandIcon";
+import { track } from "@/lib/analytics";
+import { cn } from "@/lib/utils";
+import {
+  SHARE_FORMATS,
+  SHARE_STYLES,
+  shareCaption,
+  shareCardPath,
+  sharePagePath,
+  type ShareFormat,
+  type ShareStyle,
+  type ShareTarget,
+} from "@/lib/share/params";
 
-const CARD_WIDTH = 1080;
-const CARD_HEIGHT = 1920;
+const FORMATS: ShareFormat[] = ["story", "square", "landscape"];
+const STYLES: ShareStyle[] = ["prestige", "ivoire", "aurore", "sticker"];
 
-const RARITY_COLORS: Record<AchievementRarity, string> = {
-  common: "#a8a9ad",
-  rare: "#749ef1",
-  epic: "#a289ff",
-  legendary: "#d6a84f",
+const SWATCHES: Record<ShareStyle, string> = {
+  prestige: "bg-[radial-gradient(circle_at_50%_35%,rgba(227,180,94,0.55),#0b0c0f_72%)]",
+  ivoire: "bg-[linear-gradient(160deg,#f7f3ec,#e9e1d1)]",
+  aurore: "bg-[linear-gradient(135deg,#e3b45e,#f97316_45%,#ec4899)]",
+  sticker: "bg-[repeating-conic-gradient(#3a3a3a_0%_25%,#1f1f1f_0%_50%)] bg-[length:8px_8px]",
 };
 
-/**
- * Fully opaque, rarity-tinted background colors for the "Doré" design's
- * glow — deliberately NOT the accent color with alpha applied. An
- * alpha-blended fill on the very first draw call blends against nothing
- * (canvases start transparent), leaving the exported PNG partially
- * see-through instead of a solid dark background, which looks washed out
- * once shared outside a dark viewer.
- */
-const RARITY_GLOW: Record<AchievementRarity, string> = {
-  common: "#1c1c1e",
-  rare: "#0f1830",
-  epic: "#160f28",
-  legendary: "#1a1508",
+// Preview box per format, in px (the image keeps its own ratio inside).
+const PREVIEW: Record<ShareFormat | "sticker", { w: number; h: number }> = {
+  story: { w: 203, h: 360 },
+  square: { w: 300, h: 300 },
+  landscape: { w: 340, h: 179 },
+  sticker: { w: 320, h: 141 },
 };
-
-interface CardParams {
-  title: string;
-  name: string;
-  rank?: string | null;
-  accent: string;
-  glow: string;
-}
-
-function drawLogo(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string) {
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.moveTo(x, y - size / 2);
-  ctx.lineTo(x + size / 2, y + size / 2);
-  ctx.lineTo(x + size * 0.16, y + size / 2);
-  ctx.lineTo(x, y + size * 0.05);
-  ctx.lineTo(x - size * 0.16, y + size / 2);
-  ctx.lineTo(x - size / 2, y + size / 2);
-  ctx.closePath();
-  ctx.fill();
-}
-
-function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-/** Greedy word-wrap for canvas text — returns the lines and doesn't draw. */
-function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let current = "";
-  for (const word of words) {
-    const attempt = current ? `${current} ${word}` : word;
-    if (ctx.measureText(attempt).width > maxWidth && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = attempt;
-    }
-  }
-  if (current) lines.push(current);
-  return lines;
-}
-
-function drawCenteredLines(ctx: CanvasRenderingContext2D, lines: string[], centerX: number, startY: number, lineHeight: number) {
-  lines.forEach((line, i) => ctx.fillText(line, centerX, startY + i * lineHeight));
-}
-
-const DESIGNS: { label: string; transparent?: boolean; draw: (ctx: CanvasRenderingContext2D, p: CardParams) => void }[] = [
-  {
-    label: "Doré",
-    draw(ctx, { title, name, rank, accent, glow }) {
-      const cx = CARD_WIDTH / 2;
-      const bg = ctx.createRadialGradient(cx, 420, 80, cx, 420, 900);
-      bg.addColorStop(0, glow);
-      bg.addColorStop(1, "#0a0b0d");
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-
-      drawLogo(ctx, cx, 300, 90, accent);
-
-      ctx.textAlign = "center";
-      ctx.fillStyle = accent;
-      ctx.font = "600 32px system-ui, sans-serif";
-      ctx.fillText("ACCOMPLISSEMENT DÉBLOQUÉ", cx, 430);
-
-      ctx.fillStyle = "#f4f1ea";
-      ctx.font = "600 96px system-ui, sans-serif";
-      const lines = wrapLines(ctx, title, 900);
-      drawCenteredLines(ctx, lines, cx, 620, 108);
-
-      ctx.fillStyle = "#a8a29e";
-      ctx.font = "400 40px system-ui, sans-serif";
-      ctx.fillText(rank ? `${name} · ${rank}` : name, cx, 620 + lines.length * 108 + 70);
-
-      ctx.fillStyle = accent;
-      ctx.font = "600 34px system-ui, sans-serif";
-      ctx.fillText("ASCEND", cx, CARD_HEIGHT - 120);
-    },
-  },
-  {
-    label: "Minimal",
-    draw(ctx, { title, name, rank, accent }) {
-      ctx.fillStyle = "#f4f1ea";
-      ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-
-      const cx = CARD_WIDTH / 2;
-      drawLogo(ctx, cx, 300, 80, "#0a0a0a");
-
-      ctx.fillStyle = accent;
-      ctx.textAlign = "center";
-      ctx.font = "600 30px system-ui, sans-serif";
-      ctx.fillText("ACCOMPLISSEMENT DÉBLOQUÉ", cx, 420);
-
-      ctx.fillStyle = "#0a0a0a";
-      ctx.font = "600 92px Georgia, serif";
-      const lines = wrapLines(ctx, title, 900);
-      drawCenteredLines(ctx, lines, cx, 610, 104);
-
-      const lineY = 610 + lines.length * 104 + 50;
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(cx - 60, lineY);
-      ctx.lineTo(cx + 60, lineY);
-      ctx.stroke();
-
-      ctx.fillStyle = "#57534e";
-      ctx.font = "400 38px system-ui, sans-serif";
-      ctx.fillText(rank ? `${name} · ${rank}` : name, cx, lineY + 70);
-
-      ctx.fillStyle = "#0a0a0a";
-      ctx.font = "600 32px system-ui, sans-serif";
-      ctx.fillText("ASCEND", cx, CARD_HEIGHT - 120);
-    },
-  },
-  {
-    label: "Contraste",
-    draw(ctx, { title, name, rank, accent }) {
-      const bg = ctx.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
-      bg.addColorStop(0, accent);
-      bg.addColorStop(0.5, "#0a0a0a");
-      bg.addColorStop(1, "#0a0a0a");
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-
-      const cx = CARD_WIDTH / 2;
-      drawLogo(ctx, cx, 280, 90, "#ffffff");
-
-      ctx.fillStyle = "#ffffff";
-      ctx.globalAlpha = 0.85;
-      ctx.textAlign = "center";
-      ctx.font = "700 30px system-ui, sans-serif";
-      ctx.fillText("NOUVEAU RECORD", cx, 400);
-      ctx.globalAlpha = 1;
-
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "700 104px system-ui, sans-serif";
-      const lines = wrapLines(ctx, title, 940);
-      drawCenteredLines(ctx, lines, cx, 600, 114);
-
-      const pillY = 600 + lines.length * 114 + 60;
-      const pillText = rank ? `${name}  ·  ${rank}` : name;
-      ctx.font = "600 34px system-ui, sans-serif";
-      const pillWidth = ctx.measureText(pillText).width + 80;
-      ctx.fillStyle = "rgba(255,255,255,0.14)";
-      roundedRectPath(ctx, cx - pillWidth / 2, pillY - 42, pillWidth, 84, 42);
-      ctx.fill();
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText(pillText, cx, pillY + 12);
-
-      ctx.font = "700 32px system-ui, sans-serif";
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText("ASCEND", cx, CARD_HEIGHT - 120);
-    },
-  },
-  {
-    label: "Sticker",
-    transparent: true,
-    draw(ctx, { title, name, rank, accent }) {
-      const cx = CARD_WIDTH / 2;
-      ctx.textAlign = "center";
-      ctx.font = "600 76px system-ui, sans-serif";
-      const lines = wrapLines(ctx, title, 760);
-      ctx.font = "400 36px system-ui, sans-serif";
-      const subLine = rank ? `${name} · ${rank}` : name;
-
-      const panelWidth = 880;
-      const panelHeight = 340 + lines.length * 96;
-      const panelY = CARD_HEIGHT * 0.72 - panelHeight / 2;
-      const panelX = cx - panelWidth / 2;
-
-      ctx.save();
-      ctx.shadowColor = "rgba(0,0,0,0.45)";
-      ctx.shadowBlur = 60;
-      ctx.shadowOffsetY = 20;
-      ctx.fillStyle = "rgba(10,10,10,0.55)";
-      roundedRectPath(ctx, panelX, panelY, panelWidth, panelHeight, 40);
-      ctx.fill();
-      ctx.restore();
-
-      ctx.strokeStyle = `${accent}55`;
-      ctx.lineWidth = 2;
-      roundedRectPath(ctx, panelX, panelY, panelWidth, panelHeight, 40);
-      ctx.stroke();
-
-      drawLogo(ctx, cx, panelY + 90, 64, accent);
-
-      ctx.fillStyle = accent;
-      ctx.font = "600 28px system-ui, sans-serif";
-      ctx.fillText("ACCOMPLISSEMENT DÉBLOQUÉ", cx, panelY + 160);
-
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "600 76px system-ui, sans-serif";
-      drawCenteredLines(ctx, lines, cx, panelY + 250, 88);
-
-      ctx.fillStyle = "rgba(255,255,255,0.7)";
-      ctx.font = "400 36px system-ui, sans-serif";
-      ctx.fillText(subLine, cx, panelY + 260 + lines.length * 88);
-    },
-  },
-  {
-    label: "Médaille",
-    transparent: true,
-    draw(ctx, { title, name, rank, accent }) {
-      const cx = CARD_WIDTH / 2;
-      const medalY = CARD_HEIGHT * 0.62;
-      const radius = 130;
-
-      ctx.save();
-      ctx.shadowColor = "rgba(0,0,0,0.55)";
-      ctx.shadowBlur = 50;
-      ctx.shadowOffsetY = 12;
-      const medalGradient = ctx.createRadialGradient(cx, medalY - 40, 10, cx, medalY, radius);
-      medalGradient.addColorStop(0, "#ffffff");
-      medalGradient.addColorStop(0.35, accent);
-      medalGradient.addColorStop(1, "#0a0a0a");
-      ctx.fillStyle = medalGradient;
-      ctx.beginPath();
-      ctx.arc(cx, medalY, radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      ctx.strokeStyle = "rgba(255,255,255,0.6)";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(cx, medalY, radius - 14, 0, Math.PI * 2);
-      ctx.stroke();
-
-      drawLogo(ctx, cx, medalY + 10, 100, "#ffffff");
-
-      ctx.textAlign = "center";
-      ctx.save();
-      ctx.shadowColor = "rgba(0,0,0,0.8)";
-      ctx.shadowBlur = 30;
-      ctx.shadowOffsetY = 4;
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "700 84px system-ui, sans-serif";
-      const lines = wrapLines(ctx, title, 900);
-      drawCenteredLines(ctx, lines, cx, medalY + radius + 130, 96);
-      ctx.restore();
-
-      ctx.save();
-      ctx.shadowColor = "rgba(0,0,0,0.8)";
-      ctx.shadowBlur = 20;
-      ctx.fillStyle = "rgba(255,255,255,0.85)";
-      ctx.font = "400 38px system-ui, sans-serif";
-      ctx.fillText(rank ? `${name} · ${rank}` : name, cx, medalY + radius + 150 + lines.length * 96);
-      ctx.restore();
-    },
-  },
-];
 
 export function ShareCardModal({
   open,
   onClose,
-  title,
-  name,
-  rank,
-  rarity = "common",
+  target,
+  itemName,
   zIndexClassName,
 }: {
   open: boolean;
   onClose: () => void;
-  title: string;
-  name: string;
-  rank?: string | null;
-  rarity?: AchievementRarity;
+  target: ShareTarget;
+  /** Used in the caption ("« Top 10 » débloqué sur ASCEND."). */
+  itemName: string;
   zIndexClassName?: string;
 }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [designIndex, setDesignIndex] = useState(0);
-  const [busy, setBusy] = useState(false);
+  const [format, setFormat] = useState<ShareFormat>("story");
+  const [style, setStyle] = useState<ShareStyle>("prestige");
+  const [preview, setPreview] = useState<{ src: string; url: string; blob: Blob } | null>(null);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const [copied, setCopied] = useState<"link" | "caption" | null>(null);
   const toast = useToast();
-  const accent = RARITY_COLORS[rarity];
-  const glow = RARITY_GLOW[rarity];
+  const objectUrl = useRef<string | null>(null);
 
+  const src = shareCardPath(target, format, style);
+  const ready = preview?.src === src;
+  const failed = failedSrc === src;
+  const box = PREVIEW[style === "sticker" ? "sticker" : format];
+
+  // One fetch per variant: the blob feeds the preview and is reused as-is by
+  // "Partager", so the share sheet opens within the click (Safari requires it).
   useEffect(() => {
     if (!open) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
-    canvas.width = CARD_WIDTH;
-    canvas.height = CARD_HEIGHT;
-    ctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-    DESIGNS[designIndex].draw(ctx, { title, name, rank, accent, glow });
-  }, [open, designIndex, title, name, rank, accent, glow]);
+    const controller = new AbortController();
+    fetch(src, { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        if (objectUrl.current) URL.revokeObjectURL(objectUrl.current);
+        objectUrl.current = url;
+        setPreview({ src, url, blob });
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setFailedSrc(src);
+      });
+    return () => controller.abort();
+  }, [open, src]);
 
-  function toBlob(): Promise<Blob | null> {
-    return new Promise((resolve) => canvasRef.current?.toBlob((b) => resolve(b), "image/png"));
+  useEffect(
+    () => () => {
+      if (objectUrl.current) URL.revokeObjectURL(objectUrl.current);
+    },
+    [],
+  );
+
+  function pageUrl() {
+    return new URL(sharePagePath(target), window.location.origin).toString();
   }
 
-  async function download() {
-    const blob = await toBlob();
-    if (!blob) return;
+  function fullCaption() {
+    return `${shareCaption(target.kind, itemName)}\nRevenus vérifiés, classement public : ${pageUrl()}`;
+  }
+
+  function fileName() {
+    return `ascend-${target.kind}-${style === "sticker" ? "sticker" : format}.png`;
+  }
+
+  function flashCopied(what: "link" | "caption") {
+    setCopied(what);
+    setTimeout(() => setCopied((c) => (c === what ? null : c)), 2000);
+  }
+
+  function download() {
+    if (!ready) return;
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "ascend.png";
+    link.href = preview.url;
+    link.download = fileName();
     link.click();
-    URL.revokeObjectURL(link.href);
-    toast.show("Image téléchargée.", "success");
+    track("card_shared", { kind: target.kind, format, style, channel: "download" });
+    toast.show("Image enregistrée.", "success");
   }
 
-  async function shareNative() {
-    setBusy(true);
-    try {
-      const blob = await toBlob();
-      if (!blob) throw new Error("no blob");
-      const file = new File([blob], "ascend.png", { type: "image/png" });
-      const caption = `Je viens de débloquer « ${title} » sur ASCEND 🚀`;
-
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: "ASCEND", text: caption });
-      } else {
-        await download();
-        await navigator.clipboard?.writeText(caption).catch(() => undefined);
-        toast.show("Ce navigateur ne permet pas le partage direct : l'image est téléchargée et la légende copiée.", "info");
+  async function shareImage() {
+    if (!ready) return;
+    const file = new File([preview.blob], fileName(), { type: "image/png" });
+    const text = fullCaption();
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], text });
+        track("card_shared", { kind: target.kind, format, style, channel: "native" });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        toast.show("Le partage n'a pas abouti. Enregistre l'image puis publie-la depuis ton appli.", "error");
       }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      toast.show("Impossible de partager depuis ce navigateur. Télécharge plutôt l'image.", "error");
-    } finally {
-      setBusy(false);
+      return;
     }
+    download();
+    await navigator.clipboard?.writeText(text).catch(() => undefined);
+    toast.show("Image enregistrée et légende copiée : il ne reste qu'à la publier.", "info");
   }
 
-  async function shareToInstagramStory() {
-    setBusy(true);
+  async function copy(what: "link" | "caption") {
     try {
-      const blob = await toBlob();
-      if (!blob) throw new Error("no blob");
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      toast.show("Image copiée, ouverture d'Instagram…", "info");
-      window.location.href = "instagram-stories://share";
+      await navigator.clipboard.writeText(what === "link" ? pageUrl() : fullCaption());
+      flashCopied(what);
+      track("card_shared", { kind: target.kind, format, style, channel: `copy_${what}` });
     } catch {
-      toast.show(
-        "Ton navigateur ne permet pas l'ouverture directe d'Instagram — télécharge l'image et ajoute-la à ta story manuellement.",
-        "info",
-      );
-    } finally {
-      setBusy(false);
+      toast.show("Copie impossible depuis ce navigateur.", "error");
     }
   }
 
-  const currentDesign = DESIGNS[designIndex];
+  function openNetwork(network: "linkedin" | "x" | "whatsapp") {
+    const url = pageUrl();
+    const line = shareCaption(target.kind, itemName);
+    const href =
+      network === "linkedin"
+        ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
+        : network === "x"
+          ? `https://x.com/intent/post?text=${encodeURIComponent(line)}&url=${encodeURIComponent(url)}`
+          : `https://wa.me/?text=${encodeURIComponent(`${line} ${url}`)}`;
+    window.open(href, "_blank", "noopener,noreferrer");
+    track("card_shared", { kind: target.kind, format, style, channel: network });
+  }
 
   return (
-    <Modal open={open} onClose={onClose} title="Partager" className="max-w-sm" zIndexClassName={zIndexClassName}>
-      <div className="flex flex-col items-center gap-4">
-        <div
-          className="relative h-[400px] w-[225px] overflow-hidden rounded-lg border border-border-strong shadow-lg"
-          style={{
-            backgroundImage:
-              "repeating-conic-gradient(#2a2a2a 0% 25%, #1a1a1a 0% 50%)",
-            backgroundSize: "16px 16px",
-          }}
-        >
-          <canvas ref={canvasRef} className="h-full w-full object-cover" />
-        </div>
-        {currentDesign.transparent && (
-          <p className="-mt-2 text-[11px] text-text-muted">Fond transparent — colle-le sur une photo dans Instagram.</p>
-        )}
-
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            aria-label="Design précédent"
-            onClick={() => setDesignIndex((i) => (i - 1 + DESIGNS.length) % DESIGNS.length)}
-            className="rounded-full border border-border-strong p-1.5 text-text-secondary hover:text-text-primary"
+    <Modal open={open} onClose={onClose} title="Partager" className="max-w-lg" zIndexClassName={zIndexClassName}>
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center justify-center rounded-lg border border-border bg-bg-primary/60 px-4 py-5">
+          <div
+            className={cn(
+              "relative flex items-center justify-center overflow-hidden rounded-md shadow-[0_18px_50px_rgba(0,0,0,0.45)] transition-[width,height] duration-300 ease-out",
+              style === "sticker" && "bg-[repeating-conic-gradient(#2a2a2a_0%_25%,#1a1a1a_0%_50%)] bg-[length:16px_16px]",
+            )}
+            style={{ width: box.w, height: box.h }}
           >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <span className="w-24 text-center text-xs font-medium text-text-secondary">{currentDesign.label}</span>
-          <button
-            type="button"
-            aria-label="Design suivant"
-            onClick={() => setDesignIndex((i) => (i + 1) % DESIGNS.length)}
-            className="rounded-full border border-border-strong p-1.5 text-text-secondary hover:text-text-primary"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {DESIGNS.map((d, i) => (
-            <button
-              key={d.label}
-              type="button"
-              aria-label={`Design ${d.label}`}
-              onClick={() => setDesignIndex(i)}
-              className={`h-1.5 rounded-full transition-all ${i === designIndex ? "w-5 bg-gold" : "w-1.5 bg-border-strong"}`}
-            />
-          ))}
+            {ready && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={preview.url} alt="Aperçu de la carte à partager" className="h-full w-full object-contain" />
+            )}
+            {!ready && !failed && (
+              <div className="absolute inset-0 flex items-center justify-center bg-card">
+                <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
+              </div>
+            )}
+            {failed && (
+              <div className="absolute inset-0 flex items-center justify-center bg-card p-4 text-center text-xs text-text-muted">
+                Aperçu indisponible pour le moment. Réessaie dans un instant.
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex w-full flex-col gap-2">
-          <Button type="button" onClick={shareNative} disabled={busy} className="w-full">
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
-            Partager
+        <div className="flex flex-col gap-3">
+          {style !== "sticker" ? (
+            <div role="radiogroup" aria-label="Format" className="grid grid-cols-3 gap-1 rounded-md border border-border bg-bg-primary/60 p-1">
+              {FORMATS.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  role="radio"
+                  aria-checked={format === f}
+                  onClick={() => setFormat(f)}
+                  className={cn(
+                    "rounded-sm px-2 py-1.5 text-center transition-colors",
+                    format === f ? "bg-card-elevated text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary",
+                  )}
+                >
+                  <span className="block text-xs font-semibold">{SHARE_FORMATS[f].label}</span>
+                  <span className="block truncate text-[10px] opacity-80">{SHARE_FORMATS[f].hint}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-md border border-border bg-bg-primary/60 px-3 py-2.5 text-center text-xs text-text-secondary">
+              Fond transparent : dans ta story Instagram, colle-le par-dessus ta photo.
+            </p>
+          )}
+
+          <div role="radiogroup" aria-label="Style" className="grid grid-cols-4 gap-2">
+            {STYLES.map((s) => (
+              <button
+                key={s}
+                type="button"
+                role="radio"
+                aria-checked={style === s}
+                onClick={() => setStyle(s)}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 rounded-md border p-2 transition-colors",
+                  style === s ? "border-gold/60 bg-gold/5" : "border-border hover:border-border-strong",
+                )}
+              >
+                <span className={cn("h-9 w-full rounded-sm border border-white/10", SWATCHES[s])} />
+                <span className={cn("text-[11px] font-medium", style === s ? "text-gold" : "text-text-secondary")}>
+                  {SHARE_STYLES[s].label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Button type="button" onClick={shareImage} disabled={!ready} className="w-full">
+            <Share2 className="h-4 w-4" /> Partager l&apos;image
           </Button>
           <div className="grid grid-cols-2 gap-2">
-            <Button type="button" variant="secondary" onClick={shareToInstagramStory} disabled={busy}>
-              <Camera className="h-4 w-4" /> Story Instagram
+            <Button type="button" variant="secondary" onClick={download} disabled={!ready}>
+              <Download className="h-4 w-4" /> Enregistrer
             </Button>
-            <Button type="button" variant="secondary" onClick={download} disabled={busy}>
-              <Download className="h-4 w-4" /> Télécharger
+            <Button type="button" variant="secondary" onClick={() => copy("link")}>
+              {copied === "link" ? <Check className="h-4 w-4 text-success" /> : <Link2 className="h-4 w-4" />}
+              {copied === "link" ? "Lien copié" : "Copier le lien"}
+            </Button>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => openNetwork("linkedin")}>
+              <BrandIcon brand="linkedin" className="h-3.5 w-3.5" /> LinkedIn
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => openNetwork("x")}>
+              <BrandIcon brand="x" className="h-3.5 w-3.5" /> X
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => openNetwork("whatsapp")}>
+              <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" /> WhatsApp
             </Button>
           </div>
         </div>
-        <p className="text-center text-[11px] text-text-muted">
-          « Partager » ouvre le menu de ton téléphone (Instagram, WhatsApp, Messages...). Si Instagram ne
-          s&apos;ouvre pas directement en story, colle l&apos;image téléchargée à la main.
+
+        <div className="rounded-md border border-border bg-bg-primary/60 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-text-muted">Légende suggérée</span>
+            <button
+              type="button"
+              onClick={() => copy("caption")}
+              className="flex items-center gap-1 text-xs font-medium text-gold hover:underline"
+            >
+              {copied === "caption" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied === "caption" ? "Copiée" : "Copier"}
+            </button>
+          </div>
+          <p className="mt-1.5 text-xs leading-relaxed text-text-secondary">
+            {shareCaption(target.kind, itemName)} Revenus vérifiés, classement public : ton lien de profil.
+          </p>
+        </div>
+
+        <p className="text-center text-[11px] leading-relaxed text-text-muted">
+          Sur téléphone, « Partager l&apos;image » ouvre Instagram, WhatsApp ou LinkedIn. Le lien affiche ta carte en
+          aperçu quand tu le publies.
         </p>
       </div>
     </Modal>

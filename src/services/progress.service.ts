@@ -165,7 +165,7 @@ export async function grantTitleToMember(
   return true;
 }
 
-export async function grantAchievementToMember(userId: string, achievementId: string) {
+export async function grantAchievementToMember(userId: string, achievementId: string, opts: { notify?: boolean } = {}) {
   const admin = createAdminClient();
   const [{ data: owned }, { data: def }] = await Promise.all([
     admin.from("user_achievements").select("id").eq("user_id", userId).eq("achievement_id", achievementId).maybeSingle(),
@@ -176,14 +176,100 @@ export async function grantAchievementToMember(userId: string, achievementId: st
   const { error } = await admin.from("user_achievements").insert({ user_id: userId, achievement_id: achievementId });
   if (error) return false;
 
+  if (opts.notify !== false) {
+    await createNotificationForUser({
+      userId,
+      type: "achievement_unlocked",
+      title: "Accomplissement débloqué",
+      body: `Tu viens de débloquer « ${def.name} ».`,
+      metadata: { achievement_id: achievementId },
+    });
+  }
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Grouped notifications: a member connecting a long revenue history can
+// unlock a dozen things in one sync. Up to two stay individual; from three
+// on, one summary per kind.
+// ---------------------------------------------------------------------------
+
+const GROUP_FROM = 3;
+const RARITY_ORDER = ["legendary", "epic", "rare", "common"];
+
+function listNames(names: string[]): string {
+  const quoted = names.map((n) => `« ${n} »`);
+  if (quoted.length <= 3) return quoted.length === 1 ? quoted[0] : `${quoted.slice(0, -1).join(", ")} et ${quoted.at(-1)}`;
+  return `${quoted.slice(0, 3).join(", ")} et ${quoted.length - 3} autre${quoted.length - 3 > 1 ? "s" : ""}`;
+}
+
+async function notifyChallenges(userId: string, list: { id: string; title: string; points: number }[]) {
+  if (list.length < GROUP_FROM) {
+    for (const c of list) {
+      await createNotificationForUser({
+        userId,
+        type: "milestone_reached",
+        title: c.points > 0 ? `Défi réussi : +${c.points} points` : "Défi réussi",
+        body: `Tu as réussi le défi « ${c.title} ».`,
+        metadata: { challenge_id: c.id },
+      });
+    }
+    return;
+  }
+  const points = list.reduce((sum, c) => sum + c.points, 0);
+  await createNotificationForUser({
+    userId,
+    type: "milestone_reached",
+    title: points > 0 ? `${list.length} défis réussis : +${points} points` : `${list.length} défis réussis`,
+    body: `${listNames(list.map((c) => c.title))}. Regarde où ça te place dans la saison.`,
+    metadata: { challenge_ids: list.map((c) => c.id) },
+  });
+}
+
+async function notifyTitles(userId: string, list: { id: string; name: string }[]) {
+  if (list.length < GROUP_FROM) {
+    for (const t of list) {
+      await createNotificationForUser({
+        userId,
+        type: "achievement_unlocked",
+        title: "Nouveau titre débloqué",
+        body: `Tu peux désormais afficher le titre « ${t.name} » sur ton profil.`,
+        metadata: { title_id: t.id },
+      });
+    }
+    return;
+  }
   await createNotificationForUser({
     userId,
     type: "achievement_unlocked",
-    title: "Accomplissement débloqué",
-    body: `Tu viens de débloquer « ${def.name} ».`,
-    metadata: { achievement_id: achievementId },
+    title: `${list.length} nouveaux titres débloqués`,
+    body: `${listNames(list.map((t) => t.name))}. Choisis celui à afficher sur ton profil.`,
+    metadata: { title_ids: list.map((t) => t.id) },
   });
-  return true;
+}
+
+async function notifyAchievements(userId: string, list: { id: string; name: string; rarity: string }[]) {
+  if (list.length < GROUP_FROM) {
+    for (const a of list) {
+      await createNotificationForUser({
+        userId,
+        type: "achievement_unlocked",
+        title: "Accomplissement débloqué",
+        body: `Tu viens de débloquer « ${a.name} ».`,
+        metadata: { achievement_id: a.id },
+      });
+    }
+    return;
+  }
+  // The dashboard celebrates the achievement in metadata: the rarest one.
+  const rarest = [...list].sort((a, b) => RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity))[0];
+  await createNotificationForUser({
+    userId,
+    type: "achievement_unlocked",
+    title: `${list.length} accomplissements débloqués`,
+    body: `${listNames(list.map((a) => a.name))}.`,
+    metadata: { achievement_id: rarest.id, achievement_ids: list.map((a) => a.id) },
+  });
 }
 
 export async function refreshMemberProgress(userId: string, metrics?: MemberMetrics): Promise<ProgressChanges> {
@@ -192,28 +278,45 @@ export async function refreshMemberProgress(userId: string, metrics?: MemberMetr
   const now = new Date().toISOString();
   const changes: ProgressChanges = { completedChallenges: [], newTitles: [], newAchievements: [] };
 
-  const [{ data: challenges }, { data: progressRows }, { data: titles }, { data: ownedTitles }, { data: achievements }, { data: ownedAchievements }] =
+  const [
+    { data: challenges },
+    { data: progressRows },
+    { data: titles },
+    { data: ownedTitles },
+    { data: achievements },
+    { data: ownedAchievements },
+    { data: activeSeasons },
+  ] =
     await Promise.all([
       // select("*"): also works before the season columns exist (migration 060).
       admin.from("challenges").select("*").lte("starts_at", now).gte("ends_at", now),
       admin.from("user_challenges").select("challenge_id, status, progress").eq("user_id", userId),
-      admin.from("titles").select("id, requirement").eq("type", "earned"),
+      admin.from("titles").select("id, name, requirement").eq("type", "earned"),
       admin.from("user_titles").select("title_id, is_active").eq("user_id", userId),
-      admin.from("achievements").select("id, criteria"),
+      admin.from("achievements").select("id, name, rarity, criteria"),
       admin.from("user_achievements").select("achievement_id").eq("user_id", userId),
+      admin.from("seasons").select("id").eq("is_active", true),
     ]);
+  // A season being prepared (not active yet) never hands out points early.
+  const activeSeasonIds = new Set((activeSeasons ?? []).map((s) => s.id));
 
   const progressByChallenge = new Map((progressRows ?? []).map((p) => [p.challenge_id, p]));
   let hasActiveTitle = (ownedTitles ?? []).some((t) => t.is_active);
-  const grantTitle = async (titleId: string) => {
-    const granted = await grantTitleToMember(userId, titleId, { hasActiveTitle });
+  const grantTitle = async (titleId: string, notify = true) => {
+    const granted = await grantTitleToMember(userId, titleId, { hasActiveTitle, notify });
     if (granted) hasActiveTitle = true;
     return granted;
   };
+  const doneChallenges: { id: string; title: string; points: number }[] = [];
+  const earnedTitles: { id: string; name: string }[] = [];
+  const earnedAchievements: { id: string; name: string; rarity: string }[] = [];
+  const titleNames = new Map((titles ?? []).map((t) => [t.id, t.name]));
+  const achievementDefs = new Map((achievements ?? []).map((a) => [a.id, a]));
 
   for (const raw of challenges ?? []) {
     const c = { ...raw, points: raw.points ?? 0, reward_title_id: raw.reward_title_id ?? null };
     if (c.type === "coming_soon" || raw.is_published === false) continue;
+    if (c.season_id && !activeSeasonIds.has(c.season_id)) continue;
     const existing = progressByChallenge.get(c.id);
     // A completed challenge stays completed: its season points are earned.
     if (existing?.status === "completed") continue;
@@ -234,19 +337,16 @@ export async function refreshMemberProgress(userId: string, metrics?: MemberMetr
     if (error || !done) continue;
 
     changes.completedChallenges.push(c.id);
-    if (c.reward_achievement_id && (await grantAchievementToMember(userId, c.reward_achievement_id))) {
+    doneChallenges.push({ id: c.id, title: c.title, points: c.points });
+    if (c.reward_achievement_id && (await grantAchievementToMember(userId, c.reward_achievement_id, { notify: false }))) {
       changes.newAchievements.push(c.reward_achievement_id);
+      const def = achievementDefs.get(c.reward_achievement_id);
+      earnedAchievements.push({ id: c.reward_achievement_id, name: def?.name ?? "Accomplissement", rarity: def?.rarity ?? "common" });
     }
-    if (c.reward_title_id && (await grantTitle(c.reward_title_id))) {
+    if (c.reward_title_id && (await grantTitle(c.reward_title_id, false))) {
       changes.newTitles.push(c.reward_title_id);
+      earnedTitles.push({ id: c.reward_title_id, name: titleNames.get(c.reward_title_id) ?? "Titre" });
     }
-    await createNotificationForUser({
-      userId,
-      type: "milestone_reached",
-      title: c.points > 0 ? `Défi réussi : +${c.points} points` : "Défi réussi",
-      body: `Tu as réussi le défi « ${c.title} ».`,
-      metadata: { challenge_id: c.id },
-    });
   }
 
   const ownedTitleIds = new Set((ownedTitles ?? []).map((t) => t.title_id));
@@ -254,8 +354,9 @@ export async function refreshMemberProgress(userId: string, metrics?: MemberMetr
     if (ownedTitleIds.has(t.id)) continue;
     const condition = normalizeRequirement(t.requirement);
     if (!condition || !conditionDef(condition.type)?.automatic) continue;
-    if (evaluateCondition(condition.type, condition.target, m).done && (await grantTitle(t.id))) {
+    if (evaluateCondition(condition.type, condition.target, m).done && (await grantTitle(t.id, false))) {
       changes.newTitles.push(t.id);
+      earnedTitles.push({ id: t.id, name: t.name });
     }
   }
 
@@ -264,11 +365,15 @@ export async function refreshMemberProgress(userId: string, metrics?: MemberMetr
     if (ownedAchievementIds.has(a.id) || changes.newAchievements.includes(a.id)) continue;
     const condition = normalizeRequirement(a.criteria);
     if (!condition || !conditionDef(condition.type)?.automatic) continue;
-    if (evaluateCondition(condition.type, condition.target, m).done && (await grantAchievementToMember(userId, a.id))) {
+    if (evaluateCondition(condition.type, condition.target, m).done && (await grantAchievementToMember(userId, a.id, { notify: false }))) {
       changes.newAchievements.push(a.id);
+      earnedAchievements.push({ id: a.id, name: a.name, rarity: a.rarity });
     }
   }
 
+  await notifyChallenges(userId, doneChallenges);
+  await notifyTitles(userId, earnedTitles);
+  await notifyAchievements(userId, earnedAchievements);
   return changes;
 }
 

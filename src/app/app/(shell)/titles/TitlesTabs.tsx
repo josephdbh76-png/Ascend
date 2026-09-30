@@ -25,7 +25,9 @@ export function TitlesTabs({
   myListings,
   activeListings,
   recentSales,
+  username,
 }: {
+  username: string;
   catalog: TitleRow[];
   owned: EarnedTitle[];
   completionRates?: Record<string, number>;
@@ -98,6 +100,7 @@ export function TitlesTabs({
               owned={ownedIds.has(t.id)}
               isActive={ownedByid.get(t.id)?.isActive}
               completionRate={completionRates?.[t.id]}
+              shareUsername={ownedIds.has(t.id) ? username : undefined}
             />
           ))}
         </div>

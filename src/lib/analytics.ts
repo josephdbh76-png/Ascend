@@ -23,6 +23,7 @@ export type AnalyticsEvent =
   | "leaderboard_viewed"
   | "profile_viewed"
   | "profile_shared"
+  | "card_shared"
   | "achievement_unlocked"
   | "challenge_started"
   | "challenge_completed";

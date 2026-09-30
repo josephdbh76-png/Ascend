@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, Copy } from "lucide-react";
+import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 import type { DashboardBannerRow, BannerButton } from "@/services/banner.service";
 
 // Both chip styles below share the exact same padding/height so a link
@@ -73,30 +74,79 @@ function Slide({ banner }: { banner: DashboardBannerRow }) {
   );
 }
 
+const ROTATE_MS = 6000;
+
 export function DashboardBannerCarousel({ banners }: { banners: DashboardBannerRow[] }) {
   const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotionSafe();
+
+  // Only the strip scrolls, horizontally. scrollIntoView() would also scroll
+  // the page to bring the banner back into view, jumping to the top of the
+  // dashboard every six seconds.
+  const goTo = useCallback(
+    (index: number) => {
+      const el = scrollerRef.current;
+      const child = el?.children[index] as HTMLElement | undefined;
+      if (!el || !child) return;
+      // The strip is `relative`, so offsetLeft is measured from its own edge.
+      el.scrollTo({ left: child.offsetLeft, behavior: reduced ? "auto" : "smooth" });
+    },
+    [reduced],
+  );
+
+  const activeRef = useRef(0);
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
 
   useEffect(() => {
-    if (banners.length < 2) return;
+    if (banners.length < 2 || paused) return;
     const interval = setInterval(() => {
-      setActive((i) => (i + 1) % banners.length);
-    }, 6000);
+      if (document.hidden) return;
+      const next = (activeRef.current + 1) % banners.length;
+      setActive(next);
+      goTo(next);
+    }, ROTATE_MS);
     return () => clearInterval(interval);
-  }, [banners.length]);
+  }, [banners.length, paused, goTo]);
 
+  // Swiping by hand moves the dots too.
   useEffect(() => {
     const el = scrollerRef.current;
-    if (!el) return;
-    const child = el.children[active] as HTMLElement | undefined;
-    child?.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
-  }, [active]);
+    if (!el || banners.length < 2) return;
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const index = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
+        setActive(Math.min(banners.length - 1, Math.max(0, index)));
+      });
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, [banners.length]);
 
   if (banners.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-2">
-      <div ref={scrollerRef} className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth [&::-webkit-scrollbar]:hidden">
+    <div
+      className="flex flex-col gap-2"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={() => setPaused(false)}
+      onTouchStart={() => setPaused(true)}
+    >
+      <div
+        ref={scrollerRef}
+        className="relative flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain [&::-webkit-scrollbar]:hidden"
+        style={{ scrollbarWidth: "none" }}
+      >
         {banners.map((b) => (
           <div key={b.id} className="w-full shrink-0 snap-center">
             <Slide banner={b} />
@@ -110,7 +160,11 @@ export function DashboardBannerCarousel({ banners }: { banners: DashboardBannerR
               key={b.id}
               type="button"
               aria-label={`Aller à la bannière ${i + 1}`}
-              onClick={() => setActive(i)}
+              aria-current={i === active ? "true" : undefined}
+              onClick={() => {
+                setActive(i);
+                goTo(i);
+              }}
               className={`h-1.5 rounded-full transition-all ${i === active ? "w-4 bg-gold" : "w-1.5 bg-border-strong"}`}
             />
           ))}

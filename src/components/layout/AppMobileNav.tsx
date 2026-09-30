@@ -11,7 +11,7 @@ import { NotificationBell, type NotificationItem } from "./NotificationBell";
 const TABS = [
   { href: "/app/dashboard", label: "Accueil", icon: LayoutGrid },
   { href: "/app/leaderboard", label: "Classement", icon: Trophy },
-  { href: "/app/challenges", label: "Défis", icon: Flag },
+  { href: "/app/challenges", label: "Saison", icon: Flag },
 ];
 
 const MENU_LINKS = [
@@ -54,9 +54,12 @@ export function AppMobileHeader({
           ASCEND
         </Link>
         <div className="flex items-center gap-1">
-          <NotificationBell initial={notifications} unreadCount={unreadCount} />
+          <span data-tour="mobile-notifications">
+            <NotificationBell initial={notifications} unreadCount={unreadCount} />
+          </span>
           <button
             onClick={() => setOpen(true)}
+            data-tour="mobile-menu"
             aria-label="Ouvrir le menu"
             aria-expanded={open}
             className="relative rounded-md p-2 text-text-secondary"
@@ -121,6 +124,7 @@ export function AppBottomNav({ username }: { username: string }) {
           <Link
             key={item.href}
             href={item.href}
+            data-tour={item.label === "Profil" ? "tab-profile" : `tab-${item.href.split("/").pop()}`}
             aria-current={active ? "page" : undefined}
             className={cn(
               "flex flex-1 flex-col items-center gap-1 py-2 text-[11px] font-medium",

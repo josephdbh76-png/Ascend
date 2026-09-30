@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { LEGAL } from "@/lib/legal";
+import { CATEGORY_PAGES } from "@/lib/seo";
+
+// The most searched activities get a direct link (internal linking for search engines).
+const FOOTER_CATEGORIES = ["saas", "e-commerce", "mode", "agences", "createurs-de-contenu", "freelances"];
 
 export function Footer() {
   return (
     <footer className="border-t border-border bg-bg-secondary">
       <div className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-5">
           <div className="col-span-2 sm:col-span-1">
             <span className="text-lg font-semibold tracking-tight text-text-primary">ASCEND</span>
             <p className="mt-2 text-sm text-text-muted">Construis. Prouve. Progresse.</p>
@@ -14,9 +18,21 @@ export function Footer() {
             <h4 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Produit</h4>
             <ul className="mt-3 space-y-2 text-sm text-text-secondary">
               <li><Link href="/#produit" className="hover:text-text-primary">Fonctionnalités</Link></li>
-              <li><Link href="/#classement" className="hover:text-text-primary">Classement</Link></li>
+              <li><Link href="/classement" className="hover:text-text-primary">Classement public</Link></li>
               <li><Link href="/#tarifs" className="hover:text-text-primary">Tarifs</Link></li>
               <li><Link href="/verification" className="hover:text-text-primary">Comment on vérifie</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Classements</h4>
+            <ul className="mt-3 space-y-2 text-sm text-text-secondary">
+              {CATEGORY_PAGES.filter((c) => FOOTER_CATEGORIES.includes(c.slug)).map((c) => (
+                <li key={c.slug}>
+                  <Link href={`/classement/${c.slug}`} className="hover:text-text-primary">
+                    {c.audience.charAt(0).toUpperCase() + c.audience.slice(1)}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
           <div>

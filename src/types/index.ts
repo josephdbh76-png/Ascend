@@ -118,6 +118,15 @@ export interface ChallengeProgress {
   rewardTitleId: string | null;
 }
 
+export interface PublicBusiness {
+  name: string;
+  category: string;
+  customCategory: string | null;
+  description: string | null;
+  /** Already checked to be a plain http(s) address. */
+  website: string | null;
+}
+
 export interface PublicProfile {
   userId: string;
   username: string;
@@ -132,6 +141,8 @@ export interface PublicProfile {
   memberSince: string;
   businessName: string;
   businessCategory: string;
+  /** Main activity first, then the extra ones in the member's order. */
+  businesses: PublicBusiness[];
   revenueVisibility: RevenueVisibility;
   revenueDisplayCents: number | null;
   revenueRangeMinCents: number | null;

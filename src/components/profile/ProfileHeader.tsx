@@ -1,19 +1,16 @@
-import { CheckCircle2, MapPin, Calendar, Globe2, Flag as FlagIcon, Crown, BadgeCheck } from "lucide-react";
+import { CheckCircle2, MapPin, Calendar, Globe2, Flag as FlagIcon, Crown, BadgeCheck, Briefcase } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { ShareProfileButton } from "./ShareProfileButton";
 import { FollowButton } from "@/components/network/FollowButton";
 import { MessageButton } from "@/components/network/MessageButton";
 import { cn, formatCurrency, formatCurrencyRange, formatPercent, initials } from "@/lib/utils";
-import { COUNTRIES, BUSINESS_CATEGORIES, ACCENT_THEMES } from "@/lib/constants";
+import { COUNTRIES, ACCENT_THEMES } from "@/lib/constants";
+import { activityLabel, categoryLabel } from "@/lib/business";
 import type { PublicProfile } from "@/types";
 
 function countryLabel(code: string | null) {
   if (!code) return null;
   return COUNTRIES.find((c) => c.value === code)?.label ?? code;
-}
-
-function categoryLabel(value: string) {
-  return BUSINESS_CATEGORIES.find((c) => c.value === value)?.label ?? value;
 }
 
 export function ProfileHeader({
@@ -34,6 +31,7 @@ export function ProfileHeader({
   isCreator?: boolean;
 }) {
   const accent = ACCENT_THEMES.find((t) => t.id === profile.accentTheme) ?? ACCENT_THEMES[0];
+  const [mainBusiness, ...otherBusinesses] = profile.businesses;
   const foundingNumber = profile.foundingMemberNumber ? String(profile.foundingMemberNumber).padStart(3, "0") : null;
   const revenueDisplay =
     profile.revenueVisibility === "exact" && profile.revenueDisplayCents != null
@@ -99,7 +97,22 @@ export function ProfileHeader({
                 <MapPin className="h-3.5 w-3.5" /> {countryLabel(profile.country)}
               </span>
             )}
-            <span>Fondateur {categoryLabel(profile.businessCategory)}</span>
+            {mainBusiness ? (
+              <span className="flex min-w-0 items-center gap-1.5">
+                <Briefcase className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">
+                  <span className="text-text-primary">{mainBusiness.name}</span> ·{" "}
+                  {activityLabel(mainBusiness.category, mainBusiness.customCategory)}
+                </span>
+                {otherBusinesses.length > 0 && (
+                  <a href="#activites" className="shrink-0 font-medium text-gold hover:underline">
+                    +{otherBusinesses.length}
+                  </a>
+                )}
+              </span>
+            ) : (
+              profile.businessCategory && <span>Fondateur {categoryLabel(profile.businessCategory)}</span>
+            )}
             <span className="flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5" /> Membre depuis {new Date(profile.memberSince).getFullYear()}
             </span>
@@ -123,7 +136,7 @@ export function ProfileHeader({
               <FollowButton targetUserId={profile.userId} initialFollowing={isFollowing ?? false} />
             </>
           )}
-          <ShareProfileButton username={profile.username} isOwner={isOwner} />
+          <ShareProfileButton username={profile.username} isOwner={isOwner} globalRank={profile.globalRank} />
         </div>
       </div>
 

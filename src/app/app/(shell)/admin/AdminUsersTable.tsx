@@ -2,12 +2,14 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Trash2 } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
-import { adminSetTierAction, adminSetIsAdminAction } from "./actions";
+import { adminSetTierAction, adminSetIsAdminAction, adminDeleteMemberAction } from "./actions";
 import type { AdminUserRow } from "@/services/admin.service";
 import type { SubscriptionTier } from "@/types/database.types";
 
@@ -17,7 +19,22 @@ export function AdminUsersTable({ users, currentUserId }: { users: AdminUserRow[
   const [query, setQuery] = useState("");
   const [rows, setRows] = useState(users);
   const [pending, startTransition] = useTransition();
+  const [toDelete, setToDelete] = useState<AdminUserRow | null>(null);
+  const [confirmText, setConfirmText] = useState("");
   const toast = useToast();
+
+  function deleteMember() {
+    if (!toDelete) return;
+    const target = toDelete;
+    startTransition(async () => {
+      const result = await adminDeleteMemberAction(target.id, confirmText);
+      if (!result.success) return toast.show(result.error, "error");
+      setRows((r) => r.filter((u) => u.id !== target.id));
+      setToDelete(null);
+      setConfirmText("");
+      toast.show(`Compte @${target.username} supprimé.`, "success");
+    });
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -73,6 +90,9 @@ export function AdminUsersTable({ users, currentUserId }: { users: AdminUserRow[
               <th className="px-4 py-3 font-medium">Vérifié</th>
               <th className="px-4 py-3 font-medium">Formule</th>
               <th className="px-4 py-3 font-medium">Admin</th>
+              <th className="px-4 py-3 font-medium">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -127,11 +147,43 @@ export function AdminUsersTable({ users, currentUserId }: { users: AdminUserRow[
                     <ShieldCheck className="h-3 w-3" /> {u.isAdmin ? "Admin" : "Standard"}
                   </button>
                 </td>
+                <td className="px-4 py-3 text-right">
+                  {u.id !== currentUserId && (
+                    <button
+                      type="button"
+                      onClick={() => setToDelete(u)}
+                      aria-label={`Supprimer @${u.username}`}
+                      className="rounded-md p-1.5 text-text-muted transition-colors hover:bg-error/10 hover:text-error"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <Modal open={toDelete !== null} onClose={() => setToDelete(null)} title="Supprimer ce compte ?">
+        <p className="text-sm text-text-secondary">
+          Le compte <span className="font-medium text-text-primary">@{toDelete?.username}</span> et toutes ses données
+          (revenus, titres, messages, candidatures) seront supprimés définitivement. Un abonnement Stripe en cours est
+          résilié immédiatement.
+        </p>
+        <p className="mt-3 text-sm text-text-secondary">
+          Tape <span className="font-mono text-text-primary">{toDelete?.username}</span> pour confirmer.
+        </p>
+        <Input className="mt-2" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} autoFocus />
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setToDelete(null)}>
+            Annuler
+          </Button>
+          <Button variant="danger" size="sm" onClick={deleteMember} disabled={pending || confirmText.trim() !== toDelete?.username}>
+            Supprimer définitivement
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

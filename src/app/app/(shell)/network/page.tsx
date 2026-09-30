@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { Flame, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Flame, GraduationCap, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getSubscription, hasProAccess, hasEliteAccess } from "@/services/subscription.service";
 import { searchNetwork, getTrendingFounders, getNewestFounders, getNetworkTeaser } from "@/services/network.service";
-import { listActiveDeals } from "@/services/deal.service";
+import { listTrendingTrainings } from "@/services/training.service";
 import { NetworkFomoTeaser } from "@/components/fomo/NetworkFomoTeaser";
-import { DealsSection } from "@/components/network/DealsSection";
+import { NetworkTabs } from "@/components/network/NetworkTabs";
+import { TrainingCard } from "@/components/trainings/TrainingCard";
 import { NetworkSearchForm } from "./NetworkSearchForm";
 import { NetworkResults } from "./NetworkResults";
 
@@ -31,18 +33,41 @@ export default async function NetworkPage({
   const cityFilter = isElite ? params.city : undefined;
   const hasFilters = !!(params.q || cityFilter || params.category);
 
-  const [results, trending, newest, teaser, deals] = await Promise.all([
+  const [results, trending, newest, teaser, trainings] = await Promise.all([
     isPro && user && hasFilters
       ? searchNetwork({ query: params.q, city: cityFilter, category: params.category }, user.id)
       : Promise.resolve([]),
     isPro && user && !hasFilters ? getTrendingFounders(user.id) : Promise.resolve([]),
     isPro && user && !hasFilters ? getNewestFounders(user.id) : Promise.resolve([]),
     !isPro && user ? getNetworkTeaser(user.id) : Promise.resolve(null),
-    isElite ? listActiveDeals() : Promise.resolve([]),
+    // Open to every member: creators get their audience, members discover the offers.
+    !hasFilters && user
+      ? listTrendingTrainings({ userId: user.id, tier: subscription?.tier ?? null }, 3)
+      : Promise.resolve([]),
   ]);
+
+  const trainingsSection =
+    trainings.length > 0 ? (
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-text-muted">
+            <GraduationCap className="h-4 w-4 text-gold" /> Formations à la une
+          </h2>
+          <Link href="/formations" className="flex items-center gap-1 text-xs font-medium text-gold hover:underline">
+            Toutes les formations <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {trainings.map((t) => (
+            <TrainingCard key={t.id} training={t} />
+          ))}
+        </div>
+      </section>
+    ) : null;
 
   return (
     <div className="flex flex-col gap-6">
+      <NetworkTabs active="founders" />
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Réseau</h1>
         <p className="mt-1 text-sm text-text-secondary">
@@ -59,7 +84,7 @@ export default async function NetworkPage({
             cityLocked={!isElite}
           />
 
-          {isElite && !hasFilters && <DealsSection deals={deals} />}
+          {!hasFilters && trainingsSection}
 
           {!hasFilters && trending.length > 0 && (
             <section className="flex flex-col gap-3">
@@ -82,11 +107,14 @@ export default async function NetworkPage({
           {hasFilters && <NetworkResults results={results} />}
         </>
       ) : (
-        <NetworkFomoTeaser
-          totalActive={teaser?.totalActive ?? 0}
-          sameCategoryCount={teaser?.sameCategoryCount ?? 0}
-          category={teaser?.category ?? null}
-        />
+        <>
+          <NetworkFomoTeaser
+            totalActive={teaser?.totalActive ?? 0}
+            sameCategoryCount={teaser?.sameCategoryCount ?? 0}
+            category={teaser?.category ?? null}
+          />
+          {trainingsSection}
+        </>
       )}
     </div>
   );

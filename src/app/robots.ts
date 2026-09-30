@@ -7,7 +7,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        // Share cards are link-preview images: LinkedIn and X honour robots.txt.
+        allow: ["/", "/api/share/"],
         disallow: ["/app", "/onboarding", "/api", "/mfa-challenge"],
       },
     ],

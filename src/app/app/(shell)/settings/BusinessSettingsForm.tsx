@@ -3,25 +3,29 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { BadgeCheck } from "lucide-react";
-import { Field, Input, Select } from "@/components/ui/Input";
+import { Field, Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { BUSINESS_CATEGORIES } from "@/lib/constants";
 import { updateBusinessAction, verifySiretAction } from "./actions";
+import { BusinessFields, type BusinessFormValues } from "./BusinessFields";
 
 export function BusinessSettingsForm({
   initial,
 }: {
-  initial: {
-    name: string;
-    category: string;
-    website: string;
+  initial: BusinessFormValues & {
     skills: string;
     siret: string;
     legalName: string | null;
   };
 }) {
-  const [form, setForm] = useState(initial);
+  const [business, setBusiness] = useState<BusinessFormValues>({
+    name: initial.name,
+    category: initial.category,
+    customCategory: initial.customCategory,
+    description: initial.description,
+    website: initial.website,
+  });
+  const [skills, setSkills] = useState(initial.skills);
   const [siret, setSiret] = useState(initial.siret);
   const [pending, startTransition] = useTransition();
   const [siretPending, startSiretTransition] = useTransition();
@@ -31,7 +35,7 @@ export function BusinessSettingsForm({
   function submit(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
-      const result = await updateBusinessAction(form);
+      const result = await updateBusinessAction({ ...business, skills });
       if (!result.success) return toast.show(result.error, "error");
       toast.show("Activité mise à jour.", "success");
     });
@@ -50,37 +54,21 @@ export function BusinessSettingsForm({
   return (
     <div className="flex flex-col gap-6">
       <form onSubmit={submit} className="flex flex-col gap-4">
-        <Field label="Nom de l'activité">
-          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        </Field>
-        <Field label="Catégorie">
-          <Select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-            {BUSINESS_CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Site web" hint="Optionnel">
-          <Input
-            value={form.website}
-            onChange={(e) => setForm({ ...form, website: e.target.value })}
-            placeholder="https://"
-          />
-        </Field>
+        <BusinessFields values={business} onChange={setBusiness} idPrefix="main-business" />
         <Field
           label="Compétences"
+          htmlFor="main-business-skills"
           hint="Séparées par des virgules. Elles servent à te proposer les opportunités qui te correspondent."
         >
           <Input
-            value={form.skills}
-            onChange={(e) => setForm({ ...form, skills: e.target.value })}
+            id="main-business-skills"
+            value={skills}
+            onChange={(e) => setSkills(e.target.value)}
             placeholder="Growth marketing, React, Vente B2B..."
           />
         </Field>
         <Button type="submit" disabled={pending} className="self-start">
-          Enregistrer
+          {pending ? "Enregistrement..." : "Enregistrer"}
         </Button>
       </form>
 

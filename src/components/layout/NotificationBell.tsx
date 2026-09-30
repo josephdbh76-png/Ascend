@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles, UserPlus, MessageCircle, Compass, FileCheck, Gift, RotateCcw, Crown } from "lucide-react";
+import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles, UserPlus, MessageCircle, Compass, FileCheck, Gift, RotateCcw, Crown, GraduationCap } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
 import { markAllNotificationsReadAction } from "@/app/app/(shell)/actions";
 import type { NotificationType } from "@/types/database.types";
@@ -31,6 +31,7 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   referral_rewarded: Gift,
   payment_refunded: RotateCcw,
   season_reward: Crown,
+  training_review_completed: GraduationCap,
 };
 
 function notificationHref(n: NotificationItem): string | null {
@@ -45,6 +46,18 @@ function notificationHref(n: NotificationItem): string | null {
   }
   if (n.type === "new_application" || n.type === "application_status_changed") {
     return "/app/opportunities";
+  }
+  if (n.type === "milestone_reached" && (n.metadata?.challenge_id || n.metadata?.challenge_ids)) {
+    return "/app/challenges";
+  }
+  if (n.type === "achievement_unlocked") {
+    return n.metadata?.title_id || n.metadata?.title_ids ? "/app/titles" : "/app/achievements";
+  }
+  if (n.type === "training_review_completed") {
+    return "/app/settings#formations";
+  }
+  if (n.type === "season_reward") {
+    return "/app/challenges";
   }
   return null;
 }

@@ -1,14 +1,20 @@
 import { Trophy } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
+import { ShareCardButton } from "@/components/achievements/ShareCardButton";
 
 export function TrophyCard({
+  id,
   name,
   description,
   earnedAt,
+  shareUsername,
 }: {
+  id: string;
   name: string;
   description: string;
   earnedAt: string;
+  /** Owner's username: shows the share button. */
+  shareUsername?: string;
 }) {
   return (
     <div className="flex flex-col items-center gap-3 rounded-lg border border-gold/30 bg-card p-6 text-center">
@@ -18,6 +24,7 @@ export function TrophyCard({
       <h3 className="text-sm font-semibold text-text-primary">{name}</h3>
       <p className="text-xs text-text-secondary">{description}</p>
       <p className="text-[11px] text-text-muted">Débloqué {timeAgo(earnedAt)}</p>
+      {shareUsername && <ShareCardButton target={{ kind: "trophy", username: shareUsername, id }} itemName={name} />}
     </div>
   );
 }

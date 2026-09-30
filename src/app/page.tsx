@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { Footer } from "@/components/layout/Footer";
 import { LandingStructuredData } from "@/components/landing/LandingStructuredData";
@@ -16,6 +17,8 @@ import { Pricing } from "@/components/landing/Pricing";
 import { FAQ } from "@/components/landing/FAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { getFoundingSpotsLeft } from "@/services/founding.service";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default async function LandingPage() {
   const foundingSpotsLeft = await getFoundingSpotsLeft();

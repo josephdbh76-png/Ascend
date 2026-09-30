@@ -75,8 +75,30 @@ export interface CreateBannerInput {
   displayOrder?: number;
 }
 
+const MAX_BUTTONS = 3;
+
+/**
+ * A code button only carries the code (its label is never shown), a link
+ * needs both a label and a destination: an ASCEND path or an http(s) URL.
+ */
+function cleanButtons(buttons: BannerButton[] | undefined): BannerButton[] {
+  return (buttons ?? [])
+    .map((b): BannerButton | null => {
+      const value = b.value.trim();
+      if (!value) return null;
+      if (b.type === "copy_code") return { type: "copy_code", label: "", value: value.toUpperCase().slice(0, 40) };
+      const label = b.label.trim();
+      if (!label) return null;
+      const isPath = value.startsWith("/") && !value.startsWith("//");
+      if (!isPath && !/^https?:\/\//i.test(value)) return null;
+      return { type: "link", label: label.slice(0, 40), value };
+    })
+    .filter((b): b is BannerButton => b !== null)
+    .slice(0, MAX_BUTTONS);
+}
+
 export async function createBanner(input: CreateBannerInput): Promise<DashboardBannerRow> {
-  const buttons = (input.buttons ?? []).filter((b) => b.label.trim() && b.value.trim());
+  const buttons = cleanButtons(input.buttons);
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("dashboard_banners")
@@ -94,7 +116,7 @@ export async function createBanner(input: CreateBannerInput): Promise<DashboardB
 }
 
 export async function updateBanner(bannerId: string, input: CreateBannerInput): Promise<DashboardBannerRow> {
-  const buttons = (input.buttons ?? []).filter((b) => b.label.trim() && b.value.trim());
+  const buttons = cleanButtons(input.buttons);
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("dashboard_banners")

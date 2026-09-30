@@ -25,7 +25,6 @@ import {
   type InfluencerRow,
   type InfluencerCommissionRow,
 } from "@/services/influencer.service";
-import { createDeal, setDealActive, deleteDeal, type DealRow, type CreateDealInput } from "@/services/deal.service";
 import {
   createBanner,
   updateBanner,
@@ -37,7 +36,31 @@ import {
 import { setEmailTypeEnabledPlatformWide } from "@/services/notification.service";
 import type { CampaignAudience, EmailTemplateRow } from "@/lib/emailCampaignDisplay";
 import type { ActionResult } from "@/app/(auth)/actions";
-import type { SubscriptionTier } from "@/types/database.types";
+import type { SubscriptionTier, PhysicalRewardStatus } from "@/types/database.types";
+import { deleteMemberAccount } from "@/services/account.service";
+import { createMetricsToken, revokeMetricsTokens } from "@/services/metrics.service";
+import {
+  saveSeason,
+  activateSeason,
+  saveChallenge,
+  deleteChallenge,
+  addSeasonReward,
+  deleteSeasonReward,
+  closeSeasonAndDistribute,
+  setPhysicalRewardStatus,
+  type SeasonInput,
+  type ChallengeInput,
+  type RewardInput,
+} from "@/services/season.service";
+import { createTitle, createTrophy, createAchievement, grantRewardToMember } from "@/services/catalog.service";
+import {
+  reviewTraining,
+  setTrainingPinned,
+  adminSetTrainingStatus,
+  adminDeleteTraining,
+  adminSaveTraining,
+} from "@/services/training.service";
+import type { TrainingInput } from "@/lib/validations";
 
 const TIERS: SubscriptionTier[] = ["free", "pro", "elite"];
 
@@ -296,46 +319,6 @@ export async function markCommissionPaidAction(commissionId: string): Promise<Ac
   }
 }
 
-export async function createDealAction(input: CreateDealInput): Promise<ActionResult<DealRow>> {
-  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
-  if (!input.title.trim() || !input.description.trim() || !input.influencerName.trim() || !input.externalUrl.trim()) {
-    return { success: false, error: "Tous les champs sont obligatoires." };
-  }
-
-  try {
-    const deal = await createDeal(input);
-    revalidatePath("/app/admin", "layout");
-    revalidatePath("/app/network");
-    return { success: true, data: deal };
-  } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
-  }
-}
-
-export async function setDealActiveAction(dealId: string, isActive: boolean): Promise<ActionResult> {
-  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
-  try {
-    await setDealActive(dealId, isActive);
-    revalidatePath("/app/admin", "layout");
-    revalidatePath("/app/network");
-    return { success: true, data: undefined };
-  } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
-  }
-}
-
-export async function deleteDealAction(dealId: string): Promise<ActionResult> {
-  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
-  try {
-    await deleteDeal(dealId);
-    revalidatePath("/app/admin", "layout");
-    revalidatePath("/app/network");
-    return { success: true, data: undefined };
-  } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
-  }
-}
-
 export async function setEmailTypeEnabledAction(emailKey: string, enabled: boolean): Promise<ActionResult> {
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   try {
@@ -405,7 +388,7 @@ export async function deleteBannerAction(bannerId: string): Promise<ActionResult
 const MAX_ADMIN_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_ADMIN_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
-/** Shared upload used by both deal cover images and dashboard banners. */
+/** Shared upload used by training covers and dashboard banners. */
 export async function uploadAdminImageAction(formData: FormData): Promise<ActionResult<{ url: string }>> {
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
 
@@ -424,4 +407,191 @@ export async function uploadAdminImageAction(formData: FormData): Promise<Action
 
   const { data } = admin.storage.from("admin-media").getPublicUrl(path);
   return { success: true, data: { url: data.publicUrl } };
+}
+
+// ---------------------------------------------------------------- members
+
+export async function adminDeleteMemberAction(targetUserId: string, confirmUsername: string): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user?.id === targetUserId) return { success: false, error: "Supprime ton propre compte depuis tes Réglages." };
+
+  const admin = createAdminClient();
+  const { data: target } = await admin.from("profiles").select("username").eq("id", targetUserId).maybeSingle();
+  if (!target) return { success: false, error: "Membre introuvable." };
+  if (target.username !== confirmUsername.trim().replace(/^@/, "")) {
+    return { success: false, error: "Le nom d'utilisateur saisi ne correspond pas." };
+  }
+
+  try {
+    await deleteMemberAccount(targetUserId);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+  revalidatePath("/app/admin", "layout");
+  return { success: true, data: undefined };
+}
+
+// ---------------------------------------------------------------- metrics links
+
+export async function createMetricsLinkAction(): Promise<ActionResult<{ token: string }>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  try {
+    return { success: true, data: { token: await createMetricsToken(user!.id) } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function revokeMetricsLinksAction(): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    await revokeMetricsTokens();
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+  revalidatePath("/app/admin", "layout");
+  return { success: true, data: undefined };
+}
+
+// ---------------------------------------------------------------- seasons
+
+async function adminRun(fn: () => Promise<unknown>, paths: string[] = []): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    await fn();
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+  revalidatePath("/app/admin", "layout");
+  for (const p of paths) revalidatePath(p);
+  return { success: true, data: undefined };
+}
+
+export async function saveSeasonAction(input: SeasonInput): Promise<ActionResult> {
+  if (!input.name.trim() || !input.label.trim()) return { success: false, error: "Nom et période sont obligatoires." };
+  if (new Date(input.endsAt) <= new Date(input.startsAt)) return { success: false, error: "La fin doit être après le début." };
+  return adminRun(() => saveSeason(input), ["/app/challenges"]);
+}
+
+export async function activateSeasonAction(seasonId: string): Promise<ActionResult> {
+  return adminRun(() => activateSeason(seasonId), ["/app/challenges", "/app/dashboard"]);
+}
+
+export async function saveChallengeAction(input: ChallengeInput): Promise<ActionResult> {
+  if (!input.title.trim() || !input.description.trim()) return { success: false, error: "Titre et description sont obligatoires." };
+  if (!(input.points >= 0) || !(input.target >= 0)) return { success: false, error: "Valeurs invalides." };
+  return adminRun(() => saveChallenge(input), ["/app/challenges"]);
+}
+
+export async function deleteChallengeAction(challengeId: string): Promise<ActionResult> {
+  return adminRun(() => deleteChallenge(challengeId), ["/app/challenges"]);
+}
+
+export async function addSeasonRewardAction(input: RewardInput): Promise<ActionResult> {
+  if (input.rankFrom < 1 || input.rankTo < input.rankFrom) return { success: false, error: "Plage de rangs invalide." };
+  if (!input.label.trim()) return { success: false, error: "Décris la récompense." };
+  if (input.kind === "title" && !input.titleId) return { success: false, error: "Choisis un titre." };
+  if (input.kind === "trophy" && !input.trophyId) return { success: false, error: "Choisis un trophée." };
+  return adminRun(() => addSeasonReward(input), ["/app/challenges"]);
+}
+
+export async function deleteSeasonRewardAction(rewardId: string): Promise<ActionResult> {
+  return adminRun(() => deleteSeasonReward(rewardId), ["/app/challenges"]);
+}
+
+export async function closeSeasonAction(seasonId: string): Promise<ActionResult<{ winners: number }>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    const result = await closeSeasonAndDistribute(seasonId);
+    revalidatePath("/app/admin", "layout");
+    revalidatePath("/app/challenges");
+    return { success: true, data: result };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function setPhysicalRewardStatusAction(
+  seasonId: string,
+  userId: string,
+  status: PhysicalRewardStatus,
+): Promise<ActionResult> {
+  return adminRun(() => setPhysicalRewardStatus(seasonId, userId, status));
+}
+
+// ---------------------------------------------------------------- catalog
+
+export async function createTitleAction(input: Parameters<typeof createTitle>[0]): Promise<ActionResult> {
+  if (!input.name.trim() || !input.description.trim()) return { success: false, error: "Nom et description sont obligatoires." };
+  return adminRun(() => createTitle(input), ["/app/titles"]);
+}
+
+export async function createTrophyAction(input: Parameters<typeof createTrophy>[0]): Promise<ActionResult> {
+  if (!input.name.trim() || !input.description.trim()) return { success: false, error: "Nom et description sont obligatoires." };
+  return adminRun(() => createTrophy(input));
+}
+
+export async function createAchievementAction(input: Parameters<typeof createAchievement>[0]): Promise<ActionResult> {
+  if (!input.name.trim() || !input.description.trim()) return { success: false, error: "Nom et description sont obligatoires." };
+  return adminRun(() => createAchievement(input), ["/app/achievements"]);
+}
+
+export async function grantRewardAction(input: Parameters<typeof grantRewardToMember>[0]): Promise<ActionResult> {
+  if (!input.username.trim() || !input.id) return { success: false, error: "Choisis un membre et une récompense." };
+  return adminRun(() => grantRewardToMember(input));
+}
+
+// ---------------------------------------------------------------- trainings
+
+function revalidateTrainings() {
+  revalidatePath("/app/admin", "layout");
+  revalidatePath("/formations", "layout");
+  revalidatePath("/app/network");
+}
+
+export async function reviewTrainingAction(id: string, approve: boolean, reason?: string): Promise<ActionResult> {
+  return adminRun(async () => {
+    await reviewTraining(id, approve, reason);
+    revalidateTrainings();
+  });
+}
+
+export async function setTrainingPinnedAction(id: string, pinned: boolean): Promise<ActionResult> {
+  return adminRun(async () => {
+    await setTrainingPinned(id, pinned);
+    revalidateTrainings();
+  });
+}
+
+export async function adminSetTrainingStatusAction(id: string, status: "published" | "archived"): Promise<ActionResult> {
+  return adminRun(async () => {
+    await adminSetTrainingStatus(id, status);
+    revalidateTrainings();
+  });
+}
+
+export async function adminDeleteTrainingAction(id: string): Promise<ActionResult> {
+  return adminRun(async () => {
+    await adminDeleteTraining(id);
+    revalidateTrainings();
+  });
+}
+
+export async function adminSaveTrainingAction(
+  input: TrainingInput & { ownerUsername?: string; creatorName?: string },
+  id?: string,
+): Promise<ActionResult<{ id: string }>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  const result = await adminSaveTraining(input, id);
+  if (!result.ok) return { success: false, error: result.error };
+  revalidateTrainings();
+  return { success: true, data: { id: result.id } };
 }

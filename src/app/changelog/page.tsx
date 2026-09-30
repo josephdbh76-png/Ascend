@@ -7,6 +7,7 @@ import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { CHANGELOG, ROADMAP } from "@/lib/changelog";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/changelog" },
   title: "Nouveautés",
   description: "Ce qui vient d'arriver sur ASCEND, et ce qui s'en vient.",
 };

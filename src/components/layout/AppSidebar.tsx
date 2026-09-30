@@ -11,7 +11,7 @@ const NAV = [
   { href: "/app/dashboard", label: "Vue d'ensemble", icon: LayoutGrid },
   { href: "/app/leaderboard", label: "Classement", icon: Trophy },
   { href: "/app/analytics", label: "Analyses", icon: LineChart },
-  { href: "/app/challenges", label: "Défis", icon: Flag },
+  { href: "/app/challenges", label: "Saison", icon: Flag },
   { href: "/app/titles", label: "Titres", icon: Gem },
   { href: "/app/network", label: "Réseau", icon: Users },
   { href: "/app/messages", label: "Messages", icon: MessageCircle },
@@ -52,17 +52,21 @@ export function AppSidebar({
         <Link href="/app/dashboard" className="text-base font-semibold tracking-tight text-text-primary">
           ASCEND
         </Link>
-        <NotificationBell initial={notifications} unreadCount={unreadCount} align="left" />
+        <span data-tour="notifications">
+          <NotificationBell initial={notifications} unreadCount={unreadCount} align="left" />
+        </span>
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-3 py-2">
         {nav.map((item) => {
-          const active = pathname.startsWith(item.href);
+          const active =
+            pathname.startsWith(item.href) || (item.href === "/app/network" && pathname.startsWith("/formations"));
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
+              data-tour={`nav-${item.href.split("/").pop()}`}
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
@@ -84,6 +88,7 @@ export function AppSidebar({
       <div className="border-t border-border px-3 py-3">
         <Link
           href="/app/settings"
+          data-tour="nav-settings"
           aria-current={pathname.startsWith("/app/settings") ? "page" : undefined}
           className={cn(
             "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
@@ -96,7 +101,7 @@ export function AppSidebar({
           Réglages
         </Link>
         <div className="mt-1 flex items-center gap-2 rounded-md px-3 py-2">
-          <Link href={`/profile/${username}`} className="flex min-w-0 flex-1 items-center gap-2.5">
+          <Link href={`/profile/${username}`} data-tour="nav-profile" className="flex min-w-0 flex-1 items-center gap-2.5">
             <Avatar avatarUrl={avatarUrl} firstName={firstName} username={username} />
             <span className="truncate text-sm font-medium text-text-secondary hover:text-text-primary">
               {firstName ?? username}

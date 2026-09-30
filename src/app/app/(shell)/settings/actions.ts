@@ -1,9 +1,22 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { profileUpdateSchema, privacySettingsSchema } from "@/lib/validations";
+import {
+  profileUpdateSchema,
+  privacySettingsSchema,
+  businessSchema,
+  type BusinessInput,
+  type TrainingInput,
+} from "@/lib/validations";
+import {
+  saveOwnerTraining,
+  setOwnerTrainingArchived,
+  deleteOwnerTraining,
+  uploadTrainingCover,
+} from "@/services/training.service";
+import { normalizeWebsite } from "@/lib/business";
 import { toFriendlyAuthError } from "@/lib/errors";
 import { getSubscription, hasProAccess } from "@/services/subscription.service";
 import { verifyAndSaveSiret } from "@/services/siret.service";
@@ -21,10 +34,11 @@ import {
 } from "@/services/bank.service";
 import type { Aspsp } from "@/lib/enableBanking";
 import { submitRevenueDeclaration } from "@/services/revenue.service";
+import { deleteMemberAccount } from "@/services/account.service";
 import { evaluateChallengeProgress } from "@/services/challenge.service";
-import { ACCENT_THEMES } from "@/lib/constants";
+import { ACCENT_THEMES, MAX_EXTRA_BUSINESSES } from "@/lib/constants";
 import type { ActionResult } from "@/app/(auth)/actions";
-import type { AccentTheme } from "@/types/database.types";
+import type { AccentTheme, TrainingStatus } from "@/types/database.types";
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -90,25 +104,46 @@ export async function updateProfileAction(input: {
   return { success: true, data: undefined };
 }
 
-export async function updateBusinessAction(input: {
+type BusinessWrite = {
   name: string;
   category: string;
-  website?: string;
-  skills?: string;
-}): Promise<ActionResult> {
+  custom_category: string | null;
+  description: string | null;
+  website: string | null;
+};
+
+function parseBusiness(input: BusinessInput): { ok: true; row: BusinessWrite } | { ok: false; error: string } {
+  const parsed = businessSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Vérifie les informations de ton activité." };
+  }
+  const website = normalizeWebsite(parsed.data.website);
+  if (parsed.data.website && !website) {
+    return { ok: false, error: "L'adresse du site n'est pas valide. Exemple : monsite.fr" };
+  }
+  return {
+    ok: true,
+    row: {
+      name: parsed.data.name,
+      category: parsed.data.category,
+      custom_category: parsed.data.customCategory || null,
+      description: parsed.data.description || null,
+      website,
+    },
+  };
+}
+
+export async function updateBusinessAction(input: BusinessInput & { skills?: string }): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
-  const { error } = await supabase.from("businesses").upsert(
-    {
-      user_id: userData.user.id,
-      name: input.name,
-      category: input.category,
-      website: input.website || null,
-    },
-    { onConflict: "user_id" },
-  );
+  const parsed = parseBusiness(input);
+  if (!parsed.ok) return { success: false, error: parsed.error };
+
+  const { error } = await supabase
+    .from("businesses")
+    .upsert({ user_id: userData.user.id, ...parsed.row }, { onConflict: "user_id" });
 
   if (error) return { success: false, error: toFriendlyAuthError(error.message) };
 
@@ -121,6 +156,60 @@ export async function updateBusinessAction(input: {
   const { error: skillsError } = await supabase.from("profiles").update({ skills }).eq("id", userData.user.id);
   if (skillsError) return { success: false, error: toFriendlyAuthError(skillsError.message) };
 
+  return { success: true, data: undefined };
+}
+
+export async function saveExtraBusinessAction(
+  input: BusinessInput & { id?: string },
+): Promise<ActionResult<{ id: string }>> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+  const userId = userData.user.id;
+
+  const parsed = parseBusiness(input);
+  if (!parsed.ok) return { success: false, error: parsed.error };
+
+  if (input.id) {
+    const { data, error } = await supabase
+      .from("extra_businesses")
+      .update(parsed.row)
+      .eq("id", input.id)
+      .eq("user_id", userId)
+      .select("id")
+      .maybeSingle();
+    if (error) return { success: false, error: "Impossible d'enregistrer cette activité. Réessaie." };
+    if (!data) return { success: false, error: "Cette activité n'existe plus. Recharge la page." };
+    revalidatePath("/app/settings");
+    return { success: true, data: { id: data.id } };
+  }
+
+  const { count } = await supabase
+    .from("extra_businesses")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if ((count ?? 0) >= MAX_EXTRA_BUSINESSES) {
+    return { success: false, error: `Tu peux présenter jusqu'à ${MAX_EXTRA_BUSINESSES} autres activités.` };
+  }
+
+  const { data, error } = await supabase
+    .from("extra_businesses")
+    .insert({ user_id: userId, position: count ?? 0, ...parsed.row })
+    .select("id")
+    .single();
+  if (error || !data) return { success: false, error: "Impossible d'ajouter cette activité. Réessaie." };
+  revalidatePath("/app/settings");
+  return { success: true, data: { id: data.id } };
+}
+
+export async function deleteExtraBusinessAction(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  const { error } = await supabase.from("extra_businesses").delete().eq("id", id).eq("user_id", userData.user.id);
+  if (error) return { success: false, error: "Impossible de retirer cette activité. Réessaie." };
+  revalidatePath("/app/settings");
   return { success: true, data: undefined };
 }
 
@@ -486,35 +575,66 @@ export async function deleteAccountAction(): Promise<ActionResult> {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
-  const admin = createAdminClient();
-
-  // Stop billing before the account disappears: otherwise Stripe keeps
-  // charging a member who no longer exists on ASCEND.
-  const { data: sub } = await admin
-    .from("subscriptions")
-    .select("stripe_subscription_id")
-    .eq("user_id", userData.user.id)
-    .maybeSingle();
-  if (sub?.stripe_subscription_id) {
-    try {
-      const { getStripe } = await import("@/lib/stripe");
-      const stripe = getStripe();
-      const live = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
-      if (live.status !== "canceled" && live.status !== "incomplete_expired") {
-        await stripe.subscriptions.cancel(sub.stripe_subscription_id);
-      }
-    } catch (err) {
-      console.error("Subscription cancel on account deletion failed:", err);
-      return {
-        success: false,
-        error: "Impossible de résilier ton abonnement pour le moment. Réessaie dans quelques minutes, ou résilie-le d'abord depuis « Gérer mon abonnement ».",
-      };
-    }
+  try {
+    await deleteMemberAccount(userData.user.id);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Une erreur est survenue. Réessaie." };
   }
-
-  const { error } = await admin.auth.admin.deleteUser(userData.user.id);
-  if (error) return { success: false, error: toFriendlyAuthError(error.message) };
 
   await supabase.auth.signOut();
   redirect("/");
+}
+
+// ---------------------------------------------------------------- trainings
+
+export async function saveTrainingAction(
+  input: TrainingInput,
+  id?: string,
+): Promise<ActionResult<{ id: string; status: TrainingStatus }>> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  const result = await saveOwnerTraining(userData.user.id, input, id);
+  if (!result.ok) return { success: false, error: result.error };
+  revalidatePath("/app/settings");
+  revalidatePath("/formations");
+  return { success: true, data: { id: result.id, status: result.status } };
+}
+
+export async function setTrainingArchivedAction(
+  id: string,
+  archived: boolean,
+): Promise<ActionResult<{ status: TrainingStatus }>> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  const result = await setOwnerTrainingArchived(userData.user.id, id, archived);
+  if (!result.ok) return { success: false, error: result.error };
+  revalidatePath("/formations");
+  return { success: true, data: { status: result.status } };
+}
+
+export async function deleteTrainingAction(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  const result = await deleteOwnerTraining(userData.user.id, id);
+  if (!result.ok) return { success: false, error: result.error };
+  revalidatePath("/formations");
+  return { success: true, data: undefined };
+}
+
+export async function uploadTrainingCoverAction(formData: FormData): Promise<ActionResult<{ url: string }>> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { success: false, error: "Aucune image fournie." };
+  const result = await uploadTrainingCover(userData.user.id, file);
+  if (!result.ok) return { success: false, error: result.error };
+  return { success: true, data: { url: result.url } };
 }

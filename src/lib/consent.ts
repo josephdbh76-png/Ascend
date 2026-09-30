@@ -1,6 +1,13 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
+
 const STORAGE_KEY = "ascend_cookie_consent";
+const CONSENT_EVENT = "ascend:consent";
+
+// Set when the visitor answers, even if storage is blocked and the choice
+// cannot be saved: the rest of the session still treats it as answered.
+let answeredThisSession = false;
 
 export type ConsentChoice = "accepted" | "rejected";
 
@@ -16,11 +23,27 @@ export function getStoredConsent(): ConsentChoice | null {
 }
 
 export function storeConsent(choice: ConsentChoice) {
+  answeredThisSession = true;
   try {
     localStorage.setItem(STORAGE_KEY, choice);
   } catch {
     // Ignore — the banner still closes, it just may reappear next visit.
   }
+  window.dispatchEvent(new Event(CONSENT_EVENT));
+}
+
+function subscribeConsent(callback: () => void) {
+  window.addEventListener(CONSENT_EVENT, callback);
+  return () => window.removeEventListener(CONSENT_EVENT, callback);
+}
+
+/** True once the cookie banner has been answered (false on the server). */
+export function useConsentAnswered(): boolean {
+  return useSyncExternalStore(
+    subscribeConsent,
+    () => answeredThisSession || getStoredConsent() !== null,
+    () => false,
+  );
 }
 
 export function clearConsent() {

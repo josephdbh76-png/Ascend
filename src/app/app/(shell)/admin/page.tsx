@@ -1,178 +1,149 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { isCurrentUserAdmin, listUsersForAdmin } from "@/services/admin.service";
-import { getPendingRevenueReviews } from "@/services/revenue.service";
-import { getCampaignHistory, listEmailTemplates } from "@/services/email-campaign.service";
-import { listTransactionalEmailPreviews } from "@/lib/transactionalEmailPreviews";
-import { listInfluencers } from "@/services/influencer.service";
-import { listAllDealsForAdmin } from "@/services/deal.service";
-import { listAllBannersForAdmin } from "@/services/banner.service";
-import { listEmailToggleGroups } from "@/services/notification.service";
-import { createClient } from "@/lib/supabase/server";
-import { AdminUsersTable } from "./AdminUsersTable";
-import { TitleStripeSyncButton } from "./TitleStripeSyncButton";
-import { AnnualPriceSyncPanel } from "./AnnualPriceSyncPanel";
-import { ElitePricingPanel } from "./ElitePricingPanel";
-import { RevenueReviewQueue } from "./RevenueReviewQueue";
-import { EmailCampaignPanel } from "./EmailCampaignPanel";
-import { TransactionalEmailPreviews } from "./TransactionalEmailPreviews";
-import { InfluencerProgramPanel } from "./InfluencerProgramPanel";
-import { DealsPanel } from "./DealsPanel";
-import { BannersPanel } from "./BannersPanel";
-import { EmailToggleGroupsPanel } from "./EmailToggleGroupsPanel";
-import { SurveyPanel } from "./SurveyPanel";
-import { listSurveyResponses, summarizeSurvey, topReferrers } from "@/services/survey.service";
-import { Card } from "@/components/ui/Card";
+import Link from "next/link";
+import { AlertTriangle, ArrowRight } from "lucide-react";
+import { computeBusinessMetrics, getMetricsTokenStatus } from "@/services/metrics.service";
+import { listSurveyResponses, summarizeSurvey } from "@/services/survey.service";
+import { getActiveSeason, getSeasonStandings } from "@/services/season.service";
+import { StatCard } from "@/components/ui/StatCard";
+import { formatCurrency, getAppUrl } from "@/lib/utils";
+import { AdminSection } from "./AdminSection";
+import { ExcelLinkPanel } from "./ExcelLinkPanel";
 
 export const metadata: Metadata = { title: "Administration" };
 
-export default async function AdminPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  if (!(await isCurrentUserAdmin())) redirect("/app/dashboard");
+function pct(value: number | null) {
+  return value == null ? "—" : `${(value * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`;
+}
 
-  const [users, pendingRevenueReviews, campaignHistory, emailTemplates, influencers, deals, banners, emailToggleGroups, surveyResponses] =
-    await Promise.all([
-      listUsersForAdmin(),
-      getPendingRevenueReviews(),
-      getCampaignHistory(),
-      listEmailTemplates(),
-      listInfluencers(),
-      listAllDealsForAdmin(),
-      listAllBannersForAdmin(),
-      listEmailToggleGroups(),
-      listSurveyResponses(),
-    ]);
+export default async function AdminOverviewPage() {
+  const [metrics, tokenStatus, survey, season] = await Promise.all([
+    computeBusinessMetrics(),
+    getMetricsTokenStatus().catch(() => ({ active: 0, lastUsedAt: null })),
+    listSurveyResponses(),
+    getActiveSeason(),
+  ]);
+  const standings = season ? await getSeasonStandings(season.id, 3) : [];
+  const discovery = summarizeSurvey(survey)[0];
+  const { members, subscriptions: subs, rates } = metrics;
+  const maxSignups = Math.max(1, ...metrics.monthly.map((m) => m.signups));
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Administration</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Gère les formules d&apos;abonnement et les droits d&apos;administration de tous les membres.
+      {metrics.stripeError && (
+        <p className="flex items-center gap-2 rounded-md border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm text-error">
+          <AlertTriangle className="h-4 w-4 shrink-0" /> Stripe n&apos;a pas répondu : les chiffres d&apos;abonnement sont
+          incomplets ({metrics.stripeError}).
         </p>
-      </div>
-      <Card className="flex flex-col gap-3 p-5" elevated>
-        <div>
-          <h2 className="text-sm font-semibold text-text-primary">Questionnaire d&apos;inscription</h2>
-          <p className="text-xs text-text-secondary">
-            Comment les membres nous découvrent, où ils encaissent, leur niveau et ce qu&apos;ils viennent chercher.
-          </p>
-        </div>
-        <SurveyPanel
-          total={surveyResponses.length}
-          tallies={summarizeSurvey(surveyResponses)}
-          referrers={topReferrers(surveyResponses)}
-        />
-      </Card>
+      )}
 
-      <Card className="flex flex-col items-start gap-3 p-5 sm:flex-row sm:items-center sm:justify-between" elevated>
-        <div>
-          <h2 className="text-sm font-semibold text-text-primary">Titres payants</h2>
-          <p className="text-xs text-text-secondary">
-            Crée le produit et le prix Stripe pour chaque titre à vendre qui n&apos;en a pas encore.
-          </p>
-        </div>
-        <TitleStripeSyncButton />
-      </Card>
-
-      <Card className="flex flex-col gap-3 p-5" elevated>
-        <div>
-          <h2 className="text-sm font-semibold text-text-primary">Tarifs annuels</h2>
-          <p className="text-xs text-text-secondary">
-            Crée les prix Stripe annuels (Pro, Elite) sur les mêmes produits que les prix mensuels.
-          </p>
-        </div>
-        <AnnualPriceSyncPanel />
-      </Card>
-
-      <Card className="flex flex-col gap-3 p-5" elevated>
-        <div>
-          <h2 className="text-sm font-semibold text-text-primary">Tarif Elite</h2>
-          <p className="text-xs text-text-secondary">
-            Crée les nouveaux prix Stripe (39€/mois, 351€/an) sur le produit Elite existant.
-          </p>
-        </div>
-        <ElitePricingPanel />
-      </Card>
-
-      <Card className="flex flex-col gap-3 p-5" elevated>
-        <div>
-          <h2 className="text-sm font-semibold text-text-primary">Campagne email</h2>
-          <p className="text-xs text-text-secondary">
-            Envoie un email à un segment de membres — un lien de désinscription est ajouté automatiquement, seuls les membres ayant donné leur consentement le reçoivent.
-          </p>
-        </div>
-        <EmailCampaignPanel history={campaignHistory} templates={emailTemplates} />
-      </Card>
-
-      <Card className="flex flex-col gap-3 p-5" elevated>
-        <div>
-          <h2 className="text-sm font-semibold text-text-primary">Programme d&apos;influenceurs</h2>
-          <p className="text-xs text-text-secondary">
-            Crée un code de réduction pour un influenceur — son audience paie -10% tant qu&apos;elle reste
-            abonnée, et tu suis ici la commission qu&apos;il te reste à lui verser.
-          </p>
-        </div>
-        <InfluencerProgramPanel influencers={influencers} />
-      </Card>
-
-      <Card className="flex flex-col gap-3 p-5" elevated>
-        <div>
-          <h2 className="text-sm font-semibold text-text-primary">Bons plans</h2>
-          <p className="text-xs text-text-secondary">
-            Offres d&apos;influenceurs (formations, etc.) visibles uniquement par les membres Elite dans le Réseau.
-          </p>
-        </div>
-        <DealsPanel deals={deals} />
-      </Card>
-
-      <Card className="flex flex-col gap-3 p-5" elevated>
-        <div>
-          <h2 className="text-sm font-semibold text-text-primary">Bannière du tableau de bord</h2>
-          <p className="text-xs text-text-secondary">
-            Actualités ASCEND, bons plans de la semaine — affichées en haut du tableau de bord de tous les
-            membres.
-          </p>
-        </div>
-        <BannersPanel banners={banners} />
-      </Card>
-
-      <Card className="flex flex-col gap-1 p-5" elevated>
-        <div className="mb-2">
-          <h2 className="text-sm font-semibold text-text-primary">Emails automatiques</h2>
-          <p className="text-xs text-text-secondary">
-            Ce que reçoit un membre dès qu&apos;un évènement se produit sur son compte — pas un historique, un aperçu de leur contenu actuel.
-          </p>
-        </div>
-        <TransactionalEmailPreviews items={listTransactionalEmailPreviews()} />
-      </Card>
-
-      <Card className="flex flex-col gap-1 p-5" elevated>
-        <div className="mb-2">
-          <h2 className="text-sm font-semibold text-text-primary">Emails automatiques — activation</h2>
-          <p className="text-xs text-text-secondary">
-            Coupe l&apos;envoi d&apos;un type d&apos;email pour tout le monde, indépendamment des préférences
-            personnelles de chaque membre.
-          </p>
-        </div>
-        <EmailToggleGroupsPanel groups={emailToggleGroups} />
-      </Card>
-
-      <div>
-        <h2 className="mb-3 text-sm font-semibold text-text-primary">
-          Revenus déclarés en attente de vérification
-          {pendingRevenueReviews.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-text-muted">({pendingRevenueReviews.length})</span>
-          )}
-        </h2>
-        <RevenueReviewQueue reviews={pendingRevenueReviews} />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard label="Inscrits" value={members.total} trend={`+${members.last7Days} cette semaine · +${members.last30Days} sur 30 jours`} />
+        <StatCard label="Membres vérifiés" value={members.verified} trend={`${pct(rates.verification)} des inscrits`} />
+        <StatCard label="Abonnés Pro" value={subs.pro} trend={`${subs.proMonthly} mensuels · ${subs.proAnnual} annuels`} />
+        <StatCard label="Abonnés Elite" value={subs.elite} trend={`${subs.eliteMonthly} mensuels · ${subs.eliteAnnual} annuels`} accent />
+        <StatCard label="Revenu mensuel récurrent" value={formatCurrency(subs.mrrCents)} trend={`${formatCurrency(subs.mrrCents * 12)} par an`} accent />
+        <StatCard label="Conversion inscrit → payant" value={pct(rates.paid)} trend={`${subs.payingCustomers} clients payants`} />
+        <StatCard label="Essais Elite en cours" value={subs.trialing} trend={subs.pastDue > 0 ? `${subs.pastDue} paiement(s) en échec` : "Aucun paiement en échec"} trendPositive={subs.pastDue === 0} />
+        <StatCard label="Résiliations (30 jours)" value={subs.canceledLast30Days} trend={`Marché : ${metrics.marketplace.sales} ventes · ${formatCurrency(metrics.marketplace.commissionCents)}`} />
       </div>
 
-      <AdminUsersTable users={users} currentUserId={user.id} />
+      <AdminSection
+        title="Connexion Excel et Google Sheets"
+        description="Ces chiffres, en direct depuis Stripe et la base, dans ton classeur. Aucune saisie à la main."
+      >
+        <ExcelLinkPanel appUrl={getAppUrl()} activeLinks={tokenStatus.active} lastUsedAt={tokenStatus.lastUsedAt} />
+      </AdminSection>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <AdminSection title="12 derniers mois" description="Inscriptions, nouveaux abonnements et résiliations.">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-text-muted">
+                  <th className="pb-2 font-medium">Mois</th>
+                  <th className="pb-2 font-medium">Inscrits</th>
+                  <th className="pb-2 text-right font-medium">Pro</th>
+                  <th className="pb-2 text-right font-medium">Elite</th>
+                  <th className="pb-2 text-right font-medium">Résil.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.monthly
+                  .slice()
+                  .reverse()
+                  .map((m) => (
+                    <tr key={m.month} className="border-t border-border">
+                      <td className="py-1.5 tabular-nums text-text-secondary">
+                        {new Date(`${m.month}-01T00:00:00Z`).toLocaleDateString("fr-FR", { month: "short", year: "numeric", timeZone: "UTC" })}
+                      </td>
+                      <td className="py-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 tabular-nums text-text-primary">{m.signups}</span>
+                          <span className="h-1.5 rounded-full bg-gold/70" style={{ width: `${(m.signups / maxSignups) * 100}%`, maxWidth: 120 }} />
+                        </div>
+                      </td>
+                      <td className="py-1.5 text-right tabular-nums text-text-primary">{m.newPro}</td>
+                      <td className="py-1.5 text-right tabular-nums text-text-primary">{m.newElite}</td>
+                      <td className="py-1.5 text-right tabular-nums text-text-secondary">{m.cancellations}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </AdminSection>
+
+        <div className="flex flex-col gap-6">
+          <AdminSection
+            title={season ? `${season.name} : podium actuel` : "Saison"}
+            action={
+              <Link href="/app/admin/saisons" className="flex items-center gap-1 text-xs font-medium text-gold hover:text-gold-light">
+                Gérer <ArrowRight className="h-3 w-3" />
+              </Link>
+            }
+          >
+            {!season ? (
+              <p className="text-xs text-text-muted">Aucune saison active.</p>
+            ) : standings.length === 0 ? (
+              <p className="text-xs text-text-muted">Personne n&apos;a encore marqué de points cette saison.</p>
+            ) : (
+              <ol className="flex flex-col gap-1.5 text-sm">
+                {standings.map((s) => (
+                  <li key={s.user_id} className="flex justify-between">
+                    <span className="text-text-secondary">
+                      <span className="mr-2 font-semibold tabular-nums text-gold">#{s.rank}</span>
+                      {s.first_name} {s.last_name} <span className="text-text-muted">@{s.username}</span>
+                    </span>
+                    <span className="tabular-nums text-text-primary">{s.points} pts</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </AdminSection>
+
+          <AdminSection
+            title="D'où viennent les inscrits"
+            description={`${survey.length} réponse${survey.length > 1 ? "s" : ""} au questionnaire.`}
+            action={
+              <Link href="/app/admin/marketing" className="flex items-center gap-1 text-xs font-medium text-gold hover:text-gold-light">
+                Détail <ArrowRight className="h-3 w-3" />
+              </Link>
+            }
+          >
+            <ul className="flex flex-col gap-1.5 text-xs">
+              {discovery.rows
+                .filter((r) => r.count > 0)
+                .slice(0, 5)
+                .map((r) => (
+                  <li key={r.label} className="flex justify-between text-text-secondary">
+                    <span>{r.label}</span>
+                    <span className="tabular-nums text-text-primary">{r.count}</span>
+                  </li>
+                ))}
+              {survey.length === 0 && <li className="text-text-muted">Aucune réponse pour l&apos;instant.</li>}
+            </ul>
+          </AdminSection>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Gem, Medal, Flame, Trophy, Hammer, Settings, Crown } from "lucide-react";
+import { Gem, Medal, Flame, Trophy, Hammer, Settings, Crown, Users, Target, Rocket, Shield, Star, Zap, Award } from "lucide-react";
 import type { TitleRarity } from "@/types/database.types";
 
 export const TITLE_ICONS: Record<string, typeof Gem> = {
@@ -9,7 +9,17 @@ export const TITLE_ICONS: Record<string, typeof Gem> = {
   hammer: Hammer,
   settings: Settings,
   crown: Crown,
+  users: Users,
+  target: Target,
+  rocket: Rocket,
+  shield: Shield,
+  star: Star,
+  zap: Zap,
+  award: Award,
 };
+
+/** Icons offered when an admin creates a title or trophy. */
+export const PICKABLE_ICONS = ["crown", "trophy", "medal", "gem", "star", "rocket", "flame", "target", "shield", "zap", "users", "hammer"];
 
 export const TITLE_RARITY_STYLES: Record<TitleRarity, string> = {
   common: "border-border-strong text-text-secondary",

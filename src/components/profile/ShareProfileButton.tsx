@@ -3,12 +3,23 @@
 import { useState } from "react";
 import { Share2, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { ShareCardModal } from "@/components/achievements/ShareCardModal";
 import { track } from "@/lib/analytics";
 
-export function ShareProfileButton({ username, isOwner = true }: { username: string; isOwner?: boolean }) {
+export function ShareProfileButton({
+  username,
+  isOwner = true,
+  globalRank,
+}: {
+  username: string;
+  isOwner?: boolean;
+  globalRank?: number | null;
+}) {
   const [copied, setCopied] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  async function share() {
+  // Visitors share the link; the preview shows the member's card.
+  async function shareLink() {
     const url = `${window.location.origin}/profile/${username}`;
     track("profile_shared", { username });
     if (navigator.share) {
@@ -24,10 +35,26 @@ export function ShareProfileButton({ username, isOwner = true }: { username: str
     setTimeout(() => setCopied(false), 2000);
   }
 
+  if (isOwner) {
+    return (
+      <>
+        <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
+          <Share2 className="h-3.5 w-3.5" /> Partager mon profil
+        </Button>
+        <ShareCardModal
+          open={open}
+          onClose={() => setOpen(false)}
+          target={{ kind: "rank", username }}
+          itemName={globalRank ? `#${globalRank}` : "Mon profil"}
+        />
+      </>
+    );
+  }
+
   return (
-    <Button variant="secondary" size="sm" onClick={share}>
+    <Button variant="secondary" size="sm" onClick={shareLink}>
       {copied ? <Check className="h-3.5 w-3.5" /> : <Share2 className="h-3.5 w-3.5" />}
-      {copied ? "Lien copié" : isOwner ? "Partager mon profil" : "Partager ce profil"}
+      {copied ? "Lien copié" : "Partager ce profil"}
     </Button>
   );
 }

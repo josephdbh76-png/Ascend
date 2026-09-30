@@ -71,6 +71,13 @@ export function transactionalEmailContent(
         ctaLabel: "Voir mes réglages",
         ctaPath: "/app/settings#parrainage",
       };
+    case "training_review_completed":
+      return {
+        subject: params.title,
+        body: `${greeting}\n\n${params.body}`,
+        ctaLabel: "Voir mes formations",
+        ctaPath: "/app/settings#formations",
+      };
     default:
       return null;
   }

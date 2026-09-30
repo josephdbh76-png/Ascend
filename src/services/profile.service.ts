@@ -2,9 +2,10 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { RESERVED_USERNAMES } from "@/lib/constants";
+import { normalizeWebsite } from "@/lib/business";
 import { getUserAchievements } from "@/services/achievement.service";
 import { getActiveTitle } from "@/services/title.service";
-import type { Profile, PublicProfile, EarnedTrophy, EarnedTitle } from "@/types";
+import type { Profile, PublicProfile, PublicBusiness, EarnedTrophy, EarnedTitle } from "@/types";
 import type { PublicProfileRow } from "@/types/database.types";
 
 // cache(): the app layout and most pages read the viewer's profile in the same request.
@@ -59,6 +60,7 @@ function mapPublicProfileRow(
   achievements: PublicProfile["achievements"],
   trophies: EarnedTrophy[],
   activeTitle: EarnedTitle | null,
+  businesses: PublicBusiness[],
 ): PublicProfile {
   return {
     userId: row.user_id,
@@ -74,6 +76,7 @@ function mapPublicProfileRow(
     memberSince: row.member_since,
     businessName: row.business_name,
     businessCategory: row.business_category,
+    businesses,
     revenueVisibility: row.revenue_visibility,
     revenueDisplayCents: row.revenue_display_cents,
     revenueRangeMinCents: row.revenue_range_min_cents,
@@ -98,10 +101,11 @@ export const getPublicProfileByUsername = cache(async (username: string): Promis
   const row = data?.[0];
   if (!row) return null;
 
-  const [achievements, activeTitle, { data: trophyRows }] = await Promise.all([
+  const [achievements, activeTitle, { data: trophyRows }, businesses] = await Promise.all([
     getUserAchievements(row.user_id),
     getActiveTitle(row.user_id),
     supabase.from("user_trophies").select("trophy_id, earned_at").eq("user_id", row.user_id),
+    getPublicBusinesses(row.user_id),
   ]);
 
   const trophyIds = (trophyRows ?? []).map((t) => t.trophy_id);
@@ -124,5 +128,37 @@ export const getPublicProfileByUsername = cache(async (username: string): Promis
       };
     });
 
-  return mapPublicProfileRow(row, achievements, trophies, activeTitle);
+  return mapPublicProfileRow(row, achievements, trophies, activeTitle, businesses);
 });
+
+type BusinessRow = {
+  name: string;
+  category: string;
+  custom_category?: string | null;
+  description?: string | null;
+  website: string | null;
+};
+
+function toPublicBusiness(b: BusinessRow): PublicBusiness {
+  return {
+    name: b.name,
+    category: b.category,
+    customCategory: b.custom_category?.trim() || null,
+    description: b.description?.trim() || null,
+    website: normalizeWebsite(b.website),
+  };
+}
+
+async function getPublicBusinesses(userId: string): Promise<PublicBusiness[]> {
+  const supabase = await createClient();
+  const [{ data: main }, { data: extras }] = await Promise.all([
+    supabase.from("businesses").select("*").eq("user_id", userId).maybeSingle(),
+    supabase
+      .from("extra_businesses")
+      .select("name, category, custom_category, description, website")
+      .eq("user_id", userId)
+      .order("position")
+      .order("created_at"),
+  ]);
+  return [...(main ? [toPublicBusiness(main)] : []), ...(extras ?? []).map(toPublicBusiness)];
+}

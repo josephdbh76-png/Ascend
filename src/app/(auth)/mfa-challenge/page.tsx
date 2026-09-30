@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MfaChallengeForm } from "./MfaChallengeForm";
 
-export const metadata: Metadata = { title: "Vérification en deux étapes" };
+export const metadata: Metadata = { title: "Vérification en deux étapes", robots: { index: false, follow: false } };
 
 export default async function MfaChallengePage() {
   const supabase = await createClient();

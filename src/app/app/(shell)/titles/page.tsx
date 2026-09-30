@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getTitleCatalog, getUserTitles, getTitleCompletionRates } from "@/services/title.service";
+import { getProfile } from "@/services/profile.service";
 import {
   getSellerAccountStatus,
   listMyTradeableTitles,
@@ -21,7 +22,7 @@ export default async function TitlesPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [catalog, owned, completionRates, sellerStatus, tradeableTitles, myListings, activeListings, recentSales] =
+  const [catalog, owned, completionRates, sellerStatus, tradeableTitles, myListings, activeListings, recentSales, profile] =
     await Promise.all([
       getTitleCatalog(),
       getUserTitles(user.id),
@@ -31,6 +32,7 @@ export default async function TitlesPage() {
       listMyListings(user.id),
       listActiveMarketplaceListings(user.id),
       listRecentSales(),
+      getProfile(user.id),
     ]);
 
   return (
@@ -45,6 +47,7 @@ export default async function TitlesPage() {
         </p>
       </div>
       <TitlesTabs
+        username={profile?.username ?? ""}
         catalog={catalog}
         owned={owned}
         completionRates={completionRates}

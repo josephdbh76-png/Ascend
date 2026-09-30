@@ -70,6 +70,13 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
         "error",
       );
     }
+    const badLink = form.buttons.find((b) => {
+      const value = b.value.trim();
+      return b.type === "link" && value && !((value.startsWith("/") && !value.startsWith("//")) || /^https?:\/\//i.test(value));
+    });
+    if (badLink) {
+      return toast.show(`Le lien « ${badLink.label || badLink.value} » doit commencer par / (page ASCEND) ou par https://`, "error");
+    }
 
     startTransition(async () => {
       const payload = {
@@ -203,7 +210,7 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-text-primary">Boutons (optionnel)</span>
-              <Button type="button" variant="secondary" size="sm" onClick={addButton}>
+              <Button type="button" variant="secondary" size="sm" onClick={addButton} disabled={form.buttons.length >= 3}>
                 <Plus className="h-3.5 w-3.5" /> Ajouter
               </Button>
             </div>
