@@ -24,6 +24,12 @@ export async function POST() {
   }
 
   const isPlatformAccount = source.external_account_id === PLATFORM_ACCOUNT_SENTINEL;
+  if (isPlatformAccount) {
+    const { data: profile } = await supabase.from("profiles").select("is_cofounder").eq("id", user.id).maybeSingle();
+    if (!profile?.is_cofounder) {
+      return NextResponse.json({ error: "Réservé aux cofondateurs d'ASCEND." }, { status: 403 });
+    }
+  }
   const result = await syncStripeRevenue(
     user.id,
     source.id,

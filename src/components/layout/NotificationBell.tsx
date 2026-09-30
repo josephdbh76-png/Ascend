@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles, UserPlus, MessageCircle, Compass, FileCheck, Gift, RotateCcw } from "lucide-react";
+import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles, UserPlus, MessageCircle, Compass, FileCheck, Gift, RotateCcw, Crown } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
 import { markAllNotificationsReadAction } from "@/app/app/(shell)/actions";
 import type { NotificationType } from "@/types/database.types";
@@ -30,6 +30,7 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   revenue_review_completed: FileCheck,
   referral_rewarded: Gift,
   payment_refunded: RotateCcw,
+  season_reward: Crown,
 };
 
 function notificationHref(n: NotificationItem): string | null {

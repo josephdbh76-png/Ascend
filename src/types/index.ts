@@ -108,10 +108,14 @@ export interface ChallengeProgress {
   description: string;
   type: ChallengeType;
   target: number;
+  points: number;
   progress: number;
   status: ChallengeStatus;
+  completedAt: string | null;
   endsAt: string;
+  seasonId: string | null;
   rewardAchievementId: string | null;
+  rewardTitleId: string | null;
 }
 
 export interface PublicProfile {

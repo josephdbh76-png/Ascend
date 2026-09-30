@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { ACHIEVEMENT_DEFINITIONS } from "@/lib/constants";
-import { createNotification } from "@/services/notification.service";
+import { grantAchievementToMember } from "@/services/progress.service";
 import type { EarnedAchievement } from "@/types";
 
 export async function getUserAchievements(userId: string): Promise<EarnedAchievement[]> {
@@ -47,42 +47,9 @@ export async function getAllAchievementCatalog() {
   return data ?? [];
 }
 
-/** Grants an achievement if not already earned. Returns true only when
- * this call is the one that newly unlocked it, so callers can notify
- * exactly once. */
-async function grantAchievement(userId: string, achievementId: string): Promise<boolean> {
-  const supabase = await createClient();
-
-  const { data: existing } = await supabase
-    .from("user_achievements")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("achievement_id", achievementId)
-    .maybeSingle();
-
-  if (existing) return false;
-
-  await supabase
-    .from("user_achievements")
-    .upsert({ user_id: userId, achievement_id: achievementId }, { onConflict: "user_id,achievement_id" });
-
-  const { data: def } = await supabase
-    .from("achievements")
-    .select("name, description")
-    .eq("id", achievementId)
-    .maybeSingle();
-
-  if (def) {
-    await createNotification({
-      userId,
-      type: "achievement_unlocked",
-      title: "Accomplissement débloqué",
-      body: `Tu viens de débloquer « ${def.name} ».`,
-      metadata: { achievement_id: achievementId },
-    });
-  }
-
-  return true;
+/** Grants an achievement if not already earned (service role). True only on the call that unlocked it. */
+function grantAchievement(userId: string, achievementId: string): Promise<boolean> {
+  return grantAchievementToMember(userId, achievementId);
 }
 
 /**

@@ -20,7 +20,7 @@ import {
   type BankTransactionRow,
 } from "@/services/bank.service";
 import type { Aspsp } from "@/lib/enableBanking";
-import { submitRevenueDeclaration, calculateMonthlyGrowth, getCurrentRevenue } from "@/services/revenue.service";
+import { submitRevenueDeclaration } from "@/services/revenue.service";
 import { evaluateChallengeProgress } from "@/services/challenge.service";
 import { ACCENT_THEMES } from "@/lib/constants";
 import type { ActionResult } from "@/app/(auth)/actions";
@@ -303,12 +303,7 @@ export async function submitRevenueDeclarationAction(formData: FormData): Promis
 
   try {
     await submitRevenueDeclaration({ userId, period, label, amountCents, proofPath });
-
-    const { current, previous } = await getCurrentRevenue(userId);
-    if (current) {
-      const growth = calculateMonthlyGrowth(current.amountCents, previous?.amountCents ?? null);
-      await evaluateChallengeProgress(userId, current.amountCents, growth);
-    }
+    await evaluateChallengeProgress(userId);
 
     return { success: true, data: undefined };
   } catch (err) {

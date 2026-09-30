@@ -1,19 +1,9 @@
 import "server-only";
 import { getStripe, isStripeTestKey } from "@/lib/stripe";
-import { createClient } from "@/lib/supabase/server";
-import {
-  upsertMonthlyRevenue,
-  getCurrentRevenue,
-  calculateMonthlyGrowth,
-  nextRevenueMilestone,
-  refreshRevenueVerifiedFlag,
-} from "@/services/revenue.service";
-import { evaluateRevenueAchievements, evaluateRankAchievements } from "@/services/achievement.service";
-import { evaluateChallengeProgress } from "@/services/challenge.service";
-import { createNotification } from "@/services/notification.service";
-import { getUserRank } from "@/services/leaderboard.service";
-import { evaluateEarnedTitles } from "@/services/title.service";
-import { getProfile } from "@/services/profile.service";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { upsertMonthlyRevenue, refreshRevenueVerifiedFlag } from "@/services/revenue.service";
+import { createNotificationForUser } from "@/services/notification.service";
+import { afterRevenueSync } from "@/services/progress.service";
 
 const STRIPE_OAUTH_AUTHORIZE_URL = "https://connect.stripe.com/oauth/authorize";
 const MONTHS_OF_HISTORY = 6;
@@ -57,7 +47,7 @@ export function buildStripeConnectUrl(userId: string, appUrl: string): string {
  * since it acts on the platform's real financial data.
  */
 export async function connectPlatformRevenueForCofounder(userId: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: source, error } = await supabase
     .from("revenue_sources")
     .upsert(
@@ -106,7 +96,7 @@ export async function handleStripeOAuthCallback(code: string, userId: string) {
     throw new Error("Stripe did not return a connected account id.");
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: source, error } = await supabase
     .from("revenue_sources")
@@ -154,7 +144,7 @@ export async function syncStripeRevenue(
   stripeAccountId: string | null,
 ) {
   const stripe = getStripe();
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: verificationBefore } = await supabase
     .from("verifications")
@@ -249,34 +239,10 @@ export async function syncStripeRevenue(
       };
     }
 
-    const { current, previous } = await getCurrentRevenue(userId);
-    let rank: number | null = null;
-    let milestoneCents: number | null = null;
-
-    if (current) {
-      const growth = calculateMonthlyGrowth(current.amountCents, previous?.amountCents ?? null);
-      await evaluateRevenueAchievements(userId, current.amountCents);
-      await evaluateChallengeProgress(userId, current.amountCents, growth);
-
-      const rankResult = await getUserRank(userId, "global", "");
-      if (rankResult) {
-        rank = rankResult.rank;
-        await evaluateRankAchievements(userId, rankResult.rank);
-      }
-      milestoneCents = nextRevenueMilestone(current.amountCents).targetCents;
-
-      const profile = await getProfile(userId);
-      await evaluateEarnedTitles(userId, {
-        revenueCents: current.amountCents,
-        growthPercent: growth,
-        globalRank: rank,
-        foundingMemberNumber: profile?.foundingMemberNumber ?? null,
-        isVerified: true,
-      });
-    }
+    const { currentRevenueCents, rank, milestoneCents } = await afterRevenueSync(userId);
 
     if (!wasAlreadyVerified) {
-      await createNotification({
+      await createNotificationForUser({
         userId,
         type: "verification_completed",
         title: "Revenus vérifiés",
@@ -288,7 +254,7 @@ export async function syncStripeRevenue(
       success: true as const,
       monthsSynced: monthlyTotals.size,
       isFirstVerification: !wasAlreadyVerified,
-      currentRevenueCents: current?.amountCents ?? null,
+      currentRevenueCents,
       rank,
       milestoneCents,
     };
@@ -303,7 +269,7 @@ export async function syncStripeRevenue(
 }
 
 export async function disconnectStripeSource(userId: string, revenueSourceId: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   await supabase
     .from("revenue_sources")

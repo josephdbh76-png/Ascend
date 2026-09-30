@@ -1,7 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createNotification, createNotificationForUser } from "@/services/notification.service";
+import { createNotificationForUser } from "@/services/notification.service";
+import { grantTitleToMember } from "@/services/progress.service";
 import { getStripe } from "@/lib/stripe";
 import type { TitleRow, EarnedTitle } from "@/types";
 import type { TitleRarity } from "@/types/database.types";
@@ -100,45 +101,8 @@ export async function setActiveTitle(userId: string, titleId: string | null) {
   }
 }
 
-async function grantEarnedTitle(userId: string, titleId: string): Promise<boolean> {
-  const supabase = await createClient();
-
-  const { data: existing } = await supabase
-    .from("user_titles")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("title_id", titleId)
-    .maybeSingle();
-  if (existing) return false;
-
-  const { data: def } = await supabase.from("titles").select("name").eq("id", titleId).maybeSingle();
-  if (!def) return false;
-
-  // A title a member earns but never manually activates never shows up
-  // anywhere (profile, leaderboard, network) — most people never think to
-  // go flip that switch. Auto-activating someone's very first title fixes
-  // that without ever overriding a choice they've already made.
-  const { data: alreadyHasActive } = await supabase
-    .from("user_titles")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  const { error } = await supabase
-    .from("user_titles")
-    .insert({ user_id: userId, title_id: titleId, acquisition_type: "earned", is_active: !alreadyHasActive });
-  if (error) return false;
-
-  await createNotification({
-    userId,
-    type: "achievement_unlocked",
-    title: "Nouveau titre débloqué",
-    body: `Tu peux désormais afficher le titre « ${def.name} » sur ton profil.`,
-    metadata: { title_id: titleId },
-  });
-
-  return true;
+function grantEarnedTitle(userId: string, titleId: string): Promise<boolean> {
+  return grantTitleToMember(userId, titleId);
 }
 
 /**

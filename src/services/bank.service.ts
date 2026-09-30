@@ -28,7 +28,7 @@ export async function initiateBankConnection(
   institutionName: string,
   institutionCountry: string,
 ): Promise<{ link: string }> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: source, error } = await supabase
     .from("revenue_sources")
@@ -251,7 +251,7 @@ export async function setTransactionRevenueTag(userId: string, transactionId: st
 }
 
 export async function disconnectBankSource(userId: string, revenueSourceId: string): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   await supabase.from("revenue_sources").update({ status: "disconnected" }).eq("id", revenueSourceId).eq("user_id", userId);
   await supabase

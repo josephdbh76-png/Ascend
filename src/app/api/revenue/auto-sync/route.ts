@@ -27,7 +27,13 @@ export async function POST() {
     .eq("status", "connected")
     .in("provider", ["stripe", "shopify", "paypal", "lemonsqueezy"]);
 
-  const stale = (sources ?? []).filter((s) => isRevenueSyncStale(s.last_synced_at));
+  const { data: profile } = await supabase.from("profiles").select("is_cofounder").eq("id", user.id).maybeSingle();
+  const stale = (sources ?? []).filter(
+    (s) =>
+      isRevenueSyncStale(s.last_synced_at) &&
+      // The platform's own Stripe account is only ever read for cofounders.
+      (s.external_account_id !== PLATFORM_ACCOUNT_SENTINEL || profile?.is_cofounder),
+  );
 
   let synced = 0;
   for (const source of stale) {

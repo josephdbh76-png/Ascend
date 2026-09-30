@@ -9,7 +9,19 @@ export type SourceStatus = "connected" | "disconnected" | "error";
 export type VerificationStatus = "unverified" | "verified" | "pending" | "rejected" | "error" | "disconnected";
 export type RevenueReviewStatus = "pending" | "approved" | "rejected";
 export type AchievementRarity = "common" | "rare" | "epic" | "legendary";
-export type ChallengeType = "revenue_threshold" | "growth_threshold" | "consistency" | "coming_soon";
+export type ChallengeType =
+  | "revenue_threshold"
+  | "growth_threshold"
+  | "consistency"
+  | "coming_soon"
+  | "customer_threshold"
+  | "transaction_threshold"
+  | "follower_threshold"
+  | "rank_threshold"
+  | "verification"
+  | "profile_complete";
+export type SeasonRewardKind = "title" | "trophy" | "physical";
+export type PhysicalRewardStatus = "none" | "to_send" | "sent";
 export type ChallengeStatus = "in_progress" | "completed";
 export type LeaderboardScope = "global" | "country" | "category";
 export type NotificationType =
@@ -24,7 +36,8 @@ export type NotificationType =
   | "application_status_changed"
   | "revenue_review_completed"
   | "referral_rewarded"
-  | "payment_refunded";
+  | "payment_refunded"
+  | "season_reward";
 export type TitleRarity = "common" | "rare" | "epic" | "legendary" | "exclusive";
 export type TitleType = "earned" | "purchasable";
 export type SubscriptionTier = "free" | "pro" | "elite";
@@ -87,6 +100,8 @@ export interface Database {
           siret: string | null;
           legal_name: string | null;
           siret_verified_at: string | null;
+          custom_category: string | null;
+          description: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -244,7 +259,7 @@ export interface Database {
           criteria: Record<string, unknown>;
           created_at: string;
         };
-        Insert: Database["public"]["Tables"]["achievements"]["Row"];
+        Insert: Omit<Database["public"]["Tables"]["achievements"]["Row"], "created_at">;
         Update: Partial<Database["public"]["Tables"]["achievements"]["Row"]>;
         Relationships: [];
       };
@@ -270,7 +285,7 @@ export interface Database {
           icon: string;
           created_at: string;
         };
-        Insert: Database["public"]["Tables"]["trophies"]["Row"];
+        Insert: Omit<Database["public"]["Tables"]["trophies"]["Row"], "created_at">;
         Update: Partial<Database["public"]["Tables"]["trophies"]["Row"]>;
         Relationships: [];
       };
@@ -299,6 +314,9 @@ export interface Database {
           type: ChallengeType;
           target: number;
           reward_achievement_id: string | null;
+          reward_title_id: string | null;
+          points: number;
+          is_published: boolean;
           starts_at: string;
           ends_at: string;
           created_at: string;
@@ -336,6 +354,8 @@ export interface Database {
           starts_at: string;
           ends_at: string;
           is_active: boolean;
+          description: string | null;
+          rewards_distributed_at: string | null;
           created_at: string;
         };
         Insert: Partial<Omit<Database["public"]["Tables"]["seasons"]["Row"], "id">> & {
@@ -343,6 +363,83 @@ export interface Database {
           name: string;
         };
         Update: Partial<Database["public"]["Tables"]["seasons"]["Row"]>;
+        Relationships: [];
+      };
+      season_rewards: {
+        Row: {
+          id: string;
+          season_id: string;
+          rank_from: number;
+          rank_to: number;
+          kind: SeasonRewardKind;
+          title_id: string | null;
+          trophy_id: string | null;
+          label: string;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["season_rewards"]["Row"], "id">> & {
+          season_id: string;
+          rank_from: number;
+          rank_to: number;
+          kind: SeasonRewardKind;
+          label: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["season_rewards"]["Row"]>;
+        Relationships: [];
+      };
+      season_results: {
+        Row: {
+          season_id: string;
+          user_id: string;
+          rank: number;
+          points: number;
+          rewards: string[];
+          physical_status: PhysicalRewardStatus;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["season_results"]["Row"]> & {
+          season_id: string;
+          user_id: string;
+          rank: number;
+          points: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["season_results"]["Row"]>;
+        Relationships: [];
+      };
+      extra_businesses: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          category: string;
+          custom_category: string | null;
+          description: string | null;
+          website: string | null;
+          position: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["extra_businesses"]["Row"], "id">> & {
+          user_id: string;
+          name: string;
+          category: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["extra_businesses"]["Row"]>;
+        Relationships: [];
+      };
+      metrics_access_tokens: {
+        Row: {
+          id: string;
+          token_hash: string;
+          created_by: string | null;
+          created_at: string;
+          last_used_at: string | null;
+          revoked_at: string | null;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["metrics_access_tokens"]["Row"], "id">> & {
+          token_hash: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["metrics_access_tokens"]["Row"]>;
         Relationships: [];
       };
       leaderboard_snapshots: {
@@ -403,7 +500,14 @@ export interface Database {
           tradeable: boolean;
           created_at: string;
         };
-        Insert: Database["public"]["Tables"]["titles"]["Row"];
+        Insert: Partial<Database["public"]["Tables"]["titles"]["Row"]> & {
+          id: string;
+          name: string;
+          description: string;
+          icon: string;
+          rarity: TitleRarity;
+          type: TitleType;
+        };
         Update: Partial<Database["public"]["Tables"]["titles"]["Row"]>;
         Relationships: [];
       };
@@ -883,6 +987,14 @@ export interface Database {
         Args: { p_snapshot_date?: string };
         Returns: undefined;
       };
+      get_season_standings: {
+        Args: { p_season_id: string; p_limit?: number };
+        Returns: SeasonStandingRow[];
+      };
+      get_user_season_standing: {
+        Args: { p_season_id: string; p_user_id: string };
+        Returns: { rank: number; points: number; total: number }[];
+      };
     };
   };
 }
@@ -905,6 +1017,19 @@ export interface LeaderboardRow {
   growth_percent: number | null;
   is_current_user: boolean;
   active_title: { name: string; icon: string; rarity: TitleRarity } | null;
+}
+
+export interface SeasonStandingRow {
+  rank: number;
+  user_id: string;
+  username: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  points: number;
+  completed_count: number;
+  last_completed_at: string | null;
+  is_current_user: boolean;
 }
 
 export interface UserRankRow {

@@ -93,8 +93,9 @@ export async function refreshRevenueVerifiedFlag(userId: string): Promise<boolea
 }
 
 export async function upsertMonthlyRevenue(input: UpsertMonthlyRevenueInput) {
-  const supabase = await createClient();
-  const { error } = await supabase.from("revenue_source_snapshots").upsert(
+  // Service role: members can't write revenue rows themselves (migration 059).
+  const admin = createAdminClient();
+  const { error } = await admin.from("revenue_source_snapshots").upsert(
     {
       user_id: input.userId,
       revenue_source_id: input.revenueSourceId,

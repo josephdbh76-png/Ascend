@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveChallengesWithProgress, getChallengeCompletionRates } from "@/services/challenge.service";
 import { ChallengeCard } from "@/components/challenges/ChallengeCard";
+import { refreshMemberProgress } from "@/services/progress.service";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Flag } from "lucide-react";
 
@@ -18,6 +19,9 @@ export default async function ChallengesPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+
+  // Progress is recomputed from server-side data when the page opens.
+  await refreshMemberProgress(user.id).catch((err) => console.error("Progress refresh failed:", err));
 
   const [challenges, { data: season }, completionRates] = await Promise.all([
     getActiveChallengesWithProgress(user.id),

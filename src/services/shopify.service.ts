@@ -1,20 +1,9 @@
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getShopifyAccessToken, fetchShopifyOrdersPage, isValidShopDomain, SHOPIFY_API_VERSION, type ShopifyOrder } from "@/lib/shopify";
-import {
-  upsertMonthlyRevenue,
-  getCurrentRevenue,
-  calculateMonthlyGrowth,
-  nextRevenueMilestone,
-  refreshRevenueVerifiedFlag,
-} from "@/services/revenue.service";
-import { evaluateRevenueAchievements, evaluateRankAchievements } from "@/services/achievement.service";
-import { evaluateChallengeProgress } from "@/services/challenge.service";
-import { createNotification } from "@/services/notification.service";
-import { getUserRank } from "@/services/leaderboard.service";
-import { evaluateEarnedTitles } from "@/services/title.service";
-import { getProfile } from "@/services/profile.service";
+import { upsertMonthlyRevenue, refreshRevenueVerifiedFlag } from "@/services/revenue.service";
+import { createNotificationForUser } from "@/services/notification.service";
+import { afterRevenueSync } from "@/services/progress.service";
 
 const MONTHS_OF_HISTORY = 6;
 
@@ -59,7 +48,7 @@ export async function connectShopifyWithCredentials(userId: string, shop: string
     );
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const admin = createAdminClient();
 
   const { data: source, error } = await supabase
@@ -119,7 +108,7 @@ function isRevenueBearingOrder(order: ShopifyOrder): boolean {
  * of Stripe's charges.
  */
 export async function syncShopifyRevenue(userId: string, revenueSourceId: string, shop: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: verificationBefore } = await supabase
     .from("verifications")
@@ -212,34 +201,10 @@ export async function syncShopifyRevenue(userId: string, revenueSourceId: string
       };
     }
 
-    const { current, previous } = await getCurrentRevenue(userId);
-    let rank: number | null = null;
-    let milestoneCents: number | null = null;
-
-    if (current) {
-      const growth = calculateMonthlyGrowth(current.amountCents, previous?.amountCents ?? null);
-      await evaluateRevenueAchievements(userId, current.amountCents);
-      await evaluateChallengeProgress(userId, current.amountCents, growth);
-
-      const rankResult = await getUserRank(userId, "global", "");
-      if (rankResult) {
-        rank = rankResult.rank;
-        await evaluateRankAchievements(userId, rankResult.rank);
-      }
-      milestoneCents = nextRevenueMilestone(current.amountCents).targetCents;
-
-      const profile = await getProfile(userId);
-      await evaluateEarnedTitles(userId, {
-        revenueCents: current.amountCents,
-        growthPercent: growth,
-        globalRank: rank,
-        foundingMemberNumber: profile?.foundingMemberNumber ?? null,
-        isVerified: true,
-      });
-    }
+    const { currentRevenueCents, rank, milestoneCents } = await afterRevenueSync(userId);
 
     if (!wasAlreadyVerified) {
-      await createNotification({
+      await createNotificationForUser({
         userId,
         type: "verification_completed",
         title: "Revenus vérifiés",
@@ -251,7 +216,7 @@ export async function syncShopifyRevenue(userId: string, revenueSourceId: string
       success: true as const,
       monthsSynced: monthlyTotals.size,
       isFirstVerification: !wasAlreadyVerified,
-      currentRevenueCents: current?.amountCents ?? null,
+      currentRevenueCents,
       rank,
       milestoneCents,
     };
@@ -266,7 +231,7 @@ export async function syncShopifyRevenue(userId: string, revenueSourceId: string
 }
 
 export async function disconnectShopifySource(userId: string, revenueSourceId: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const admin = createAdminClient();
 
   await supabase

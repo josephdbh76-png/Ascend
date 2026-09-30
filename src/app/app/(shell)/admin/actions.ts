@@ -50,7 +50,7 @@ export async function adminSetTierAction(targetUserId: string, tier: Subscriptio
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }
-  revalidatePath("/app/admin");
+  revalidatePath("/app/admin", "layout");
   return { success: true, data: undefined };
 }
 
@@ -62,7 +62,7 @@ export async function adminSetIsAdminAction(targetUserId: string, isAdmin: boole
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }
-  revalidatePath("/app/admin");
+  revalidatePath("/app/admin", "layout");
   return { success: true, data: undefined };
 }
 
@@ -110,7 +110,7 @@ export async function adminApproveRevenueDeclarationAction(declarationId: string
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }
-  revalidatePath("/app/admin");
+  revalidatePath("/app/admin", "layout");
   return { success: true, data: undefined };
 }
 
@@ -126,7 +126,7 @@ export async function adminRejectRevenueDeclarationAction(declarationId: string,
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }
-  revalidatePath("/app/admin");
+  revalidatePath("/app/admin", "layout");
   return { success: true, data: undefined };
 }
 
@@ -172,7 +172,7 @@ export async function sendCampaignAction(
       audience,
       sentByUserId: userData.user.id,
     });
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     return { success: true, data: result };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
@@ -197,7 +197,7 @@ export async function saveEmailTemplateAction(name: string, subject: string, bod
 
   try {
     await saveEmailTemplate({ name: name.trim(), subject: subject.trim(), body: body.trim(), createdBy: userData.user.id });
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     return { success: true, data: undefined };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
@@ -238,7 +238,7 @@ export async function deleteEmailTemplateAction(id: string): Promise<ActionResul
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   try {
     await deleteEmailTemplate(id);
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     return { success: true, data: undefined };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
@@ -258,7 +258,7 @@ export async function createInfluencerAction(
 
   try {
     const influencer = await createInfluencer(name, email, code, commissionPercent / 100, discountPercent, duration);
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     return { success: true, data: influencer };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
@@ -269,7 +269,7 @@ export async function setInfluencerStatusAction(influencerId: string, status: "a
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   try {
     await setInfluencerStatus(influencerId, status);
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     return { success: true, data: undefined };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
@@ -289,7 +289,7 @@ export async function markCommissionPaidAction(commissionId: string): Promise<Ac
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   try {
     await markCommissionPaid(commissionId);
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     return { success: true, data: undefined };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
@@ -304,7 +304,7 @@ export async function createDealAction(input: CreateDealInput): Promise<ActionRe
 
   try {
     const deal = await createDeal(input);
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     revalidatePath("/app/network");
     return { success: true, data: deal };
   } catch (err) {
@@ -316,7 +316,7 @@ export async function setDealActiveAction(dealId: string, isActive: boolean): Pr
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   try {
     await setDealActive(dealId, isActive);
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     revalidatePath("/app/network");
     return { success: true, data: undefined };
   } catch (err) {
@@ -328,7 +328,7 @@ export async function deleteDealAction(dealId: string): Promise<ActionResult> {
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   try {
     await deleteDeal(dealId);
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     revalidatePath("/app/network");
     return { success: true, data: undefined };
   } catch (err) {
@@ -340,7 +340,7 @@ export async function setEmailTypeEnabledAction(emailKey: string, enabled: boole
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   try {
     await setEmailTypeEnabledPlatformWide(emailKey, enabled);
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     return { success: true, data: undefined };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
@@ -353,7 +353,7 @@ export async function createBannerAction(input: CreateBannerInput): Promise<Acti
 
   try {
     const banner = await createBanner(input);
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     revalidatePath("/app/dashboard");
     return { success: true, data: banner };
   } catch (err) {
@@ -370,7 +370,7 @@ export async function updateBannerAction(
 
   try {
     const banner = await updateBanner(bannerId, input);
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     revalidatePath("/app/dashboard");
     return { success: true, data: banner };
   } catch (err) {
@@ -382,7 +382,7 @@ export async function setBannerActiveAction(bannerId: string, isActive: boolean)
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   try {
     await setBannerActive(bannerId, isActive);
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     revalidatePath("/app/dashboard");
     return { success: true, data: undefined };
   } catch (err) {
@@ -394,7 +394,7 @@ export async function deleteBannerAction(bannerId: string): Promise<ActionResult
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   try {
     await deleteBanner(bannerId);
-    revalidatePath("/app/admin");
+    revalidatePath("/app/admin", "layout");
     revalidatePath("/app/dashboard");
     return { success: true, data: undefined };
   } catch (err) {

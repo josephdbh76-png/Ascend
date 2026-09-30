@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface SiretDirigeant {
   nom: string;
@@ -121,7 +122,8 @@ export async function verifyAndSaveSiret(
     };
   }
 
-  const { error } = await supabase
+  // Service role: members can't set the "verified company" columns themselves.
+  const { error } = await createAdminClient()
     .from("businesses")
     .update({ siret, legal_name: result.legalName, siret_verified_at: new Date().toISOString() })
     .eq("user_id", userId);

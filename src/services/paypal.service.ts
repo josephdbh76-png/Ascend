@@ -1,20 +1,9 @@
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPayPalAccessToken, fetchTransactionsSince, type PayPalTransaction } from "@/lib/paypal";
-import {
-  upsertMonthlyRevenue,
-  getCurrentRevenue,
-  calculateMonthlyGrowth,
-  nextRevenueMilestone,
-  refreshRevenueVerifiedFlag,
-} from "@/services/revenue.service";
-import { evaluateRevenueAchievements, evaluateRankAchievements } from "@/services/achievement.service";
-import { evaluateChallengeProgress } from "@/services/challenge.service";
-import { createNotification } from "@/services/notification.service";
-import { getUserRank } from "@/services/leaderboard.service";
-import { evaluateEarnedTitles } from "@/services/title.service";
-import { getProfile } from "@/services/profile.service";
+import { upsertMonthlyRevenue, refreshRevenueVerifiedFlag } from "@/services/revenue.service";
+import { createNotificationForUser } from "@/services/notification.service";
+import { afterRevenueSync } from "@/services/progress.service";
 
 const MONTHS_OF_HISTORY = 6;
 
@@ -40,7 +29,7 @@ export async function connectPayPalWithCredentials(userId: string, clientId: str
     throw new Error("Impossible de s'authentifier avec ces identifiants — vérifie l'ID client et le secret.");
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const admin = createAdminClient();
 
   const { data: source, error } = await supabase
@@ -83,7 +72,7 @@ export async function syncPayPalRevenue(
   clientIdOverride?: string,
   clientSecretOverride?: string,
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: verificationBefore } = await supabase
     .from("verifications")
@@ -158,41 +147,17 @@ export async function syncPayPalRevenue(
       return { success: true as const, monthsSynced: 0, isFirstVerification: false, currentRevenueCents: null, rank: null, milestoneCents: null };
     }
 
-    const { current, previous } = await getCurrentRevenue(userId);
-    let rank: number | null = null;
-    let milestoneCents: number | null = null;
-
-    if (current) {
-      const growth = calculateMonthlyGrowth(current.amountCents, previous?.amountCents ?? null);
-      await evaluateRevenueAchievements(userId, current.amountCents);
-      await evaluateChallengeProgress(userId, current.amountCents, growth);
-
-      const rankResult = await getUserRank(userId, "global", "");
-      if (rankResult) {
-        rank = rankResult.rank;
-        await evaluateRankAchievements(userId, rankResult.rank);
-      }
-      milestoneCents = nextRevenueMilestone(current.amountCents).targetCents;
-
-      const profile = await getProfile(userId);
-      await evaluateEarnedTitles(userId, {
-        revenueCents: current.amountCents,
-        growthPercent: growth,
-        globalRank: rank,
-        foundingMemberNumber: profile?.foundingMemberNumber ?? null,
-        isVerified: true,
-      });
-    }
+    const { currentRevenueCents, rank, milestoneCents } = await afterRevenueSync(userId);
 
     if (!wasAlreadyVerified) {
-      await createNotification({ userId, type: "verification_completed", title: "Revenus vérifiés", body: "Ton activité est désormais vérifiée sur ASCEND." });
+      await createNotificationForUser({ userId, type: "verification_completed", title: "Revenus vérifiés", body: "Ton activité est désormais vérifiée sur ASCEND." });
     }
 
     return {
       success: true as const,
       monthsSynced: monthlyTotals.size,
       isFirstVerification: !wasAlreadyVerified,
-      currentRevenueCents: current?.amountCents ?? null,
+      currentRevenueCents,
       rank,
       milestoneCents,
     };
@@ -207,7 +172,7 @@ export async function syncPayPalRevenue(
 }
 
 export async function disconnectPayPalSource(userId: string, revenueSourceId: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const admin = createAdminClient();
 
   await supabase.from("revenue_sources").update({ status: "disconnected" }).eq("id", revenueSourceId).eq("user_id", userId);
