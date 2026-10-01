@@ -54,6 +54,7 @@ import {
 } from "@/services/season.service";
 import { generateLeagueSeason } from "@/services/league.service";
 import { verifyUpload } from "@/services/upload.service";
+import { createPromoCode, setPromoCodeActive, type PromoCodeInput } from "@/services/promo.service";
 import { createTitle, createTrophy, createAchievement, grantRewardToMember } from "@/services/catalog.service";
 import {
   reviewTraining,
@@ -404,6 +405,16 @@ export async function uploadAdminImageAction(path: string): Promise<ActionResult
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Le téléversement a échoué." };
   }
+}
+
+// ---------------------------------------------------------------- promo codes
+
+export async function createPromoCodeAction(input: PromoCodeInput): Promise<ActionResult> {
+  return adminRun(() => createPromoCode(input));
+}
+
+export async function setPromoCodeActiveAction(promotionCodeId: string, active: boolean): Promise<ActionResult> {
+  return adminRun(() => setPromoCodeActive(promotionCodeId, active));
 }
 
 // ---------------------------------------------------------------- members

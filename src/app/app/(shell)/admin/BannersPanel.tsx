@@ -38,7 +38,14 @@ function audienceLabel(audience: SubscriptionTier[]) {
     .join(" + ");
 }
 
-export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow[] }) {
+export function BannersPanel({
+  banners: initial,
+  usableCodes,
+}: {
+  banners: DashboardBannerRow[];
+  /** Promo codes that work in Stripe right now; null when Stripe couldn't be read. */
+  usableCodes: string[] | null;
+}) {
   const [banners, setBanners] = useState(initial);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -184,6 +191,14 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
                       {b.buttons.map((btn) => (btn.type === "copy_code" ? `Code ${btn.value}` : `${btn.label} (lien)`)).join(" · ")}
                     </p>
                   )}
+                  {usableCodes &&
+                    b.buttons
+                      .filter((btn) => btn.type === "copy_code" && !usableCodes.includes(btn.value.toUpperCase()))
+                      .map((btn) => (
+                        <p key={btn.value} className="text-xs font-medium text-error">
+                          Le code {btn.value} ne fonctionne pas dans Stripe : crée-le ou réactive-le dans « Codes promo ».
+                        </p>
+                      ))}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
