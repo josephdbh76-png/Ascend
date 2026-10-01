@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/Toast";
 import { COUNTRIES } from "@/lib/constants";
 import { initials } from "@/lib/utils";
 import { updateProfileAction, uploadAvatarAction } from "./actions";
+import { uploadThen } from "@/lib/uploadClient";
 
 export function ProfileSettingsForm({
   initial,
@@ -37,11 +38,9 @@ export function ProfileSettingsForm({
     e.target.value = "";
     if (!file) return;
 
-    const formData = new FormData();
-    formData.set("file", file);
     setUploadingAvatar(true);
     startTransition(async () => {
-      const result = await uploadAvatarAction(formData);
+      const result = await uploadThen("avatar", file, uploadAvatarAction);
       setUploadingAvatar(false);
       if (!result.success) return toast.show(result.error, "error");
       setAvatarUrl(result.data.url);

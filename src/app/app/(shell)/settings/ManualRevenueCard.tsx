@@ -9,6 +9,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { formatCurrency } from "@/lib/utils";
 import { submitRevenueDeclarationAction } from "./actions";
+import { uploadThen } from "@/lib/uploadClient";
 import type { RevenueDeclaration } from "@/services/revenue.service";
 import type { RevenueReviewStatus } from "@/types/database.types";
 
@@ -33,13 +34,10 @@ export function ManualRevenueCard({ declarations }: { declarations: RevenueDecla
     const file = fileRef.current?.files?.[0];
     if (!file) return toast.show("Une preuve est obligatoire pour déclarer un revenu.", "error");
 
-    const formData = new FormData();
-    formData.set("amount", amount);
-    formData.set("label", label);
-    formData.set("proof", file);
-
     startTransition(async () => {
-      const result = await submitRevenueDeclarationAction(formData);
+      const result = await uploadThen("revenue-proof", file, (proofPath) =>
+        submitRevenueDeclarationAction({ amount, label, proofPath }),
+      );
       if (!result.success) return toast.show(result.error, "error");
       toast.show("Déclaration envoyée. Un administrateur la vérifie sous peu.", "success");
       setOpen(false);
@@ -118,7 +116,7 @@ export function ManualRevenueCard({ declarations }: { declarations: RevenueDecla
               placeholder="1200"
             />
           </Field>
-          <Field label="Preuve" hint="Obligatoire. PDF, PNG, JPEG ou WebP, 5 Mo maximum.">
+          <Field label="Preuve" hint="Obligatoire. PDF, PNG, JPEG ou WebP, 10 Mo maximum.">
             <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border-strong bg-card px-3.5 py-2.5 text-sm text-text-muted hover:border-gold/50 hover:text-text-secondary">
               <Upload className="h-4 w-4" />
               {fileName ?? "Choisir un fichier"}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { uploadThen } from "@/lib/uploadClient";
 import Link from "next/link";
 import { Archive, Check, ExternalLink, Eye, MousePointerClick, Pencil, Pin, PinOff, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -290,7 +291,7 @@ export function TrainingsAdmin({ initial }: { initial: Training[] }) {
               <Input value={creatorName} onChange={(e) => setCreatorName(e.target.value)} placeholder="Nom affiché" disabled={Boolean(ownerUsername.trim())} />
             </Field>
           </div>
-          <TrainingFormFields value={form} onChange={setForm} upload={uploadAdminImageAction} />
+          <TrainingFormFields value={form} onChange={setForm} upload={(file) => uploadThen("admin-media", file, uploadAdminImageAction)} />
           <div className="flex gap-2">
             <Button type="submit" disabled={pending}>
               {pending ? "Enregistrement..." : editing === "new" ? "Publier" : "Enregistrer"}

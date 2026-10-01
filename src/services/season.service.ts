@@ -6,7 +6,7 @@ import { createNotificationForUser } from "@/services/notification.service";
 import { grantTitleToMember } from "@/services/progress.service";
 import { placeSeasonScorers } from "@/services/league.service";
 import { league as leagueDef, isLeagueId, type LeagueId } from "@/lib/leagues";
-import type { SeasonRewardKind, SeasonStandingRow, PhysicalRewardStatus } from "@/types/database.types";
+import type { SeasonRewardKind, SeasonStandingRow, SeasonActivityRow, PhysicalRewardStatus } from "@/types/database.types";
 
 export interface Season {
   id: string;
@@ -98,6 +98,14 @@ export function rewardsForLeague<T extends { league: string | null }>(rewards: T
 export async function getSeasonStandings(seasonId: string, limit = 50, league: LeagueId | null = null): Promise<SeasonStandingRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_season_standings", { p_season_id: seasonId, p_limit: limit, p_league: league });
+  if (error) return [];
+  return data ?? [];
+}
+
+/** Latest challenges completed in a league, newest first. */
+export async function getSeasonActivity(seasonId: string, league: LeagueId, limit = 12): Promise<SeasonActivityRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_season_activity", { p_season_id: seasonId, p_league: league, p_limit: limit });
   if (error) return [];
   return data ?? [];
 }

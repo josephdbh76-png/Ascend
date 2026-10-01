@@ -11,6 +11,7 @@ import { Field, Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { opportunityTypeLabel, compensationTypeLabel, locationTypeLabel } from "@/lib/opportunityDisplay";
 import { applyToOpportunityAction } from "@/app/app/(shell)/opportunities/actions";
+import { uploadFile } from "@/lib/uploadClient";
 import type { OpportunityMatch } from "@/types";
 
 export function OpportunityCard({ opportunity }: { opportunity: OpportunityMatch }) {
@@ -23,8 +24,10 @@ export function OpportunityCard({ opportunity }: { opportunity: OpportunityMatch
   const toast = useToast();
 
   function addFiles(newFiles: FileList | null) {
-    if (!newFiles) return;
-    setFiles((prev) => [...prev, ...Array.from(newFiles)].slice(0, 5));
+    // Copied right away: the input is reset just after, which empties its FileList.
+    const picked = Array.from(newFiles ?? []);
+    if (picked.length === 0) return;
+    setFiles((prev) => [...prev, ...picked].slice(0, 5));
   }
 
   function removeFile(index: number) {
@@ -34,10 +37,13 @@ export function OpportunityCard({ opportunity }: { opportunity: OpportunityMatch
   function submitApplication(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
-      const formData = new FormData();
-      formData.set("message", message);
-      for (const file of files) formData.append("files", file);
-      const result = await applyToOpportunityAction(opportunity.id, formData);
+      const attachments: { path: string; name: string }[] = [];
+      for (const file of files) {
+        const sent = await uploadFile("opportunity-attachment", file);
+        if (!sent.success) return toast.show(sent.error, "error");
+        attachments.push(sent.data);
+      }
+      const result = await applyToOpportunityAction(opportunity.id, { message, attachments });
       if (!result.success) return toast.show(result.error, "error");
       toast.show("Ta candidature a été envoyée.", "success");
       setApplied(true);

@@ -5,6 +5,7 @@ import { ImagePlus, X } from "lucide-react";
 import { Field } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { uploadAdminImageAction } from "./actions";
+import { uploadThen } from "@/lib/uploadClient";
 
 export function AdminImageUpload({
   value,
@@ -24,10 +25,8 @@ export function AdminImageUpload({
     e.target.value = "";
     if (!file) return;
 
-    const formData = new FormData();
-    formData.set("file", file);
     setUploading(true);
-    uploadAdminImageAction(formData).then((result) => {
+    uploadThen("admin-media", file, uploadAdminImageAction).then((result) => {
       setUploading(false);
       if (!result.success) return toast.show(result.error, "error");
       onChange(result.data.url);
@@ -35,7 +34,7 @@ export function AdminImageUpload({
   }
 
   return (
-    <Field label="Image" hint={hint ?? "Format recommandé : 1200×400px (ratio 3:1). JPG, PNG ou WebP, 5 Mo max."}>
+    <Field label="Image" hint={hint ?? "Format recommandé : 1200×400px (ratio 3:1). JPG, PNG ou WebP. Les grandes images sont réduites automatiquement."}>
       {value ? (
         <div className="relative overflow-hidden rounded-md border border-border">
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -14,19 +14,11 @@ import {
   type CreateOpportunityInput,
   type UploadedAttachment,
 } from "@/services/opportunity.service";
+import { verifyUpload, removeUploads } from "@/services/upload.service";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { ApplicationStatus } from "@/types/database.types";
 
-const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_ATTACHMENTS = 5;
-const ALLOWED_ATTACHMENT_TYPES = [
-  "application/pdf",
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-];
 
 export async function createOpportunityAction(input: CreateOpportunityInput): Promise<ActionResult> {
   const parsed = opportunitySchema.safeParse(input);
@@ -64,8 +56,13 @@ export async function closeOpportunityAction(opportunityId: string): Promise<Act
   }
 }
 
-export async function applyToOpportunityAction(opportunityId: string, formData: FormData): Promise<ActionResult> {
-  const message = String(formData.get("message") ?? "");
+/** Attachments were sent straight to storage by the browser (see lib/uploadClient). */
+export async function applyToOpportunityAction(
+  opportunityId: string,
+  input: { message: string; attachments: { path: string; name: string }[] },
+): Promise<ActionResult> {
+  const message = String(input?.message ?? "");
+  const attachments = Array.isArray(input?.attachments) ? input.attachments : [];
   const parsed = opportunityApplicationSchema.safeParse({ message });
   if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Message invalide." };
 
@@ -88,33 +85,28 @@ export async function applyToOpportunityAction(opportunityId: string, formData: 
     }
   }
 
-  const files = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
-  if (files.length > MAX_ATTACHMENTS) {
+  if (attachments.length > MAX_ATTACHMENTS) {
+    await removeUploads("opportunity-attachment", attachments.map((a) => a.path).filter((p) => p?.startsWith(`${userId}/`)));
     return { success: false, error: `Maximum ${MAX_ATTACHMENTS} documents par candidature.` };
-  }
-  for (const file of files) {
-    if (file.size > MAX_ATTACHMENT_BYTES) return { success: false, error: `« ${file.name} » dépasse 10 Mo.` };
-    if (!ALLOWED_ATTACHMENT_TYPES.includes(file.type)) {
-      return { success: false, error: `« ${file.name} » : format non pris en charge (PDF, Word, ou image).` };
-    }
   }
 
   const uploaded: UploadedAttachment[] = [];
-  for (const file of files) {
-    const ext = file.name.split(".").pop() || "bin";
-    const path = `${userId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from("opportunity-attachments")
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (uploadError) return { success: false, error: `Le téléversement de « ${file.name} » a échoué.` };
-    uploaded.push({ filePath: path, fileName: file.name, fileSize: file.size, contentType: file.type });
-  }
-
   try {
+    for (const a of attachments) {
+      const file = await verifyUpload(userId, "opportunity-attachment", a.path);
+      uploaded.push({
+        filePath: file.path,
+        fileName: String(a.name ?? "document").slice(0, 200),
+        fileSize: file.size,
+        contentType: file.contentType,
+      });
+    }
     await applyToOpportunity(userId, opportunityId, parsed.data.message, uploaded);
     revalidatePath("/app/opportunities");
     return { success: true, data: undefined };
   } catch (err) {
+    // Nothing is kept from an application that didn't go through.
+    await removeUploads("opportunity-attachment", attachments.map((a) => a.path).filter((p) => p?.startsWith(`${userId}/`)));
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }
 }

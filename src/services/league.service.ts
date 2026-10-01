@@ -131,6 +131,16 @@ export async function placeSeasonScorers(season: SeasonDates) {
   return users.length;
 }
 
+/** Points to win in each league: the published challenges that count there. */
+export async function getLeaguePointTotals(seasonId: string): Promise<Record<LeagueId, number>> {
+  const admin = createAdminClient();
+  const { data } = await admin.from("challenges").select("points, leagues, is_published, type").eq("season_id", seasonId);
+  const rows = (data ?? []).filter((c) => c.is_published !== false && c.type !== "coming_soon");
+  return Object.fromEntries(
+    LEAGUES.map((l) => [l.id, rows.filter((c) => !c.leagues?.length || c.leagues.includes(l.id)).reduce((sum, c) => sum + (c.points ?? 0), 0)]),
+  ) as Record<LeagueId, number>;
+}
+
 export interface LeagueCount {
   league: LeagueId;
   members: number;

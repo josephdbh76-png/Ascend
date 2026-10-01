@@ -1098,6 +1098,10 @@ export interface Database {
         Args: { p_season_id: string; p_limit?: number; p_league?: string | null };
         Returns: SeasonStandingRow[];
       };
+      get_season_activity: {
+        Args: { p_season_id: string; p_league: string; p_limit?: number };
+        Returns: SeasonActivityRow[];
+      };
       get_training_stats: {
         Args: { p_since: string };
         Returns: { training_id: string; views: number; clicks: number }[];
@@ -1142,6 +1146,22 @@ export interface SeasonStandingRow {
   last_completed_at: string | null;
   is_current_user: boolean;
   league: string;
+  /** Points earned over the last 7 days. */
+  points_week?: number;
+}
+
+export interface SeasonActivityRow {
+  completed_at: string;
+  user_id: string;
+  username: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  challenge_title: string;
+  challenge_type: string;
+  points: number;
+  /** A revenue milestone of a member who doesn't show their exact revenue. */
+  hide_amount: boolean;
 }
 
 export interface UserRankRow {

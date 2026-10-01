@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpRight, Clock, Crown, Flag, Gem, Package, Trophy } from "lucide-react";
+import { Activity, ArrowUpRight, Clock, Crown, Flag, Gem, Package, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveChallengesWithProgress, getChallengeCompletionRates } from "@/services/challenge.service";
 import { refreshMemberProgress } from "@/services/progress.service";
@@ -10,9 +10,10 @@ import {
   getSeasonStandings,
   getUserSeasonStanding,
   getUserSeasonResults,
+  getSeasonActivity,
   rewardsForLeague,
 } from "@/services/season.service";
-import { getSeasonLeague } from "@/services/league.service";
+import { getSeasonLeague, getLeaguePointTotals } from "@/services/league.service";
 import { LEAGUES, isLeagueId, league as leagueDef, leagueRangeLabel, nextLeague } from "@/lib/leagues";
 import { ChallengeCard } from "@/components/challenges/ChallengeCard";
 import { ShareCardButton } from "@/components/achievements/ShareCardButton";
@@ -21,6 +22,8 @@ import { seasonShortName } from "@/lib/share/params";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { cn, formatCurrency, initials } from "@/lib/utils";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+import type { SeasonStandingRow } from "@/types/database.types";
 import type { SeasonRewardKind } from "@/types/database.types";
 
 export const metadata: Metadata = { title: "Saison et défis" };
@@ -41,6 +44,58 @@ function rankLabel(from: number, to: number) {
 
 const MONTH = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
 
+function ago(iso: string) {
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
+  if (minutes < 1) return "à l'instant";
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `il y a ${hours} h`;
+  const days = Math.round(hours / 24);
+  return `il y a ${days} j`;
+}
+
+function shortName(first: string | null, last: string | null) {
+  return [first, last ? `${last.charAt(0)}.` : null].filter(Boolean).join(" ") || "Membre";
+}
+
+function Avatar({ url, first, last, size = "h-8 w-8" }: { url: string | null; first: string | null; last: string | null; size?: string }) {
+  return (
+    <span className={cn("flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-card-elevated text-xs font-semibold text-gold", size)}>
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt="" className="h-full w-full object-cover" />
+      ) : (
+        initials(first, last)
+      )}
+    </span>
+  );
+}
+
+function StandingRow({ s, maxPoints }: { s: SeasonStandingRow; maxPoints: number }) {
+  const week = Number(s.points_week ?? 0);
+  return (
+    <li className={cn("flex items-center gap-3 border-b border-border px-4 py-3 last:border-0", s.is_current_user ? "bg-gold/5" : "bg-card")}>
+      <span className={cn("w-9 shrink-0 text-sm font-semibold tabular-nums", Number(s.rank) <= 3 ? "text-gold" : "text-text-muted")}>#{s.rank}</span>
+      <Avatar url={s.avatar_url} first={s.first_name} last={s.last_name} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <Link href={`/profile/${s.username}`} className="truncate text-sm text-text-primary hover:underline">
+            {s.first_name} {s.last_name} {s.is_current_user && <span className="text-xs text-gold">(toi)</span>}
+          </Link>
+          <span className="shrink-0 text-sm font-semibold tabular-nums text-text-primary">{s.points} pts</span>
+        </div>
+        <ProgressBar percent={maxPoints > 0 ? Math.min(100, (Number(s.points) / maxPoints) * 100) : 0} className="mt-1.5" />
+        <p className="mt-1 flex flex-wrap gap-x-3 text-[11px] text-text-muted">
+          <span>
+            {s.completed_count} défi{Number(s.completed_count) > 1 ? "s" : ""} réussi{Number(s.completed_count) > 1 ? "s" : ""}
+          </span>
+          {week > 0 && <span className="font-medium text-success">+{week} pts cette semaine</span>}
+        </p>
+      </div>
+    </li>
+  );
+}
+
 export default async function SeasonPage({ searchParams }: PageProps<"/app/challenges">) {
   const supabase = await createClient();
   const {
@@ -56,15 +111,21 @@ export default async function SeasonPage({ searchParams }: PageProps<"/app/chall
   const myLeague = placement?.league ?? "bronze";
   const requested = (await searchParams).ligue;
   const viewLeague = isLeagueId(requested) ? requested : myLeague;
-  const [challenges, completionRates, allRewards, standings, myStanding, pastResults, profile] = await Promise.all([
+  const [challenges, completionRates, allRewards, allStandings, myStanding, pastResults, profile, leaguePoints, activity] = await Promise.all([
     getActiveChallengesWithProgress(user.id, season?.id),
     getChallengeCompletionRates(),
     season ? getSeasonRewards(season.id) : Promise.resolve([]),
-    season ? getSeasonStandings(season.id, 10, viewLeague) : Promise.resolve([]),
+    season ? getSeasonStandings(season.id, 1000) : Promise.resolve([]),
     season ? getUserSeasonStanding(season.id, user.id) : Promise.resolve(null),
     getUserSeasonResults(user.id),
     getProfile(user.id),
+    season ? getLeaguePointTotals(season.id) : Promise.resolve(null),
+    season ? getSeasonActivity(season.id, viewLeague, 12) : Promise.resolve([]),
   ]);
+  const leagueRows = (id: string) => allStandings.filter((r) => r.league === id).sort((a, b) => Number(a.rank) - Number(b.rank));
+  const standings = leagueRows(viewLeague).slice(0, 50);
+  const myRow = leagueRows(viewLeague).find((r) => r.is_current_user);
+  const maxPoints = leaguePoints?.[viewLeague] ?? 0;
   const rewards = rewardsForLeague(allRewards, viewLeague);
   const mine = leagueDef(myLeague);
   const upNext = nextLeague(myLeague);
@@ -73,7 +134,7 @@ export default async function SeasonPage({ searchParams }: PageProps<"/app/chall
   const earnedPoints = challenges.filter((c) => c.status === "completed").reduce((sum, c) => sum + c.points, 0);
   const availablePoints = challenges.reduce((sum, c) => sum + c.points, 0);
   const ahead =
-    myStanding && myStanding.rank > 1 && viewLeague === myLeague ? standings.find((s) => Number(s.rank) === myStanding.rank - 1) : null;
+    myStanding && myStanding.rank > 1 ? leagueRows(myLeague).find((s) => Number(s.rank) === myStanding.rank - 1) : null;
   const gap = ahead && myStanding ? Number(ahead.points) - myStanding.points + 1 : null;
   const sorted = [...challenges].sort((a, b) => {
     if (a.status !== b.status) return a.status === "completed" ? 1 : -1;
@@ -156,21 +217,40 @@ export default async function SeasonPage({ searchParams }: PageProps<"/app/chall
             <p className="text-xs text-text-muted">Tu affrontes des entreprises de ta taille.</p>
           </div>
           <ol className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
-            {LEAGUES.map((l) => (
-              <li
-                key={l.id}
-                className={cn(
-                  "rounded-md border p-3",
-                  l.id === myLeague ? l.tone : "border-border bg-bg-primary/40",
-                )}
-              >
-                <p className={cn("text-sm font-semibold", l.id === myLeague ? "" : "text-text-secondary")}>
-                  {l.name}
-                  {l.id === myLeague && <span className="ml-1.5 text-[10px] font-medium uppercase">· toi</span>}
-                </p>
-                <p className="mt-0.5 text-[11px] text-text-muted">{leagueRangeLabel(l.id)}</p>
-              </li>
-            ))}
+            {LEAGUES.map((l) => {
+              const rows = leagueRows(l.id);
+              const leader = rows[0];
+              return (
+                <li key={l.id}>
+                  <Link
+                    href={l.id === myLeague ? "/app/challenges#classement" : `/app/challenges?ligue=${l.id}#classement`}
+                    aria-current={l.id === viewLeague ? "true" : undefined}
+                    className={cn(
+                      "flex h-full flex-col rounded-md border p-3 transition-colors hover:border-gold/50",
+                      l.id === myLeague ? l.tone : "border-border bg-bg-primary/40",
+                      l.id === viewLeague && "ring-1 ring-gold/40",
+                    )}
+                  >
+                    <span className={cn("text-sm font-semibold", l.id === myLeague ? "" : "text-text-secondary")}>
+                      {l.name}
+                      {l.id === myLeague && <span className="ml-1.5 text-[10px] font-medium uppercase">· toi</span>}
+                    </span>
+                    <span className="mt-0.5 text-[11px] text-text-muted">{leagueRangeLabel(l.id)}</span>
+                    <span className="mt-2 text-[11px] text-text-secondary">
+                      {rows.length} en course
+                      {leader ? (
+                        <>
+                          {" "}
+                          · 1er : <span className="text-text-primary">{shortName(leader.first_name, leader.last_name)}</span> ({leader.points} pts)
+                        </>
+                      ) : (
+                        " · 1re place libre"
+                      )}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
           </ol>
           <p className="mt-4 text-sm text-text-secondary">
             {placement.baseCents > 0 && placement.basePeriod ? (
@@ -186,8 +266,96 @@ export default async function SeasonPage({ searchParams }: PageProps<"/app/chall
           </p>
           <p className="mt-2 text-xs text-text-muted">
             Ta ligue vient de ton meilleur mois vérifié sur les 3 mois avant la saison, et ne change pas si tu progresses pendant la saison.
-            {upNext && ` Atteins ${formatCurrency(upNext.minCents)} sur un mois pour jouer en ligue ${upNext.name} à la saison suivante.`}
+            {upNext && ` Atteins ${formatCurrency(upNext.minCents)} sur un mois pour jouer en ligue ${upNext.name} à la saison suivante.`}{" "}
+            Ta ligue et tes points sont visibles des autres membres ; ton chiffre exact reste privé selon tes réglages.
           </p>
+        </section>
+      )}
+
+      {season && (
+        <section id="classement" className="scroll-mt-6">
+          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
+              <Trophy className="h-4 w-4 text-gold" /> Classement {leagueDef(viewLeague).name}
+            </h2>
+            <nav aria-label="Ligues" className="flex flex-wrap gap-1.5">
+              {LEAGUES.map((l) => (
+                <Link
+                  key={l.id}
+                  href={l.id === myLeague ? "/app/challenges#classement" : `/app/challenges?ligue=${l.id}#classement`}
+                  scroll={false}
+                  aria-current={l.id === viewLeague ? "page" : undefined}
+                  className={cn(
+                    "rounded-md border px-2.5 py-1 text-xs transition-colors",
+                    l.id === viewLeague ? l.tone : "border-border text-text-secondary hover:text-text-primary",
+                  )}
+                >
+                  {l.name}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              {standings.length === 0 ? (
+                <EmptyState
+                  icon={Trophy}
+                  title={`Personne n'a encore marqué de points en ligue ${leagueDef(viewLeague).name}.`}
+                  description="Les premières places sont libres."
+                />
+              ) : (
+                <ol className="flex flex-col overflow-hidden rounded-lg border border-border">
+                  {standings.map((s) => (
+                    <StandingRow key={s.user_id} s={s} maxPoints={maxPoints} />
+                  ))}
+                  {myRow && !standings.some((s) => s.user_id === myRow.user_id) && (
+                    <>
+                      <li aria-hidden className="border-b border-border bg-card px-4 py-1 text-center text-xs text-text-muted">
+                        ⋯
+                      </li>
+                      <StandingRow s={myRow} maxPoints={maxPoints} />
+                    </>
+                  )}
+                </ol>
+              )}
+              {viewLeague !== myLeague && (
+                <p className="mt-2 text-center text-xs text-text-muted">
+                  <Link href="/app/challenges#classement" scroll={false} className="inline-flex items-center gap-1 text-gold hover:underline">
+                    Revenir à ma ligue ({mine.name}) <ArrowUpRight className="h-3 w-3" />
+                  </Link>
+                </p>
+              )}
+            </div>
+
+            <aside aria-labelledby="activite" className="rounded-lg border border-border bg-card p-4">
+              <h3 id="activite" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
+                <Activity className="h-3.5 w-3.5 text-gold" /> Dernières avancées
+              </h3>
+              {activity.length === 0 ? (
+                <p className="mt-3 text-xs text-text-muted">Aucun défi réussi pour l&apos;instant dans cette ligue.</p>
+              ) : (
+                <ul className="mt-3 flex flex-col gap-3">
+                  {activity.map((a) => (
+                    <li key={`${a.user_id}-${a.completed_at}-${a.challenge_title}`} className="flex items-start gap-2.5">
+                      <Avatar url={a.avatar_url} first={a.first_name} last={a.last_name} size="h-7 w-7" />
+                      <div className="min-w-0 flex-1 text-xs leading-relaxed">
+                        <p className="text-text-secondary">
+                          <Link href={`/profile/${a.username}`} className="font-medium text-text-primary hover:underline">
+                            {shortName(a.first_name, a.last_name)}
+                          </Link>{" "}
+                          {a.hide_amount ? "a franchi un palier de revenus" : <>a réussi « {a.challenge_title} »</>}
+                        </p>
+                        <p className="text-text-muted">
+                          <span className="font-medium text-gold">+{a.points} pts</span> · {ago(a.completed_at)}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </aside>
+          </div>
         </section>
       )}
 
@@ -236,80 +404,6 @@ export default async function SeasonPage({ searchParams }: PageProps<"/app/chall
           </div>
         )}
       </section>
-
-      {season && (
-        <section>
-          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
-              <Trophy className="h-4 w-4 text-gold" /> Classement {leagueDef(viewLeague).name}
-            </h2>
-            <nav aria-label="Ligues" className="flex flex-wrap gap-1.5">
-              {LEAGUES.map((l) => (
-                <Link
-                  key={l.id}
-                  href={l.id === myLeague ? "/app/challenges" : `/app/challenges?ligue=${l.id}`}
-                  scroll={false}
-                  aria-current={l.id === viewLeague ? "page" : undefined}
-                  className={cn(
-                    "rounded-md border px-2.5 py-1 text-xs transition-colors",
-                    l.id === viewLeague ? l.tone : "border-border text-text-secondary hover:text-text-primary",
-                  )}
-                >
-                  {l.name}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          {standings.length === 0 ? (
-            <EmptyState
-              icon={Trophy}
-              title={`Personne n'a encore marqué de points en ligue ${leagueDef(viewLeague).name}.`}
-              description="Les premières places sont libres."
-            />
-          ) : (
-            <ol className="flex flex-col overflow-hidden rounded-lg border border-border">
-              {standings.map((s) => (
-                <li
-                  key={s.user_id}
-                  className={cn(
-                    "flex items-center gap-3 border-b border-border px-4 py-3 last:border-0",
-                    s.is_current_user ? "bg-gold/5" : "bg-card",
-                  )}
-                >
-                  <span className={cn("w-8 text-sm font-semibold tabular-nums", Number(s.rank) <= 3 ? "text-gold" : "text-text-muted")}>
-                    #{s.rank}
-                  </span>
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-card-elevated text-xs font-semibold text-gold">
-                    {s.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={s.avatar_url} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      initials(s.first_name, s.last_name)
-                    )}
-                  </span>
-                  <Link href={`/profile/${s.username}`} className="min-w-0 flex-1 truncate text-sm text-text-primary hover:underline">
-                    {s.first_name} {s.last_name} {s.is_current_user && <span className="text-xs text-gold">(toi)</span>}
-                  </Link>
-                  <span className="text-xs text-text-muted">{s.completed_count} défis</span>
-                  <span className="w-16 text-right text-sm font-semibold tabular-nums text-text-primary">{s.points} pts</span>
-                </li>
-              ))}
-            </ol>
-          )}
-          {viewLeague !== myLeague && (
-            <p className="mt-2 text-center text-xs text-text-muted">
-              <Link href="/app/challenges" scroll={false} className="inline-flex items-center gap-1 text-gold hover:underline">
-                Revenir à ma ligue ({mine.name}) <ArrowUpRight className="h-3 w-3" />
-              </Link>
-            </p>
-          )}
-          {viewLeague === myLeague && myStanding && myStanding.rank > standings.length && (
-            <p className="mt-2 text-center text-xs text-text-muted">
-              Tu es #{myStanding.rank} avec {myStanding.points} points.
-            </p>
-          )}
-        </section>
-      )}
 
       {pastResults.length > 0 && (
         <section>

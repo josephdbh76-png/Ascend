@@ -37,42 +37,29 @@ import {
 import type { Aspsp } from "@/lib/enableBanking";
 import { submitRevenueDeclaration } from "@/services/revenue.service";
 import { deleteMemberAccount } from "@/services/account.service";
+import { verifyUpload } from "@/services/upload.service";
 import { evaluateChallengeProgress } from "@/services/challenge.service";
 import { ACCENT_THEMES, MAX_EXTRA_BUSINESSES } from "@/lib/constants";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { AccentTheme, TrainingStatus } from "@/types/database.types";
 
-const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
-const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
-
-export async function uploadAvatarAction(formData: FormData): Promise<ActionResult<{ url: string }>> {
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { success: false, error: "Aucune image fournie." };
-  if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
-    return { success: false, error: "Format non supporté (JPG, PNG ou WebP)." };
-  }
-  if (file.size > MAX_AVATAR_BYTES) return { success: false, error: "Image trop lourde (max 5 Mo)." };
-
+/** Called once the browser has sent the photo to storage (see lib/uploadClient). */
+export async function uploadAvatarAction(path: string): Promise<ActionResult<{ url: string }>> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
-  const ext = file.name.split(".").pop() || "jpg";
-  const path = `${userData.user.id}/${Date.now()}.${ext}`;
-  const { error: uploadError } = await supabase.storage
-    .from("avatars")
-    .upload(path, file, { contentType: file.type, upsert: true });
-  if (uploadError) return { success: false, error: "Le téléversement a échoué." };
+  let url: string;
+  try {
+    url = (await verifyUpload(userData.user.id, "avatar", path)).publicUrl!;
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Le téléversement a échoué." };
+  }
 
-  const { data: publicUrl } = supabase.storage.from("avatars").getPublicUrl(path);
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ avatar_url: publicUrl.publicUrl })
-    .eq("id", userData.user.id);
+  const { error } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", userData.user.id);
   if (error) return { success: false, error: toFriendlyAuthError(error.message) };
 
-  return { success: true, data: { url: publicUrl.publicUrl } };
+  return { success: true, data: { url } };
 }
 
 export async function updateProfileAction(input: {
@@ -408,44 +395,36 @@ export async function disconnectBankAction(revenueSourceId: string): Promise<Act
   return { success: true, data: undefined };
 }
 
-const MAX_PROOF_BYTES = 5 * 1024 * 1024;
-const ALLOWED_PROOF_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
-
-export async function submitRevenueDeclarationAction(formData: FormData): Promise<ActionResult> {
+/** The proof was sent straight to storage by the browser (see lib/uploadClient). */
+export async function submitRevenueDeclarationAction(input: {
+  amount: string;
+  label: string;
+  proofPath: string;
+}): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
   const userId = userData.user.id;
 
-  const amountRaw = String(formData.get("amount") ?? "").replace(",", ".");
-  const amount = Number.parseFloat(amountRaw);
+  const amount = Number.parseFloat(String(input?.amount ?? "").replace(",", "."));
   if (!Number.isFinite(amount) || amount <= 0) {
     return { success: false, error: "Indique un montant valide." };
   }
   const amountCents = Math.round(amount * 100);
-  const label = String(formData.get("label") ?? "").trim().slice(0, 120);
+  const label = String(input?.label ?? "").trim().slice(0, 120);
 
   const now = new Date();
   const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 
-  const proof = formData.get("proof");
-  if (!(proof instanceof File) || proof.size === 0) {
+  if (!input?.proofPath) {
     return { success: false, error: "Une preuve (facture, export comptable, capture bancaire...) est obligatoire." };
   }
-  if (proof.size > MAX_PROOF_BYTES) {
-    return { success: false, error: "Le fichier ne doit pas dépasser 5 Mo." };
+  let proofPath: string;
+  try {
+    proofPath = (await verifyUpload(userId, "revenue-proof", input.proofPath)).path;
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Le téléversement de la preuve a échoué." };
   }
-  if (!ALLOWED_PROOF_TYPES.includes(proof.type)) {
-    return { success: false, error: "Formats acceptés : PDF, PNG, JPEG, WebP." };
-  }
-  const ext = proof.name.split(".").pop() || "bin";
-  const path = `${userId}/${period}-${Date.now()}.${ext}`;
-  const { error: uploadError } = await supabase.storage.from("revenue-proofs").upload(path, proof, {
-    contentType: proof.type,
-    upsert: true,
-  });
-  if (uploadError) return { success: false, error: "Le téléversement de la preuve a échoué." };
-  const proofPath = path;
 
   try {
     await submitRevenueDeclaration({ userId, period, label, amountCents, proofPath });
@@ -694,14 +673,12 @@ export async function deleteTrainingAction(id: string): Promise<ActionResult> {
   return { success: true, data: undefined };
 }
 
-export async function uploadTrainingCoverAction(formData: FormData): Promise<ActionResult<{ url: string }>> {
+export async function uploadTrainingCoverAction(path: string): Promise<ActionResult<{ url: string }>> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
 
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { success: false, error: "Aucune image fournie." };
-  const result = await uploadTrainingCover(userData.user.id, file);
+  const result = await uploadTrainingCover(userData.user.id, path);
   if (!result.ok) return { success: false, error: result.error };
   return { success: true, data: { url: result.url } };
 }

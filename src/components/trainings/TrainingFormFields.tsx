@@ -93,7 +93,8 @@ export function TrainingFormFields({
 }: {
   value: TrainingFormState;
   onChange: (next: TrainingFormState) => void;
-  upload: (formData: FormData) => Promise<ActionResult<{ url: string }>>;
+  /** Sends the image and returns its public URL. */
+  upload: (file: File) => Promise<ActionResult<{ url: string }>>;
   showAudience?: boolean;
 }) {
   const set = (patch: Partial<TrainingFormState>) => onChange({ ...f, ...patch });
@@ -108,10 +109,8 @@ export function TrainingFormFields({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    const formData = new FormData();
-    formData.set("file", file);
     setUploading(true);
-    upload(formData).then((result) => {
+    upload(file).then((result) => {
       setUploading(false);
       if (!result.success) return toast.show(result.error, "error");
       set({ coverImageUrl: result.data.url });
@@ -120,7 +119,7 @@ export function TrainingFormFields({
 
   return (
     <div className="flex flex-col gap-4">
-      <Field label="Image de couverture" hint="Optionnel. Format 16:9 conseillé (1600×900), JPG, PNG ou WebP, 5 Mo max.">
+      <Field label="Image de couverture" hint="Optionnel. Format 16:9 conseillé (1600×900), JPG, PNG ou WebP. Les grandes images sont réduites automatiquement.">
         {f.coverImageUrl ? (
           <div className="relative overflow-hidden rounded-md border border-border">
             {/* eslint-disable-next-line @next/next/no-img-element */}

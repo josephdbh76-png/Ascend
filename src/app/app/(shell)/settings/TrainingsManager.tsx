@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { uploadThen } from "@/lib/uploadClient";
 import Link from "next/link";
 import { Archive, ExternalLink, Eye, Lock, MousePointerClick, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -244,7 +245,7 @@ export function TrainingsManager({ initial, canCreate }: { initial: Training[]; 
         className="max-w-lg"
       >
         <form onSubmit={save} className="flex flex-col gap-5">
-          <TrainingFormFields value={form} onChange={setForm} upload={uploadTrainingCoverAction} />
+          <TrainingFormFields value={form} onChange={setForm} upload={(file) => uploadThen("training-cover", file, uploadTrainingCoverAction)} />
           <p className="rounded-md border border-border bg-bg-primary/40 px-3 py-2.5 text-xs text-text-muted">
             L&apos;équipe relit chaque formation avant sa mise en ligne. Modifier le titre, le texte, le lien ou
             l&apos;image la renvoie en relecture ; les prix et le code se changent librement.

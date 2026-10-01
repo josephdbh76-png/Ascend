@@ -1,4 +1,5 @@
 import "server-only";
+import { verifyUpload } from "@/services/upload.service";
 import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotificationForUser } from "@/services/notification.service";
@@ -346,15 +347,14 @@ export async function deleteOwnerTraining(ownerId: string, id: string) {
   return error ? { ok: false as const, error: "Impossible de supprimer la formation." } : { ok: true as const };
 }
 
-export async function uploadTrainingCover(ownerFolder: string, file: File): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
-  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) return { ok: false, error: "Format non supporté (JPG, PNG ou WebP)." };
-  if (file.size > 5 * 1024 * 1024) return { ok: false, error: "Image trop lourde (5 Mo maximum)." };
-  const admin = createAdminClient();
-  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-  const path = `${ownerFolder}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await admin.storage.from("training-covers").upload(path, file, { contentType: file.type });
-  if (error) return { ok: false, error: "L'envoi de l'image a échoué." };
-  return { ok: true, url: admin.storage.from("training-covers").getPublicUrl(path).data.publicUrl };
+/** The cover was sent straight to storage by the browser; this checks it. */
+export async function uploadTrainingCover(ownerId: string, path: string): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  try {
+    const file = await verifyUpload(ownerId, "training-cover", path);
+    return { ok: true, url: file.publicUrl! };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "L'envoi de l'image a échoué." };
+  }
 }
 
 // ---------------------------------------------------------------------------

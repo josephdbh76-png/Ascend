@@ -53,6 +53,7 @@ import {
   type RewardInput,
 } from "@/services/season.service";
 import { generateLeagueSeason } from "@/services/league.service";
+import { verifyUpload } from "@/services/upload.service";
 import { createTitle, createTrophy, createAchievement, grantRewardToMember } from "@/services/catalog.service";
 import {
   reviewTraining,
@@ -387,28 +388,22 @@ export async function deleteBannerAction(bannerId: string): Promise<ActionResult
   }
 }
 
-const MAX_ADMIN_IMAGE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_ADMIN_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 /** Shared upload used by training covers and dashboard banners. */
-export async function uploadAdminImageAction(formData: FormData): Promise<ActionResult<{ url: string }>> {
+/** Called once the browser has sent the image to storage (see lib/uploadClient). */
+export async function uploadAdminImageAction(path: string): Promise<ActionResult<{ url: string }>> {
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
-
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { success: false, error: "Aucune image fournie." };
-  if (!ALLOWED_ADMIN_IMAGE_TYPES.includes(file.type)) {
-    return { success: false, error: "Format non supporté (JPG, PNG ou WebP)." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Tu n'es pas connecté." };
+  try {
+    const file = await verifyUpload(user.id, "admin-media", path);
+    return { success: true, data: { url: file.publicUrl! } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Le téléversement a échoué." };
   }
-  if (file.size > MAX_ADMIN_IMAGE_BYTES) return { success: false, error: "Image trop lourde (max 5 Mo)." };
-
-  const admin = createAdminClient();
-  const ext = file.name.split(".").pop() || "jpg";
-  const path = `${crypto.randomUUID()}.${ext}`;
-  const { error: uploadError } = await admin.storage.from("admin-media").upload(path, file, { contentType: file.type });
-  if (uploadError) return { success: false, error: "Le téléversement a échoué." };
-
-  const { data } = admin.storage.from("admin-media").getPublicUrl(path);
-  return { success: true, data: { url: data.publicUrl } };
 }
 
 // ---------------------------------------------------------------- members
