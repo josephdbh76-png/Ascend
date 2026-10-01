@@ -20,7 +20,10 @@ import { getLatestUnreadOfType } from "@/services/notification.service";
 import { getProfileViewCount } from "@/services/profileView.service";
 import { getRecentFollowerCount } from "@/services/network.service";
 import { listActiveBanners } from "@/services/banner.service";
+import { getSubscription } from "@/services/subscription.service";
 import { getActiveSeason, getUserSeasonStanding } from "@/services/season.service";
+import { getSeasonLeague } from "@/services/league.service";
+import { league as leagueDef } from "@/lib/leagues";
 import { DashboardBannerCarousel } from "@/components/dashboard/DashboardBannerCarousel";
 import { AutoRevenueSync } from "@/components/dashboard/AutoRevenueSync";
 import { isRevenueSyncStale, AUTO_SYNC_PROVIDERS } from "@/lib/revenueSync";
@@ -81,7 +84,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/app/da
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("is_demo", false),
     getProfileViewCount(user.id, 7),
     getRecentFollowerCount(user.id, 7),
-    listActiveBanners(),
+    getSubscription(user.id).then((sub) => listActiveBanners(sub.tier)),
     supabase
       .from("revenue_sources")
       .select("last_synced_at")
@@ -94,7 +97,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/app/da
   const beta = await getBetaMode();
   const showTour = replayTour || !profile.hasSeenTutorial;
   const season = await getActiveSeason();
-  const seasonStanding = season ? await getUserSeasonStanding(season.id, user.id) : null;
+  const [seasonStanding, seasonPlacement] = season
+    ? await Promise.all([getUserSeasonStanding(season.id, user.id), getSeasonLeague(user.id, season)])
+    : [null, null];
+  const seasonLeague = seasonPlacement ? leagueDef(seasonPlacement.league) : null;
   const seasonDaysLeft = season ? daysUntil(season.endsAt) : null;
   const nextChallenges = challenges
     .filter((c) => c.status !== "completed" && (!season || c.seasonId === season.id))
@@ -338,6 +344,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/app/da
           </div>
           {season && (
             <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              {seasonLeague && (
+                <span className={`self-center rounded border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${seasonLeague.tone}`}>
+                  Ligue {seasonLeague.name}
+                </span>
+              )}
               <span className="text-2xl font-semibold tabular-nums text-gold">{seasonStanding ? `#${seasonStanding.rank}` : "—"}</span>
               <span className="text-sm text-text-secondary">
                 {seasonStanding ? `${seasonStanding.points} points` : "Pas encore de points"}

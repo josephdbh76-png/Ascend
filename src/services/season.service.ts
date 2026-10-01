@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotificationForUser } from "@/services/notification.service";
 import { grantTitleToMember } from "@/services/progress.service";
+import { placeSeasonScorers } from "@/services/league.service";
+import { league as leagueDef, isLeagueId, type LeagueId } from "@/lib/leagues";
 import type { SeasonRewardKind, SeasonStandingRow, PhysicalRewardStatus } from "@/types/database.types";
 
 export interface Season {
@@ -27,6 +29,8 @@ export interface SeasonReward {
   titleId: string | null;
   trophyId: string | null;
   label: string;
+  /** null: every league. */
+  league: LeagueId | null;
 }
 
 function mapSeason(s: {
@@ -82,12 +86,18 @@ export async function getSeasonRewards(seasonId: string): Promise<SeasonReward[]
     titleId: r.title_id,
     trophyId: r.trophy_id,
     label: r.label,
+    league: isLeagueId(r.league) ? r.league : null,
   }));
 }
 
-export async function getSeasonStandings(seasonId: string, limit = 50): Promise<SeasonStandingRow[]> {
+/** Rewards of one league's ranking. */
+export function rewardsForLeague<T extends { league: string | null }>(rewards: T[], league: string): T[] {
+  return rewards.filter((r) => r.league == null || r.league === league);
+}
+
+export async function getSeasonStandings(seasonId: string, limit = 50, league: LeagueId | null = null): Promise<SeasonStandingRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("get_season_standings", { p_season_id: seasonId, p_limit: limit });
+  const { data, error } = await supabase.rpc("get_season_standings", { p_season_id: seasonId, p_limit: limit, p_league: league });
   if (error) return [];
   return data ?? [];
 }
@@ -96,7 +106,9 @@ export async function getUserSeasonStanding(seasonId: string, userId: string) {
   const supabase = await createClient();
   const { data } = await supabase.rpc("get_user_season_standing", { p_season_id: seasonId, p_user_id: userId });
   const row = data?.[0];
-  return row ? { rank: Number(row.rank), points: Number(row.points), total: Number(row.total) } : null;
+  return row
+    ? { rank: Number(row.rank), points: Number(row.points), total: Number(row.total), league: isLeagueId(row.league) ? row.league : ("bronze" as LeagueId) }
+    : null;
 }
 
 export interface SeasonResult {
@@ -106,13 +118,14 @@ export interface SeasonResult {
   rank: number;
   points: number;
   rewards: string[];
+  league: LeagueId | null;
 }
 
 export async function getUserSeasonResults(userId: string): Promise<SeasonResult[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("season_results")
-    .select("season_id, rank, points, rewards, seasons(name, label)")
+    .select("season_id, rank, points, rewards, league, seasons(name, label)")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   return (data ?? []).map((r) => {
@@ -124,6 +137,7 @@ export async function getUserSeasonResults(userId: string): Promise<SeasonResult
       rank: r.rank,
       points: r.points,
       rewards: r.rewards,
+      league: isLeagueId(r.league) ? r.league : null,
     };
   });
 }
@@ -139,6 +153,7 @@ export interface AdminChallengeRow {
   points: number;
   isPublished: boolean;
   rewardTitleId: string | null;
+  leagues: LeagueId[] | null;
   completedCount: number;
 }
 
@@ -161,6 +176,7 @@ export async function listSeasonChallengesForAdmin(seasonId: string): Promise<Ad
       points: c.points ?? 0,
       isPublished: c.is_published !== false,
       rewardTitleId: c.reward_title_id ?? null,
+      leagues: c.leagues?.length ? (c.leagues.filter(isLeagueId) as LeagueId[]) : null,
       completedCount: counts.get(c.id) ?? 0,
     }));
 }
@@ -216,6 +232,8 @@ export interface ChallengeInput {
   points: number;
   rewardTitleId: string | null;
   isPublished: boolean;
+  /** null or empty: every league. */
+  leagues: LeagueId[] | null;
 }
 
 function slugify(text: string) {
@@ -241,6 +259,7 @@ export async function saveChallenge(input: ChallengeInput) {
     points: input.points,
     reward_title_id: input.rewardTitleId,
     is_published: input.isPublished,
+    leagues: input.leagues?.filter(isLeagueId).length ? input.leagues.filter(isLeagueId) : null,
     starts_at: season.starts_at,
     ends_at: season.ends_at,
   };
@@ -268,6 +287,7 @@ export interface RewardInput {
   titleId: string | null;
   trophyId: string | null;
   label: string;
+  league: LeagueId | null;
 }
 
 export async function addSeasonReward(input: RewardInput) {
@@ -280,6 +300,7 @@ export async function addSeasonReward(input: RewardInput) {
     title_id: input.kind === "title" ? input.titleId : null,
     trophy_id: input.kind === "trophy" ? input.trophyId : null,
     label: input.label,
+    league: input.league && isLeagueId(input.league) ? input.league : null,
   });
   if (error) throw new Error(error.message);
 }
@@ -313,7 +334,7 @@ export async function previewSeasonClosing(seasonId: string): Promise<AdminStand
   return rows.map((r) => ({
     ...r,
     email: emails.get(r.user_id) ?? null,
-    rewards: (rewards ?? [])
+    rewards: rewardsForLeague(rewards ?? [], r.league)
       .filter((w) => Number(r.rank) >= w.rank_from && Number(r.rank) <= w.rank_to)
       .map((w) => w.label),
   }));
@@ -338,6 +359,9 @@ export async function closeSeasonAndDistribute(seasonId: string): Promise<{ winn
     .select("id");
   if (!claimed?.length) throw new Error("Les récompenses de cette saison ont déjà été distribuées.");
 
+  // Final leagues, with every revenue month synced up to now.
+  await placeSeasonScorers({ id: season.id, startsAt: season.starts_at, endsAt: season.ends_at });
+
   const [{ data: standings }, { data: rewards }] = await Promise.all([
     admin.rpc("get_season_standings", { p_season_id: seasonId, p_limit: 100000 }),
     admin.from("season_rewards").select("*").eq("season_id", seasonId),
@@ -346,7 +370,7 @@ export async function closeSeasonAndDistribute(seasonId: string): Promise<{ winn
   let winners = 0;
   for (const row of standings ?? []) {
     const rank = Number(row.rank);
-    const won = (rewards ?? []).filter((w) => rank >= w.rank_from && rank <= w.rank_to);
+    const won = rewardsForLeague(rewards ?? [], row.league).filter((w) => rank >= w.rank_from && rank <= w.rank_to);
     const hasPhysical = won.some((w) => w.kind === "physical");
 
     await admin.from("season_results").upsert(
@@ -357,6 +381,7 @@ export async function closeSeasonAndDistribute(seasonId: string): Promise<{ winn
         points: Number(row.points),
         rewards: won.map((w) => w.label),
         physical_status: hasPhysical ? "to_send" : "none",
+        league: row.league,
       },
       { onConflict: "season_id,user_id" },
     );
@@ -375,7 +400,7 @@ export async function closeSeasonAndDistribute(seasonId: string): Promise<{ winn
     await createNotificationForUser({
       userId: row.user_id,
       type: "season_reward",
-      title: `${season.name} : tu termines #${rank}`,
+      title: `${season.name} : tu termines #${rank} en ligue ${leagueDef(row.league).name}`,
       body: `Bravo ! Tu remportes : ${won.map((w) => w.label).join(", ")}.${
         hasPhysical ? " L'équipe ASCEND va te contacter par e-mail pour l'envoi de ta récompense physique." : ""
       }`,
@@ -395,13 +420,14 @@ export interface PhysicalRewardRow {
   rank: number;
   rewards: string[];
   status: PhysicalRewardStatus;
+  league: LeagueId | null;
 }
 
 export async function listPhysicalRewards(seasonId: string): Promise<PhysicalRewardRow[]> {
   const admin = createAdminClient();
   const { data } = await admin
     .from("season_results")
-    .select("user_id, rank, rewards, physical_status, profiles(username, first_name, last_name)")
+    .select("user_id, rank, rewards, physical_status, league, profiles(username, first_name, last_name)")
     .eq("season_id", seasonId)
     .neq("physical_status", "none")
     .order("rank", { ascending: true });
@@ -418,6 +444,7 @@ export async function listPhysicalRewards(seasonId: string): Promise<PhysicalRew
         rank: r.rank,
         rewards: r.rewards,
         status: r.physical_status,
+        league: isLeagueId(r.league) ? r.league : null,
       };
     }),
   );

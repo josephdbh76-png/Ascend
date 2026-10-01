@@ -4,6 +4,7 @@ import { createNotificationForUser } from "@/services/notification.service";
 import { nextRevenueMilestone, pickReferenceMonths } from "@/services/revenue.service";
 import { normalizeRequirement, conditionDef, type ConditionType } from "@/lib/conditions";
 import { calculateGrowth } from "@/lib/utils";
+import { placeMemberInSeason } from "@/services/league.service";
 
 /**
  * The progress engine: computes a member's metrics from server-side data
@@ -24,6 +25,8 @@ export interface MemberMetrics {
   /** 0-100: photo, bio, skills, activity description. */
   profileCompleteness: number;
   foundingNumber: number | null;
+  /** Reference month of the active season (growth challenges), set by refreshMemberProgress. */
+  seasonBaseCents?: number | null;
 }
 
 export async function getMemberMetrics(userId: string): Promise<MemberMetrics> {
@@ -95,6 +98,12 @@ export function evaluateCondition(type: string, target: number, m: MemberMetrics
     case "growth_threshold": {
       const g = m.growthPercent ?? 0;
       return { progress: ratio(g), done: m.growthPercent != null && m.growthPercent >= target };
+    }
+    case "base_growth": {
+      const base = m.seasonBaseCents ?? 0;
+      if (base <= 0) return { progress: 0, done: false };
+      const g = ((m.revenueCents - base) / base) * 100;
+      return { progress: ratio(g), done: m.verified && g >= target };
     }
     case "customer_threshold":
       return { progress: ratio(m.customers), done: m.customers >= target };
@@ -298,10 +307,18 @@ export async function refreshMemberProgress(userId: string, metrics?: MemberMetr
       admin.from("user_titles").select("title_id, is_active").eq("user_id", userId),
       admin.from("achievements").select("id, name, rarity, criteria"),
       admin.from("user_achievements").select("achievement_id").eq("user_id", userId),
-      admin.from("seasons").select("id").eq("is_active", true),
+      admin.from("seasons").select("id, starts_at, ends_at").eq("is_active", true),
     ]);
   // A season being prepared (not active yet) never hands out points early.
   const activeSeasonIds = new Set((activeSeasons ?? []).map((s) => s.id));
+  // Each active season places the member in a league: only that league's
+  // challenges count, growth is measured against its reference month.
+  const leagues = new Map<string, string>();
+  for (const s of activeSeasons ?? []) {
+    const placement = await placeMemberInSeason(userId, { id: s.id, startsAt: s.starts_at, endsAt: s.ends_at });
+    leagues.set(s.id, placement.league);
+    m.seasonBaseCents = placement.baseCents;
+  }
 
   const progressByChallenge = new Map((progressRows ?? []).map((p) => [p.challenge_id, p]));
   let hasActiveTitle = (ownedTitles ?? []).some((t) => t.is_active);
@@ -320,6 +337,8 @@ export async function refreshMemberProgress(userId: string, metrics?: MemberMetr
     const c = { ...raw, points: raw.points ?? 0, reward_title_id: raw.reward_title_id ?? null };
     if (c.type === "coming_soon" || raw.is_published === false) continue;
     if (c.season_id && !activeSeasonIds.has(c.season_id)) continue;
+    const challengeLeagues = (raw as { leagues?: string[] | null }).leagues;
+    if (c.season_id && challengeLeagues?.length && !challengeLeagues.includes(leagues.get(c.season_id) ?? "bronze")) continue;
     const existing = progressByChallenge.get(c.id);
     // A completed challenge stays completed: its season points are earned.
     if (existing?.status === "completed") continue;

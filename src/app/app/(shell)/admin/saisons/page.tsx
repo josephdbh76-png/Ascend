@@ -7,6 +7,7 @@ import {
   previewSeasonClosing,
   listPhysicalRewards,
 } from "@/services/season.service";
+import { countSeasonParticipants } from "@/services/league.service";
 import { SeasonsAdmin } from "./SeasonsAdmin";
 
 export const metadata: Metadata = { title: "Saisons · Administration" };
@@ -17,13 +18,14 @@ export default async function AdminSeasonsPage({ searchParams }: { searchParams:
   const selected = seasons.find((s) => s.id === params.saison) ?? seasons.find((s) => s.isActive) ?? seasons[0] ?? null;
 
   const admin = createAdminClient();
-  const [{ data: titles }, { data: trophies }, challenges, rewards, standings, physical] = await Promise.all([
+  const [{ data: titles }, { data: trophies }, challenges, rewards, standings, physical, leagueCounts] = await Promise.all([
     admin.from("titles").select("id, name, rarity, type").order("created_at"),
     admin.from("trophies").select("id, name").order("created_at"),
     selected ? listSeasonChallengesForAdmin(selected.id) : Promise.resolve([]),
     selected ? getSeasonRewards(selected.id) : Promise.resolve([]),
     selected ? previewSeasonClosing(selected.id) : Promise.resolve([]),
     selected?.rewardsDistributedAt ? listPhysicalRewards(selected.id) : Promise.resolve([]),
+    selected ? countSeasonParticipants(selected.id) : Promise.resolve([]),
   ]);
 
   return (
@@ -32,8 +34,9 @@ export default async function AdminSeasonsPage({ searchParams }: { searchParams:
       selected={selected}
       challenges={challenges}
       rewards={rewards}
-      standings={standings.slice(0, 30)}
+      standings={standings.slice(0, 200)}
       participants={standings.length}
+      leagueCounts={leagueCounts}
       physical={physical}
       titles={(titles ?? []).filter((t) => t.type === "earned").map((t) => ({ id: t.id, name: t.name }))}
       trophies={(trophies ?? []).map((t) => ({ id: t.id, name: t.name }))}

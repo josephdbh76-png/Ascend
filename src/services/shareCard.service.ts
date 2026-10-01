@@ -1,4 +1,5 @@
 import "server-only";
+import { league as leagueDef } from "@/lib/leagues";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { activityLabel } from "@/lib/business";
@@ -225,19 +226,20 @@ export async function loadShareCard(kind: ShareKind, username: string, id: strin
       .maybeSingle();
     if (!season) return null;
 
-    let standing: { rank: number; points: number; total: number | null } | null = null;
+    let standing: { rank: number; points: number; total: number | null; league: string | null } | null = null;
     if (season.rewards_distributed_at) {
       const { data: result } = await supabase
         .from("season_results")
-        .select("rank, points")
+        .select("rank, points, league")
         .eq("season_id", season.id)
         .eq("user_id", userId)
         .maybeSingle();
-      if (result) standing = { rank: result.rank, points: result.points, total: null };
+      if (result) standing = { rank: result.rank, points: result.points, total: null, league: result.league };
     } else {
       const { data: live } = await supabase.rpc("get_user_season_standing", { p_season_id: season.id, p_user_id: userId });
       const row = live?.[0];
-      if (row && row.rank) standing = { rank: Number(row.rank), points: Number(row.points), total: Number(row.total) || null };
+      if (row && row.rank)
+        standing = { rank: Number(row.rank), points: Number(row.points), total: Number(row.total) || null, league: row.league ?? null };
     }
     if (!standing) return null;
 
@@ -245,14 +247,14 @@ export async function loadShareCard(kind: ShareKind, username: string, id: strin
     const seasonName = seasonShortName(season.number);
     return {
       kind,
-      eyebrow: final ? `${seasonName} · Classement final` : `${seasonName} · En cours`,
+      eyebrow: `${seasonName}${standing.league ? ` · Ligue ${leagueDef(standing.league).name}` : ""} · ${final ? "Classement final" : "En cours"}`,
       headline: seasonHeadline(standing.rank),
       description: season.label,
       icon: standing.rank <= 3 ? "crown" : "flag",
       rarity: standing.rank <= 3 ? "legendary" : standing.rank <= 10 ? "epic" : "rare",
       rarityLabel: null,
       bigStat: `#${standing.rank}`,
-      statCaption: `${standing.points} point${standing.points > 1 ? "s" : ""}${standing.total ? ` · ${standing.total} participants` : ""}`,
+      statCaption: `${standing.points} point${standing.points > 1 ? "s" : ""}${standing.total ? ` · ${standing.total} dans la ligue` : ""}`,
       dateLabel: final ? monthLabel(season.ends_at) : null,
       footnote: null,
       member,

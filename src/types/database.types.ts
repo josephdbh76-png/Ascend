@@ -31,7 +31,8 @@ export type ChallengeType =
   | "follower_threshold"
   | "rank_threshold"
   | "verification"
-  | "profile_complete";
+  | "profile_complete"
+  | "base_growth";
 export type SeasonRewardKind = "title" | "trophy" | "physical";
 export type PhysicalRewardStatus = "none" | "to_send" | "sent";
 export type ChallengeStatus = "in_progress" | "completed";
@@ -333,6 +334,8 @@ export interface Database {
           reward_title_id: string | null;
           points: number;
           is_published: boolean;
+          /** null: every league. */
+          leagues: ("bronze" | "silver" | "gold" | "platinum" | "diamond")[] | null;
           starts_at: string;
           ends_at: string;
           created_at: string;
@@ -391,6 +394,8 @@ export interface Database {
           title_id: string | null;
           trophy_id: string | null;
           label: string;
+          /** null: the ranking of every league. */
+          league: string | null;
           created_at: string;
         };
         Insert: Partial<Omit<Database["public"]["Tables"]["season_rewards"]["Row"], "id">> & {
@@ -411,6 +416,7 @@ export interface Database {
           points: number;
           rewards: string[];
           physical_status: PhysicalRewardStatus;
+          league: string | null;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["season_results"]["Row"]> & {
@@ -420,6 +426,24 @@ export interface Database {
           points: number;
         };
         Update: Partial<Database["public"]["Tables"]["season_results"]["Row"]>;
+        Relationships: [];
+      };
+      season_participants: {
+        Row: {
+          season_id: string;
+          user_id: string;
+          league: string;
+          base_revenue_cents: number;
+          base_period: string | null;
+          provisional: boolean;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["season_participants"]["Row"]> & {
+          season_id: string;
+          user_id: string;
+          league: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["season_participants"]["Row"]>;
         Relationships: [];
       };
       extra_businesses: {
@@ -1022,6 +1046,7 @@ export interface Database {
           title: string;
           subtitle: string | null;
           buttons: { type: "link" | "copy_code"; label: string; value: string }[];
+          audience: ("free" | "pro" | "elite")[];
           display_order: number;
           is_active: boolean;
           created_at: string;
@@ -1070,7 +1095,7 @@ export interface Database {
         Returns: undefined;
       };
       get_season_standings: {
-        Args: { p_season_id: string; p_limit?: number };
+        Args: { p_season_id: string; p_limit?: number; p_league?: string | null };
         Returns: SeasonStandingRow[];
       };
       get_training_stats: {
@@ -1079,7 +1104,7 @@ export interface Database {
       };
       get_user_season_standing: {
         Args: { p_season_id: string; p_user_id: string };
-        Returns: { rank: number; points: number; total: number }[];
+        Returns: { rank: number; points: number; total: number; league: string }[];
       };
     };
   };
@@ -1116,6 +1141,7 @@ export interface SeasonStandingRow {
   completed_count: number;
   last_completed_at: string | null;
   is_current_user: boolean;
+  league: string;
 }
 
 export interface UserRankRow {

@@ -8,6 +8,7 @@ import { formatCurrency } from "@/lib/utils";
 export type ConditionType =
   | "revenue_threshold"
   | "growth_threshold"
+  | "base_growth"
   | "customer_threshold"
   | "transaction_threshold"
   | "follower_threshold"
@@ -32,6 +33,7 @@ export interface ConditionDef {
 export const CONDITIONS: ConditionDef[] = [
   { type: "revenue_threshold", label: "Revenus mensuels vérifiés d'au moins", unit: "€", automatic: true, forChallenges: true },
   { type: "growth_threshold", label: "Croissance mensuelle d'au moins", unit: "%", automatic: true, forChallenges: true },
+  { type: "base_growth", label: "Hausse par rapport au mois de référence de la saison d'au moins", unit: "%", automatic: true, forChallenges: true },
   { type: "customer_threshold", label: "Clients sur un mois d'au moins", unit: "clients", automatic: true, forChallenges: true },
   { type: "transaction_threshold", label: "Ventes sur un mois d'au moins", unit: "ventes", automatic: true, forChallenges: true },
   { type: "follower_threshold", label: "Abonnés d'au moins", unit: "abonnés", automatic: true, forChallenges: true },
@@ -83,6 +85,8 @@ export function describeCondition(type: string, target: number): string | null {
       return `${formatCurrency(target)} de revenus mensuels vérifiés`;
     case "growth_threshold":
       return `+${target} % de croissance sur un mois`;
+    case "base_growth":
+      return `+${target} % sur le mois de référence de la saison`;
     case "customer_threshold":
       return `${target} clients sur un mois`;
     case "transaction_threshold":

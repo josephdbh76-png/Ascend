@@ -52,6 +52,7 @@ import {
   type ChallengeInput,
   type RewardInput,
 } from "@/services/season.service";
+import { generateLeagueSeason } from "@/services/league.service";
 import { createTitle, createTrophy, createAchievement, grantRewardToMember } from "@/services/catalog.service";
 import {
   reviewTraining,
@@ -506,6 +507,21 @@ export async function addSeasonRewardAction(input: RewardInput): Promise<ActionR
 
 export async function deleteSeasonRewardAction(rewardId: string): Promise<ActionResult> {
   return adminRun(() => deleteSeasonReward(rewardId), ["/app/challenges"]);
+}
+
+export async function generateLeagueSeasonAction(
+  seasonId: string,
+): Promise<ActionResult<{ created: number; updated: number; hidden: number; rewards: number }>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    const result = await generateLeagueSeason(seasonId);
+    revalidatePath("/app/admin", "layout");
+    revalidatePath("/app/challenges");
+    revalidatePath("/app/dashboard");
+    return { success: true, data: result };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
 }
 
 export async function closeSeasonAction(seasonId: string): Promise<ActionResult<{ winners: number }>> {

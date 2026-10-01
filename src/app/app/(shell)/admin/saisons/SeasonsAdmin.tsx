@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarRange, Crown, Gem, Package, Pencil, Plus, Trash2, Trophy } from "lucide-react";
+import { CalendarRange, Crown, Gem, Package, Pencil, Plus, Sparkles, Trash2, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -14,6 +14,8 @@ import { CONDITIONS, conditionDef, describeCondition, fromStoredTarget, toStored
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { Season, SeasonReward, AdminChallengeRow, AdminStandingRow, PhysicalRewardRow } from "@/services/season.service";
 import type { SeasonRewardKind, PhysicalRewardStatus } from "@/types/database.types";
+import type { LeagueCount } from "@/services/league.service";
+import { LEAGUES, league as leagueDef, leagueRangeLabel, type LeagueId } from "@/lib/leagues";
 import {
   saveSeasonAction,
   activateSeasonAction,
@@ -23,6 +25,7 @@ import {
   deleteSeasonRewardAction,
   closeSeasonAction,
   setPhysicalRewardStatusAction,
+  generateLeagueSeasonAction,
 } from "../actions";
 import { AdminSection } from "../AdminSection";
 
@@ -37,6 +40,19 @@ function day(iso: string) {
 
 function frDate(iso: string) {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function LeagueChip({ id, className }: { id: LeagueId; className?: string }) {
+  const l = leagueDef(id);
+  return (
+    <span className={cn("inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide", l.tone, className)}>
+      {l.name}
+    </span>
+  );
+}
+
+function inLeague(leagues: LeagueId[] | null, id: LeagueId) {
+  return !leagues || leagues.length === 0 || leagues.includes(id);
 }
 
 function hasEnded(s: Season) {
@@ -59,6 +75,7 @@ export function SeasonsAdmin({
   rewards,
   standings,
   participants,
+  leagueCounts,
   physical,
   titles,
   trophies,
@@ -69,6 +86,7 @@ export function SeasonsAdmin({
   rewards: SeasonReward[];
   standings: AdminStandingRow[];
   participants: number;
+  leagueCounts: LeagueCount[];
   physical: PhysicalRewardRow[];
   titles: Option[];
   trophies: Option[];
@@ -81,6 +99,8 @@ export function SeasonsAdmin({
   const [rewardFormOpen, setRewardFormOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
   const [deletingChallenge, setDeletingChallenge] = useState<string | null>(null);
+  const [generateOpen, setGenerateOpen] = useState(false);
+  const [view, setView] = useState<LeagueId | "all">("all");
 
   function run(action: () => Promise<ActionResult<unknown>>, success: string, after?: () => void) {
     startTransition(async () => {
@@ -92,7 +112,30 @@ export function SeasonsAdmin({
     });
   }
 
-  const totalPoints = challenges.filter((c) => c.isPublished).reduce((sum, c) => sum + c.points, 0);
+  const published = challenges.filter((c) => c.isPublished);
+  const pointsIn = (id: LeagueId) => published.filter((c) => inLeague(c.leagues, id)).reduce((sum, c) => sum + c.points, 0);
+  const shownChallenges = view === "all" ? challenges : challenges.filter((c) => inLeague(c.leagues, view));
+  const leagueOrder = (id: string) => LEAGUES.findIndex((l) => l.id === id);
+  const shownStandings = (view === "all" ? [...standings] : standings.filter((s) => s.league === view)).sort(
+    (a, b) => leagueOrder(a.league) - leagueOrder(b.league) || Number(a.rank) - Number(b.rank),
+  );
+  const leagueFilter = (
+    <div className="flex flex-wrap gap-1.5">
+      {(["all", ...LEAGUES.map((l) => l.id)] as const).map((id) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => setView(id)}
+          className={cn(
+            "rounded-md border px-2.5 py-1 text-xs transition-colors",
+            view === id ? "border-gold/50 bg-gold/10 text-gold" : "border-border text-text-secondary hover:text-text-primary",
+          )}
+        >
+          {id === "all" ? "Toutes les ligues" : leagueDef(id).name}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -144,32 +187,57 @@ export function SeasonsAdmin({
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <Badge variant={seasonStatus(selected).variant}>{seasonStatus(selected).label}</Badge>
               <span className="text-text-secondary">
-                {participants} participant{participants > 1 ? "s" : ""} · {challenges.filter((c) => c.isPublished).length} défis ·{" "}
-                {totalPoints} points à gagner
+                {participants} membre{participants > 1 ? "s" : ""} avec des points · {published.length} défis
               </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              {LEAGUES.map((l) => (
+                <div key={l.id} className="rounded-md border border-border bg-card p-2.5">
+                  <LeagueChip id={l.id} />
+                  <p className="mt-1.5 text-[11px] text-text-muted">{leagueRangeLabel(l.id)}</p>
+                  <p className="mt-1 text-xs text-text-secondary">
+                    {leagueCounts.find((c) => c.league === l.id)?.members ?? 0} membre(s) · {pointsIn(l.id)} pts
+                  </p>
+                </div>
+              ))}
             </div>
             {selected.description && <p className="text-sm text-text-secondary">{selected.description}</p>}
           </AdminSection>
 
           <AdminSection
             title="Défis de la saison"
-            description="Chaque défi réussi pendant la saison rapporte ses points. La progression est calculée automatiquement."
+            description="Chaque membre ne voit que les défis de sa ligue. Garde le même total de points dans chaque ligue pour que les classements se valent."
             action={
-              <Button size="sm" onClick={() => setChallengeForm("new")} disabled={!!selected.rewardsDistributedAt}>
-                <Plus className="h-3.5 w-3.5" /> Ajouter un défi
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={() => setGenerateOpen(true)} disabled={!!selected.rewardsDistributedAt || pending}>
+                  <Sparkles className="h-3.5 w-3.5" /> Générer par ligue
+                </Button>
+                <Button size="sm" onClick={() => setChallengeForm("new")} disabled={!!selected.rewardsDistributedAt}>
+                  <Plus className="h-3.5 w-3.5" /> Ajouter un défi
+                </Button>
+              </div>
             }
           >
-            {challenges.length === 0 ? (
+            {leagueFilter}
+            {shownChallenges.length === 0 ? (
               <p className="text-xs text-text-muted">Aucun défi pour l&apos;instant.</p>
             ) : (
               <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
-                {challenges.map((c) => (
+                {shownChallenges.map((c) => (
                   <li key={c.id} className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <p className={cn("text-sm font-medium", c.isPublished ? "text-text-primary" : "text-text-muted line-through")}>
                         {c.title}
                       </p>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {c.leagues?.length ? (
+                          c.leagues.map((id) => <LeagueChip key={id} id={id} />)
+                        ) : (
+                          <span className="rounded border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                            Toutes les ligues
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-text-muted">
                         {describeCondition(c.type, c.target)} · réussi par {c.completedCount} membre{c.completedCount > 1 ? "s" : ""}
                         {!c.isPublished && " · masqué"}
@@ -219,7 +287,7 @@ export function SeasonsAdmin({
 
           <AdminSection
             title="Récompenses de fin de saison"
-            description="Distribuées automatiquement à la clôture, selon le rang final. Un trophée physique est à envoyer par vos soins."
+            description="Distribuées automatiquement à la clôture, selon le rang final dans chaque ligue. Un trophée physique est à envoyer par vos soins."
             action={
               <Button size="sm" onClick={() => setRewardFormOpen(true)} disabled={!!selected.rewardsDistributedAt}>
                 <Plus className="h-3.5 w-3.5" /> Ajouter une récompense
@@ -230,11 +298,24 @@ export function SeasonsAdmin({
               <p className="text-xs text-text-muted">Aucune récompense. Ajoute au moins un titre ou un trophée pour le podium.</p>
             ) : (
               <ul className="flex flex-col gap-2">
-                {rewards.map((r) => {
+                {rewards
+                  .filter((r) => view === "all" || r.league == null || r.league === view)
+                  .sort(
+                    (a, b) =>
+                      (a.league ? leagueOrder(a.league) : -1) - (b.league ? leagueOrder(b.league) : -1) ||
+                      a.rankFrom - b.rankFrom ||
+                      a.kind.localeCompare(b.kind),
+                  )
+                  .map((r) => {
                   const Icon = REWARD_ICONS[r.kind];
                   return (
                     <li key={r.id} className="flex items-center justify-between gap-3 rounded-md border border-border p-3 text-sm">
                       <span className="flex items-center gap-3">
+                        {r.league ? (
+                          <LeagueChip id={r.league} className="w-16 justify-center" />
+                        ) : (
+                          <span className="w-16 text-center text-[10px] font-semibold uppercase text-text-muted">Toutes</span>
+                        )}
                         <span className="w-20 shrink-0 font-semibold tabular-nums text-gold">
                           {r.rankFrom === r.rankTo ? `#${r.rankFrom}` : `#${r.rankFrom} à #${r.rankTo}`}
                         </span>
@@ -260,9 +341,10 @@ export function SeasonsAdmin({
 
           <AdminSection
             title={selected.rewardsDistributedAt ? "Classement final" : "Classement en direct"}
-            description="Démo et comptes de test exclus. Vérifie les gagnants avant de clôturer."
+            description="Un classement par ligue. Démo et comptes de test exclus. Vérifie les gagnants avant de clôturer."
           >
-            {standings.length === 0 ? (
+            {leagueFilter}
+            {shownStandings.length === 0 ? (
               <p className="text-xs text-text-muted">Personne n&apos;a encore marqué de points.</p>
             ) : (
               <div className="overflow-x-auto">
@@ -270,6 +352,7 @@ export function SeasonsAdmin({
                   <thead>
                     <tr className="text-left text-xs text-text-muted">
                       <th className="pb-2 font-medium">Rang</th>
+                      <th className="pb-2 font-medium">Ligue</th>
                       <th className="pb-2 font-medium">Membre</th>
                       <th className="pb-2 text-right font-medium">Points</th>
                       <th className="pb-2 text-right font-medium">Défis</th>
@@ -277,9 +360,12 @@ export function SeasonsAdmin({
                     </tr>
                   </thead>
                   <tbody>
-                    {standings.map((s) => (
+                    {shownStandings.map((s) => (
                       <tr key={s.user_id} className="border-t border-border">
                         <td className="py-2 font-semibold tabular-nums text-gold">#{s.rank}</td>
+                        <td className="py-2">
+                          <LeagueChip id={s.league as LeagueId} />
+                        </td>
                         <td className="py-2">
                           <Link href={`/profile/${s.username}`} className="hover:underline">
                             <span className="text-text-primary">
@@ -306,7 +392,8 @@ export function SeasonsAdmin({
                   <li key={p.userId} className="flex flex-col gap-2 rounded-md border border-border p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-text-primary">
-                        #{p.rank} · {p.firstName} {p.lastName} <span className="text-text-muted">@{p.username}</span>
+                        {p.league && <LeagueChip id={p.league} className="mr-1.5" />}#{p.rank} · {p.firstName} {p.lastName}{" "}
+                        <span className="text-text-muted">@{p.username}</span>
                       </p>
                       <p className="text-xs text-text-muted">
                         {p.email ? (
@@ -371,6 +458,47 @@ export function SeasonsAdmin({
           onClose={() => setRewardFormOpen(false)}
           onSubmit={(input) => run(() => addSeasonRewardAction(input), "Récompense ajoutée.", () => setRewardFormOpen(false))}
         />
+      )}
+
+      {generateOpen && selected && (
+        <Modal open onClose={() => setGenerateOpen(false)} title="Générer les défis et récompenses par ligue ?">
+          <div className="flex flex-col gap-3 text-sm text-text-secondary">
+            <p>Crée pour chaque ligue un jeu de défis calibré sur sa taille, avec le même total de points partout :</p>
+            <ul className="list-disc space-y-1 pl-5 text-xs">
+              <li>Bronze : premières ventes, premiers clients, 1 000 € dans le mois.</li>
+              <li>Argent à Diamant : +10 %, +25 % et +50 % sur le mois de référence du membre, puis les paliers de la ligue.</li>
+              <li>Pour tous : profil complet, revenus vérifiés, abonnés, régularité.</li>
+              <li>Récompenses de chaque ligue : titre et trophée Champion, Podium, titre Top 10.</li>
+            </ul>
+            <p className="text-xs">
+              Les défis existants avec la même condition sont réutilisés (les points déjà gagnés restent), les autres sont masqués.
+              Les récompenses titres et trophées sont remplacées, les récompenses physiques sont gardées.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setGenerateOpen(false)}>
+                Annuler
+              </Button>
+              <Button
+                size="sm"
+                disabled={pending}
+                onClick={() =>
+                  startTransition(async () => {
+                    const result = await generateLeagueSeasonAction(selected.id);
+                    if (!result.success) return toast.show(result.error, "error");
+                    toast.show(
+                      `${result.data.created} défis créés, ${result.data.updated} mis à jour, ${result.data.hidden} masqués, ${result.data.rewards} récompenses.`,
+                      "success",
+                    );
+                    setGenerateOpen(false);
+                    router.refresh();
+                  })
+                }
+              >
+                Générer
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
 
       {closeOpen && selected && (
@@ -492,6 +620,7 @@ function ChallengeForm({
   const [points, setPoints] = useState(String(challenge?.points ?? 20));
   const [rewardTitleId, setRewardTitleId] = useState(challenge?.rewardTitleId ?? "");
   const [isPublished, setIsPublished] = useState(challenge?.isPublished ?? true);
+  const [leagues, setLeagues] = useState<LeagueId[]>(challenge?.leagues ?? []);
   const def = conditionDef(type);
   const needsTarget = !!def?.unit;
 
@@ -512,6 +641,7 @@ function ChallengeForm({
             points: Math.round(Number(points)),
             rewardTitleId: rewardTitleId || null,
             isPublished,
+            leagues: leagues.length === 0 || leagues.length === LEAGUES.length ? null : leagues,
           });
         }}
       >
@@ -540,6 +670,32 @@ function ChallengeForm({
             <Input id="ch-points" type="number" min={0} step={1} value={points} onChange={(e) => setPoints(e.target.value)} required />
           </Field>
         </div>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm font-medium text-text-primary">Ligues</legend>
+          <div className="flex flex-wrap gap-2">
+            {LEAGUES.map((l) => {
+              const checked = leagues.includes(l.id);
+              return (
+                <label
+                  key={l.id}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs",
+                    checked ? "border-gold bg-gold/10 text-text-primary" : "border-border-strong text-text-secondary",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    className="h-3.5 w-3.5 accent-[#f5c451]"
+                    checked={checked}
+                    onChange={() => setLeagues((prev) => (checked ? prev.filter((x) => x !== l.id) : [...prev, l.id]))}
+                  />
+                  {l.name}
+                </label>
+              );
+            })}
+          </div>
+          <p className="text-xs text-text-muted">Rien de coché : le défi compte dans toutes les ligues.</p>
+        </fieldset>
         <Field label="Titre offert en plus (facultatif)" htmlFor="ch-reward">
           <Select id="ch-reward" value={rewardTitleId} onChange={(e) => setRewardTitleId(e.target.value)}>
             <option value="">Aucun</option>
@@ -583,6 +739,7 @@ function RewardForm({
   const [titleId, setTitleId] = useState(titles[0]?.id ?? "");
   const [trophyId, setTrophyId] = useState(trophies[0]?.id ?? "");
   const [physicalLabel, setPhysicalLabel] = useState("Trophée physique ASCEND gravé à ton nom");
+  const [rewardLeague, setRewardLeague] = useState<LeagueId | "">("");
 
   const label =
     kind === "title"
@@ -605,9 +762,20 @@ function RewardForm({
             titleId: kind === "title" ? titleId : null,
             trophyId: kind === "trophy" ? trophyId : null,
             label: label.trim(),
+            league: rewardLeague || null,
           });
         }}
       >
+        <Field label="Classement" htmlFor="rw-league" hint="Le rang est celui du membre dans sa ligue.">
+          <Select id="rw-league" value={rewardLeague} onChange={(e) => setRewardLeague(e.target.value as LeagueId | "")}>
+            <option value="">Chaque ligue</option>
+            {LEAGUES.map((l) => (
+              <option key={l.id} value={l.id}>
+                Ligue {l.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Du rang" htmlFor="rw-from">
             <Input id="rw-from" type="number" min={1} value={rankFrom} onChange={(e) => setRankFrom(e.target.value)} required />

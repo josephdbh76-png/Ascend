@@ -8,7 +8,9 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { AdminImageUpload } from "./AdminImageUpload";
 import { createBannerAction, updateBannerAction, setBannerActiveAction, deleteBannerAction } from "./actions";
+import { BANNER_AUDIENCES } from "@/lib/banners";
 import type { DashboardBannerRow, BannerButton } from "@/services/banner.service";
+import type { SubscriptionTier } from "@/types/database.types";
 
 // A locally-generated id, never sent to the server — React needs a key
 // that stays attached to the same conceptual row when buttons are added
@@ -26,7 +28,15 @@ const EMPTY_FORM = {
   title: "",
   subtitle: "",
   buttons: [] as EditableButton[],
+  audience: [] as SubscriptionTier[],
 };
+
+function audienceLabel(audience: SubscriptionTier[]) {
+  if (audience.length === 0) return "Tout le monde";
+  return BANNER_AUDIENCES.filter((a) => audience.includes(a.value))
+    .map((a) => a.label)
+    .join(" + ");
+}
 
 export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow[] }) {
   const [banners, setBanners] = useState(initial);
@@ -38,7 +48,7 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
 
   function openCreate() {
     setEditingId(null);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, audience: BANNER_AUDIENCES.map((a) => a.value) });
     setModalOpen(true);
   }
 
@@ -49,6 +59,7 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
       title: banner.title,
       subtitle: banner.subtitle ?? "",
       buttons: banner.buttons.map((b) => ({ ...b, key: crypto.randomUUID() })),
+      audience: banner.audience.length === 0 ? BANNER_AUDIENCES.map((a) => a.value) : banner.audience,
     });
     setModalOpen(true);
   }
@@ -56,6 +67,7 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
   function save(e: React.FormEvent) {
     e.preventDefault();
     if (!form.imageUrl) return;
+    if (form.audience.length === 0) return toast.show("Choisis au moins un abonnement qui verra la bannière.", "error");
 
     // A copy_code button only ever needs the code itself — the label is
     // never shown for that type (it's always rendered as "CODE").
@@ -86,6 +98,7 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
         buttons: form.buttons
           .filter((b) => (b.type === "copy_code" ? b.value.trim() : b.label.trim() && b.value.trim()))
           .map(({ type, label, value }) => ({ type, label: type === "copy_code" ? "" : label, value })),
+        audience: form.audience,
       };
       const result = editingId ? await updateBannerAction(editingId, payload) : await createBannerAction(payload);
       if (!result.success) return toast.show(result.error, "error");
@@ -135,8 +148,8 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <p className="text-xs text-text-secondary">
-          Affichées en haut du tableau de bord de tous les membres. Sans bannière active, rien ne change sur
-          le tableau de bord.
+          Affichées en haut du tableau de bord, aux abonnements que tu choisis. Pendant la bêta, tout le
+          monde est Elite : une offre réservée au Gratuit ou au Pro n&apos;apparaît donc qu&apos;après.
         </p>
         <Button size="sm" onClick={openCreate} className="shrink-0">
           <Plus className="h-3.5 w-3.5" /> Nouvelle bannière
@@ -165,6 +178,7 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
                     )}
                   </div>
                   {b.subtitle && <p className="truncate text-xs text-text-muted">{b.subtitle}</p>}
+                  <p className="truncate text-xs text-gold">Visible : {audienceLabel(b.audience)}</p>
                   {b.buttons.length > 0 && (
                     <p className="truncate text-xs text-text-muted">
                       {b.buttons.map((btn) => (btn.type === "copy_code" ? `Code ${btn.value}` : `${btn.label} (lien)`)).join(" · ")}
@@ -207,6 +221,38 @@ export function BannersPanel({ banners: initial }: { banners: DashboardBannerRow
           <Field label="Sous-titre (optionnel)">
             <Input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} />
           </Field>
+          <fieldset className="flex flex-col gap-2">
+            <legend className="text-sm font-medium text-text-primary">Afficher pour</legend>
+            <div className="flex flex-wrap gap-2">
+              {BANNER_AUDIENCES.map((a) => {
+                const checked = form.audience.includes(a.value);
+                return (
+                  <label
+                    key={a.value}
+                    className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
+                      checked ? "border-gold bg-gold/10 text-text-primary" : "border-border-strong text-text-secondary"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-[#f5c451]"
+                      checked={checked}
+                      onChange={() =>
+                        setForm((f) => ({
+                          ...f,
+                          audience: checked ? f.audience.filter((t) => t !== a.value) : [...f.audience, a.value],
+                        }))
+                      }
+                    />
+                    {a.label}
+                  </label>
+                );
+              })}
+            </div>
+            <p className="text-xs text-text-muted">
+              Ex. une réduction sur le Pro : coche seulement Gratuit. Une nouveauté Elite : coche seulement Elite.
+            </p>
+          </fieldset>
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-text-primary">Boutons (optionnel)</span>

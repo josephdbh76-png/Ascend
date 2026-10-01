@@ -178,7 +178,8 @@ function CreateForm({
   const [condition, setCondition] = useState<ConditionType>(kind === "achievement" ? "revenue_threshold" : "manual");
   const [target, setTarget] = useState("");
 
-  const options = CONDITIONS.filter((c) => (kind === "achievement" ? c.automatic : true));
+  // Growth on the season's reference month only exists inside a season.
+  const options = CONDITIONS.filter((c) => c.type !== "base_growth" && (kind === "achievement" ? c.automatic : true));
   const def = conditionDef(condition);
   const needsTarget = !!def?.unit;
 

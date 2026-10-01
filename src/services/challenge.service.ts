@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { refreshMemberProgress } from "@/services/progress.service";
+import { getSeasonLeague } from "@/services/league.service";
 import type { ChallengeProgress } from "@/types";
 
 export async function getActiveChallengesWithProgress(userId: string, seasonId?: string): Promise<ChallengeProgress[]> {
@@ -17,8 +18,22 @@ export async function getActiveChallengesWithProgress(userId: string, seasonId?:
 
   const { data: rows, error } = await query;
   if (error) throw new Error(error.message);
+
+  // Season challenges: only those of the member's league.
+  const seasonIds = [...new Set((rows ?? []).map((c) => c.season_id).filter((id): id is string => !!id))];
+  const leagueBySeason = new Map<string, string>();
+  if (seasonIds.length > 0) {
+    const { data: seasons } = await supabase.from("seasons").select("id, starts_at, ends_at").in("id", seasonIds);
+    for (const s of seasons ?? []) {
+      const placement = await getSeasonLeague(userId, { id: s.id, startsAt: s.starts_at, endsAt: s.ends_at });
+      leagueBySeason.set(s.id, placement.league);
+    }
+  }
+  const inLeague = (c: { season_id: string | null; leagues?: string[] | null }) =>
+    !c.season_id || !c.leagues?.length || c.leagues.includes(leagueBySeason.get(c.season_id) ?? "bronze");
+
   const challenges = (rows ?? [])
-    .filter((c) => c.is_published !== false)
+    .filter((c) => c.is_published !== false && inLeague(c))
     .sort((a, b) => (a.points ?? 0) - (b.points ?? 0));
   if (challenges.length === 0) return [];
 

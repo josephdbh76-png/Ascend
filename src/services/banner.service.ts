@@ -1,6 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BANNER_AUDIENCES } from "@/lib/banners";
+import type { SubscriptionTier } from "@/types/database.types";
 
 export interface BannerButton {
   type: "link" | "copy_code";
@@ -14,6 +16,8 @@ export interface DashboardBannerRow {
   title: string;
   subtitle: string | null;
   buttons: BannerButton[];
+  /** Plans that see it; empty = everyone. */
+  audience: SubscriptionTier[];
   displayOrder: number;
   isActive: boolean;
   createdAt: string;
@@ -25,6 +29,7 @@ type BannerDbRow = {
   title: string;
   subtitle: string | null;
   buttons: BannerButton[];
+  audience?: SubscriptionTier[] | null;
   display_order: number;
   is_active: boolean;
   created_at: string;
@@ -37,14 +42,19 @@ function mapBanner(row: BannerDbRow): DashboardBannerRow {
     title: row.title,
     subtitle: row.subtitle,
     buttons: row.buttons ?? [],
+    audience: row.audience ?? [],
     displayOrder: row.display_order,
     isActive: row.is_active,
     createdAt: row.created_at,
   };
 }
 
-/** Empty when nothing was configured — the dashboard shows nothing different in that case. */
-export async function listActiveBanners(): Promise<DashboardBannerRow[]> {
+/**
+ * Active banners for a member on `tier` (their effective plan: during the
+ * beta everyone is Elite, so offers to upgrade stay hidden while payments
+ * are closed). Empty when nothing was configured.
+ */
+export async function listActiveBanners(tier: SubscriptionTier): Promise<DashboardBannerRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("dashboard_banners")
@@ -53,7 +63,7 @@ export async function listActiveBanners(): Promise<DashboardBannerRow[]> {
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []).map(mapBanner);
+  return (data ?? []).map(mapBanner).filter((b) => b.audience.length === 0 || b.audience.includes(tier));
 }
 
 export async function listAllBannersForAdmin(): Promise<DashboardBannerRow[]> {
@@ -72,7 +82,15 @@ export interface CreateBannerInput {
   title: string;
   subtitle?: string | null;
   buttons?: BannerButton[];
+  audience?: SubscriptionTier[];
   displayOrder?: number;
+}
+
+function cleanAudience(audience: SubscriptionTier[] | undefined): SubscriptionTier[] {
+  const allowed = BANNER_AUDIENCES.map((a) => a.value);
+  const picked = allowed.filter((t) => audience?.includes(t));
+  // All three ticked is the same as everyone.
+  return picked.length === allowed.length ? [] : picked;
 }
 
 const MAX_BUTTONS = 3;
@@ -107,6 +125,7 @@ export async function createBanner(input: CreateBannerInput): Promise<DashboardB
       title: input.title.trim(),
       subtitle: input.subtitle?.trim() || null,
       buttons,
+      audience: cleanAudience(input.audience),
       display_order: input.displayOrder ?? 0,
     })
     .select("*")
@@ -125,6 +144,7 @@ export async function updateBanner(bannerId: string, input: CreateBannerInput): 
       title: input.title.trim(),
       subtitle: input.subtitle?.trim() || null,
       buttons,
+      audience: cleanAudience(input.audience),
     })
     .eq("id", bannerId)
     .select("*")
