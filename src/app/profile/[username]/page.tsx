@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getPublicProfileByUsername } from "@/services/profile.service";
@@ -163,6 +164,32 @@ export default async function PublicProfilePage({
         followingCount={followCounts.following}
         isCreator={isCreator}
       />
+
+      {isOwner && (() => {
+        const missing = [
+          !profile.avatarUrl && { label: "Ajouter une photo", href: "/app/settings#photo" },
+          !profile.bio?.trim() && { label: "Écrire ta bio", href: "/app/settings#bio" },
+          !profile.businesses[0]?.description?.trim() && { label: "Décrire ton activité", href: "/app/settings#main-business-description" },
+          !profile.revenueVerified && { label: "Vérifier tes revenus", href: "/app/settings#comptes-connectes" },
+        ].filter((m): m is { label: string; href: string } => !!m);
+        return missing.length > 0 ? (
+          <section className="rounded-lg border border-gold/30 bg-gold/5 p-4">
+            <p className="text-sm font-medium text-text-primary">C&apos;est ce que les autres membres voient de toi.</p>
+            <p className="mt-0.5 text-xs text-text-secondary">Un profil complet inspire confiance et attire plus d&apos;abonnés. Il te manque :</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {missing.map((m) => (
+                <Link
+                  key={m.href}
+                  href={m.href}
+                  className="rounded-md border border-gold/40 px-3 py-1.5 text-xs font-medium text-gold transition-colors hover:bg-gold/10"
+                >
+                  {m.label}
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      })()}
 
       <TrainingSpotlight trainings={trainings} isOwner={isOwner} />
 

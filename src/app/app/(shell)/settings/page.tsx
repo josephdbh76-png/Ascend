@@ -183,6 +183,26 @@ export default async function SettingsPage({ searchParams }: PageProps<"/app/set
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Réglages</h1>
         <p className="mt-1 text-sm text-text-secondary">Gère ton profil, ta confidentialité et tes connexions.</p>
+        <nav aria-label="Sections des réglages" className="-mx-1 mt-4 flex gap-1.5 overflow-x-auto px-1 pb-1">
+          {[
+            ["comptes-connectes", "Revenus"],
+            ["abonnement", "Abonnement"],
+            ["profil", "Profil"],
+            ["activite", "Activité"],
+            ["formations", "Formations"],
+            ["confidentialite", "Confidentialité"],
+            ["emails", "E-mails"],
+            ["securite", "Sécurité"],
+          ].map(([id, label]) => (
+            <a
+              key={id}
+              href={`#${id}`}
+              className="shrink-0 rounded-full border border-border px-3 py-1 text-xs text-text-secondary transition-colors hover:border-gold/50 hover:text-text-primary"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
       </div>
 
       {isAdmin && (
@@ -265,7 +285,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/app/set
         <TrainingsManager initial={trainings} canCreate={hasEliteAccess(subscription.tier)} />
       </Card>
 
-      <Card className="p-6" elevated>
+      <Card id="confidentialite" className="scroll-mt-6 p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
           Confidentialité des revenus
         </h2>
@@ -277,8 +297,8 @@ export default async function SettingsPage({ searchParams }: PageProps<"/app/set
         />
       </Card>
 
-      <Card className="p-6" elevated>
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Emails</h2>
+      <Card id="emails" className="scroll-mt-6 p-6" elevated>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">E-mails</h2>
         <MarketingConsentToggle
           initialMarketing={marketing?.marketing_consent ?? false}
           initialTransactional={marketing?.email_notifications_enabled ?? true}
@@ -288,7 +308,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/app/set
 
       {profile.revenueVerified && connectedAccountsCard}
 
-      <Card className="p-6" elevated>
+      <Card id="securite" className="scroll-mt-6 p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">
           Sécurité
         </h2>
