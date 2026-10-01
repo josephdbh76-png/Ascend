@@ -7,6 +7,7 @@ import {
   getOrCreateConversation,
   sendMessage,
   acceptConversation,
+  markConversationRead,
   getSentMessageCountThisMonth,
   PRO_MONTHLY_MESSAGE_LIMIT,
 } from "@/services/message.service";
@@ -60,6 +61,17 @@ export async function sendMessageAction(conversationId: string, body: string): P
   }
   revalidatePath(`/app/messages/${conversationId}`);
   revalidatePath("/app/messages");
+  return { success: true, data: undefined };
+}
+
+/** The conversation is open and a message just arrived: it's been seen. */
+export async function markConversationReadAction(conversationId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Tu n'es pas connecté." };
+  await markConversationRead(conversationId, user.id);
   return { success: true, data: undefined };
 }
 

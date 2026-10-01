@@ -1,15 +1,32 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect } from "react";
+import { useState, useTransition, useRef, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Send, Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { cn, initials } from "@/lib/utils";
-import { sendMessageAction, acceptConversationAction } from "../actions";
+import { createClient } from "@/lib/supabase/client";
+import { sendMessageAction, acceptConversationAction, markConversationReadAction } from "../actions";
 import type { ConversationParticipant, MessageRow } from "@/services/message.service";
 import type { ConversationStatus } from "@/types/database.types";
+
+type MessageDbRow = { id: string; conversation_id: string; sender_id: string; body: string; created_at: string; read_at: string | null };
+
+const TYPING_SEND_EVERY_MS = 2500;
+const TYPING_SHOWN_FOR_MS = 4000;
+
+function seenLabel(readAt: string) {
+  const d = new Date(readAt);
+  const today = new Date().toDateString() === d.toDateString();
+  const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return today ? `Vu à ${time}` : `Vu le ${d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} à ${time}`;
+}
+
+function fromDb(row: MessageDbRow): MessageRow {
+  return { id: row.id, senderId: row.sender_id, body: row.body, createdAt: row.created_at, readAt: row.read_at };
+}
 
 export function MessageThread({
   conversationId,
@@ -31,10 +48,99 @@ export function MessageThread({
   const toast = useToast();
   const router = useRouter();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const supabase = useMemo(() => createClient(), []);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const [otherTyping, setOtherTyping] = useState(false);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSent = useRef(0);
+  const markPending = useRef(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
-  }, [messages.length]);
+  }, [messages.length, otherTyping]);
+
+  // Seen as soon as it's on screen; when the tab is in the background, once it comes back.
+  const markRead = useCallback(() => {
+    if (document.visibilityState !== "visible") {
+      markPending.current = true;
+      return;
+    }
+    markPending.current = false;
+    void markConversationReadAction(conversationId);
+  }, [conversationId]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && markPending.current) markRead();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [markRead]);
+
+  // Live: new messages, read receipts, accepted request and "en train d'écrire".
+  useEffect(() => {
+    let cancelled = false;
+    const channel = supabase.channel(`conversation:${conversationId}`, { config: { broadcast: { self: false } } });
+    channel
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
+        const row = fromDb(payload.new as MessageDbRow);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === row.id)) return prev;
+          if (row.senderId === currentUserId) {
+            // Our own message coming back: it replaces its optimistic copy.
+            const i = prev.findIndex((m) => m.id.startsWith("optimistic-") && m.body === row.body);
+            if (i >= 0) return [...prev.slice(0, i), row, ...prev.slice(i + 1)];
+          }
+          return [...prev, row];
+        });
+        if (row.senderId !== currentUserId) {
+          setOtherTyping(false);
+          markRead();
+        }
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
+        const row = payload.new as MessageDbRow;
+        setMessages((prev) => prev.map((m) => (m.id === row.id ? { ...m, readAt: row.read_at } : m)));
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversations", filter: `id=eq.${conversationId}` }, (payload) => {
+        const next = (payload.new as { status?: ConversationStatus }).status;
+        if (next) setStatus(next);
+      })
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        if (payload?.userId === currentUserId) return;
+        if (typingTimer.current) clearTimeout(typingTimer.current);
+        if (payload?.typing === false) return setOtherTyping(false);
+        setOtherTyping(true);
+        typingTimer.current = setTimeout(() => setOtherTyping(false), TYPING_SHOWN_FOR_MS);
+      });
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      if (data.session) supabase.realtime.setAuth(data.session.access_token);
+      channel.subscribe();
+      channelRef.current = channel;
+    });
+    return () => {
+      cancelled = true;
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+      channelRef.current = null;
+      void supabase.removeChannel(channel);
+    };
+  }, [supabase, conversationId, currentUserId, markRead]);
+
+  function sendTyping(typing: boolean) {
+    const channel = channelRef.current;
+    if (!channel) return;
+    if (typing) {
+      if (Date.now() - lastTypingSent.current < TYPING_SEND_EVERY_MS) return;
+      lastTypingSent.current = Date.now();
+    } else {
+      lastTypingSent.current = 0;
+    }
+    void channel.send({ type: "broadcast", event: "typing", payload: { userId: currentUserId, typing } });
+  }
+
+  const lastMineIndex = messages.map((m) => m.senderId).lastIndexOf(currentUserId);
 
   // Loading this page already marked this conversation's messages (and its
   // matching bell notification) read server-side — refresh so the sidebar's
@@ -58,9 +164,11 @@ export function MessageThread({
       senderId: currentUserId,
       body: trimmed,
       createdAt: new Date().toISOString(),
+      readAt: null,
     };
     setMessages((m) => [...m, optimistic]);
     setBody("");
+    sendTyping(false);
     startTransition(async () => {
       const result = await sendMessageAction(conversationId, trimmed);
       if (!result.success) {
@@ -116,21 +224,43 @@ export function MessageThread({
             </p>
           </div>
         )}
-        {messages.map((m) => {
+        {messages.map((m, i) => {
           const isMine = m.senderId === currentUserId;
+          const time = new Date(m.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
           return (
-            <div key={m.id} className={cn("flex", isMine ? "justify-end" : "justify-start")}>
+            <div key={m.id} className={cn("flex flex-col", isMine ? "items-end" : "items-start")}>
               <div
+                title={time}
                 className={cn(
-                  "max-w-[75%] rounded-lg px-3.5 py-2 text-sm",
+                  "max-w-[75%] whitespace-pre-wrap break-words rounded-lg px-3.5 py-2 text-sm",
                   isMine ? "bg-gold text-[#0a0a0a]" : "bg-card-elevated text-text-primary",
+                  m.id.startsWith("optimistic-") && "opacity-70",
                 )}
               >
                 {m.body}
               </div>
+              {i === lastMineIndex && (
+                <span className="mt-1 px-1 text-[11px] text-text-muted" aria-live="polite">
+                  {m.id.startsWith("optimistic-") ? "Envoi..." : m.readAt ? seenLabel(m.readAt) : "Envoyé"}
+                </span>
+              )}
             </div>
           );
         })}
+        {otherTyping && (
+          <div className="flex items-center gap-2" aria-live="polite">
+            <span className="flex items-center gap-1 rounded-lg bg-card-elevated px-3.5 py-3" aria-hidden>
+              {[0, 150, 300].map((delay) => (
+                <span
+                  key={delay}
+                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-text-muted motion-reduce:animate-none"
+                  style={{ animationDelay: `${delay}ms` }}
+                />
+              ))}
+            </span>
+            <span className="text-xs text-text-muted">{thread.otherUser.firstName ?? "Ton contact"} est en train d&apos;écrire...</span>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
@@ -177,7 +307,11 @@ export function MessageThread({
           <form onSubmit={submit} className="flex items-center gap-2">
             <input
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              onChange={(e) => {
+                setBody(e.target.value);
+                sendTyping(e.target.value.trim().length > 0);
+              }}
+              onBlur={() => sendTyping(false)}
               placeholder="Écris un message..."
               className="w-full rounded-md border border-border-strong bg-card-elevated px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40"
             />

@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { initials } from "@/lib/utils";
+import { LiveInbox } from "./LiveInbox";
 
 export const metadata: Metadata = { title: "Messages" };
 
@@ -62,6 +63,7 @@ export default async function MessagesPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <LiveInbox />
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Messages</h1>
         <p className="mt-1 text-sm text-text-secondary">Discute directement avec les fondateurs du réseau.</p>

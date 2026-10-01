@@ -26,6 +26,8 @@ export interface MessageRow {
   senderId: string;
   body: string;
   createdAt: string;
+  /** When the recipient saw it ("Vu"). */
+  readAt: string | null;
 }
 
 function pairKey(a: string, b: string): [string, string] {
@@ -144,7 +146,7 @@ export async function sendMessage(conversationId: string, senderId: string, body
     });
   }
 
-  return { id: message.id, senderId: message.sender_id, body: message.body, createdAt: message.created_at };
+  return { id: message.id, senderId: message.sender_id, body: message.body, createdAt: message.created_at, readAt: null };
 }
 
 export async function acceptConversation(conversationId: string, userId: string): Promise<void> {
@@ -253,22 +255,9 @@ export async function getConversationThread(
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true });
 
+  const now = new Date().toISOString();
   const unreadIds = (messages ?? []).filter((m) => m.sender_id !== userId && !m.read_at).map((m) => m.id);
-  if (unreadIds.length > 0) {
-    await supabase.from("messages").update({ read_at: new Date().toISOString() }).in("id", unreadIds);
-
-    // Opening this thread just read every unread message in it — the
-    // matching "new_message" bell notification(s) for this conversation
-    // are now stale too. Scoped to this conversation only (via the
-    // metadata it was created with), never all of the user's notifications.
-    await supabase
-      .from("notifications")
-      .update({ read_at: new Date().toISOString() })
-      .eq("user_id", userId)
-      .eq("type", "new_message")
-      .is("read_at", null)
-      .contains("metadata", { conversation_id: conversationId });
-  }
+  if (unreadIds.length > 0) await markConversationRead(conversationId, userId);
 
   return {
     otherUser: participants.get(otherUserId) ?? {
@@ -280,8 +269,38 @@ export async function getConversationThread(
     },
     status: conversation.status,
     isRequester: conversation.requested_by === userId,
-    messages: (messages ?? []).map((m) => ({ id: m.id, senderId: m.sender_id, body: m.body, createdAt: m.created_at })),
+    messages: (messages ?? []).map((m) => ({
+      id: m.id,
+      senderId: m.sender_id,
+      body: m.body,
+      createdAt: m.created_at,
+      readAt: m.read_at ?? (unreadIds.includes(m.id) ? now : null),
+    })),
   };
+}
+
+/**
+ * Marks every message received in the conversation as read (the sender sees
+ * "Vu" live), and the bell notifications of that conversation with them.
+ */
+export async function markConversationRead(conversationId: string, userId: string): Promise<void> {
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+  await supabase
+    .from("messages")
+    .update({ read_at: now })
+    .eq("conversation_id", conversationId)
+    .neq("sender_id", userId)
+    .is("read_at", null);
+  // Scoped to this conversation only (via the metadata the notification was
+  // created with), never all of the member's notifications.
+  await supabase
+    .from("notifications")
+    .update({ read_at: now })
+    .eq("user_id", userId)
+    .eq("type", "new_message")
+    .is("read_at", null)
+    .contains("metadata", { conversation_id: conversationId });
 }
 
 export const PRO_MONTHLY_MESSAGE_LIMIT = 10;
