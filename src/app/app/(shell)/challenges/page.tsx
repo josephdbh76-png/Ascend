@@ -54,6 +54,11 @@ function ago(iso: string) {
   return `il y a ${days} j`;
 }
 
+/** Challenge titles talk to the member ("ton mois"); the feed talks about them. */
+function aboutThem(title: string) {
+  return title.replace(/\bton\b/g, "son").replace(/\bta\b/g, "sa").replace(/\btes\b/g, "ses");
+}
+
 function shortName(first: string | null, last: string | null) {
   return [first, last ? `${last.charAt(0)}.` : null].filter(Boolean).join(" ") || "Membre";
 }
@@ -344,7 +349,7 @@ export default async function SeasonPage({ searchParams }: PageProps<"/app/chall
                           <Link href={`/profile/${a.username}`} className="font-medium text-text-primary hover:underline">
                             {shortName(a.first_name, a.last_name)}
                           </Link>{" "}
-                          {a.hide_amount ? "a franchi un palier de revenus" : <>a réussi « {a.challenge_title} »</>}
+                          {a.hide_amount ? "a franchi un palier de revenus" : <>a réussi « {aboutThem(a.challenge_title)} »</>}
                         </p>
                         <p className="text-text-muted">
                           <span className="font-medium text-gold">+{a.points} pts</span> · {ago(a.completed_at)}
