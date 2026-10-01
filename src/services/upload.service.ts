@@ -60,6 +60,27 @@ export async function verifyUpload(userId: string, kind: UploadKind, path: strin
   return { path, size, contentType, publicUrl: rule.publicBucket ? bucket.getPublicUrl(path).data.publicUrl : null };
 }
 
+/** Deletes the member's other files of this kind (a replaced profile photo). */
+export async function removeOtherFiles(kind: UploadKind, userId: string, keepPath: string) {
+  const bucket = createAdminClient().storage.from(UPLOAD_RULES[kind].bucket);
+  const { data } = await bucket.list(userId, { limit: 1000 });
+  const stale = (data ?? []).map((f) => `${userId}/${f.name}`).filter((p) => p !== keepPath);
+  if (stale.length > 0) await bucket.remove(stale);
+}
+
+/** Every file a member uploaded, in every bucket (account deletion). */
+export async function removeAllMemberFiles(userId: string) {
+  const storage = createAdminClient().storage;
+  for (const bucket of [...new Set(Object.values(UPLOAD_RULES).map((r) => r.bucket))]) {
+    for (let round = 0; round < 20; round++) {
+      const { data } = await storage.from(bucket).list(userId, { limit: 1000 });
+      if (!data || data.length === 0) break;
+      await storage.from(bucket).remove(data.map((f) => `${userId}/${f.name}`));
+      if (data.length < 1000) break;
+    }
+  }
+}
+
 export async function removeUploads(kind: UploadKind, paths: string[]) {
   if (paths.length === 0) return;
   await createAdminClient().storage.from(UPLOAD_RULES[kind].bucket).remove(paths);

@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { removeAllMemberFiles } from "@/services/upload.service";
 
 /**
  * Deletes a member for good. Any live Stripe subscription is cancelled
@@ -30,6 +31,9 @@ export async function deleteMemberAccount(userId: string): Promise<void> {
       );
     }
   }
+
+  // Photos, revenue proofs, attachments: nothing of theirs stays in storage.
+  await removeAllMemberFiles(userId).catch((err) => console.error("File cleanup on account deletion failed:", err));
 
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) throw new Error(error.message);

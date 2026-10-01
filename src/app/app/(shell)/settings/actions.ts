@@ -37,7 +37,7 @@ import {
 import type { Aspsp } from "@/lib/enableBanking";
 import { submitRevenueDeclaration } from "@/services/revenue.service";
 import { deleteMemberAccount } from "@/services/account.service";
-import { verifyUpload } from "@/services/upload.service";
+import { verifyUpload, removeOtherFiles } from "@/services/upload.service";
 import { evaluateChallengeProgress } from "@/services/challenge.service";
 import { ACCENT_THEMES, MAX_EXTRA_BUSINESSES } from "@/lib/constants";
 import type { ActionResult } from "@/app/(auth)/actions";
@@ -59,6 +59,11 @@ export async function uploadAvatarAction(path: string): Promise<ActionResult<{ u
   const { error } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", userData.user.id);
   if (error) return { success: false, error: toFriendlyAuthError(error.message) };
 
+  // Only the current photo is kept.
+  await removeOtherFiles("avatar", userData.user.id, path).catch((err) => console.error("Old avatar cleanup failed:", err));
+  // The sidebar, the header and the public profile show it too.
+  revalidatePath("/app", "layout");
+  revalidatePath("/profile/[username]", "page");
   return { success: true, data: { url } };
 }
 
@@ -90,6 +95,9 @@ export async function updateProfileAction(input: {
     .eq("id", userData.user.id);
 
   if (error) return { success: false, error: toFriendlyAuthError(error.message) };
+  // The name shows in the sidebar and the header too.
+  revalidatePath("/app", "layout");
+  revalidatePath("/profile/[username]", "page");
   return { success: true, data: undefined };
 }
 

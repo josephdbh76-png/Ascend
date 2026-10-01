@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Camera } from "lucide-react";
 import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -24,6 +25,7 @@ export function ProfileSettingsForm({
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [pending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
   const toast = useToast();
 
   function submit(e: React.FormEvent) {
@@ -32,6 +34,7 @@ export function ProfileSettingsForm({
       const result = await updateProfileAction(form);
       if (!result.success) return toast.show(result.error, "error");
       toast.show("Profil mis à jour.", "success");
+      router.refresh();
     });
   }
 
@@ -54,6 +57,7 @@ export function ProfileSettingsForm({
       setAvatarUrl(result.data.url);
       setCropFile(null);
       toast.show("Photo de profil mise à jour.", "success");
+      router.refresh();
     });
   }
 
