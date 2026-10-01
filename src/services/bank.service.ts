@@ -121,6 +121,8 @@ export async function syncBankTransactions(
     .from("bank_connections")
     .select("account_ids")
     .eq("revenue_source_id", revenueSourceId)
+    // A member can only ever sync their own connection.
+    .eq("user_id", userId)
     .maybeSingle();
   if (!connection || connection.account_ids.length === 0) {
     return { success: false, error: "Aucun compte bancaire connecté." };
@@ -253,7 +255,13 @@ export async function setTransactionRevenueTag(userId: string, transactionId: st
 export async function disconnectBankSource(userId: string, revenueSourceId: string): Promise<void> {
   const supabase = createAdminClient();
 
-  await supabase.from("revenue_sources").update({ status: "disconnected" }).eq("id", revenueSourceId).eq("user_id", userId);
+  const { data: owned } = await supabase
+    .from("revenue_sources")
+    .update({ status: "disconnected" })
+    .eq("id", revenueSourceId)
+    .eq("user_id", userId)
+    .select("id");
+  if (!owned?.length) return;
   await supabase
     .from("verifications")
     .update({ status: "disconnected", last_checked_at: new Date().toISOString() })

@@ -123,3 +123,25 @@ export async function getAccountTransactions(accountUid: string): Promise<EbTran
 
   return transactions;
 }
+
+let environmentCache: { value: "production" | "sandbox" | "unavailable"; at: number } | null = null;
+
+/**
+ * Whether members can connect a real bank. A sandbox application only lists
+ * test banks (production needs a contract with Enable Banking), so the bank
+ * option stays closed until the application is in production.
+ */
+export async function bankConnectionAvailability(): Promise<"production" | "sandbox" | "unavailable"> {
+  if (environmentCache && Date.now() - environmentCache.at < 10 * 60_000) return environmentCache.value;
+  let value: "production" | "sandbox" | "unavailable";
+  try {
+    const app = await request<{ environment?: string; active?: boolean }>("/application", {
+      signal: AbortSignal.timeout(5000),
+    });
+    value = app.environment === "PRODUCTION" && app.active !== false ? "production" : "sandbox";
+  } catch {
+    value = "unavailable";
+  }
+  environmentCache = { value, at: Date.now() };
+  return value;
+}

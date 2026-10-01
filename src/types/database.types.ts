@@ -4,7 +4,19 @@
 
 export type OnboardingStep = "profile" | "business" | "bio" | "revenue" | "done";
 export type RevenueVisibility = "exact" | "range" | "private";
-export type SourceProvider = "stripe" | "shopify" | "paypal" | "paddle" | "manual" | "bank" | "lemonsqueezy";
+export type SourceProvider =
+  | "stripe"
+  | "shopify"
+  | "paypal"
+  | "paddle"
+  | "manual"
+  | "bank"
+  | "lemonsqueezy"
+  | "qonto"
+  | "mollie"
+  | "gumroad"
+  | "whop"
+  | "woocommerce";
 export type SourceStatus = "connected" | "disconnected" | "error";
 export type VerificationStatus = "unverified" | "verified" | "pending" | "rejected" | "error" | "disconnected";
 export type RevenueReviewStatus = "pending" | "approved" | "rejected";

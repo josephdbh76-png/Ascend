@@ -27,11 +27,13 @@ export async function getPayPalAccessToken(clientId: string, clientSecret: strin
 export interface PayPalTransaction {
   transaction_info: {
     transaction_id: string;
+    /** T00xx: payments received, T11xx: refunds and reversals, others: transfers, holds, fees... */
+    transaction_event_code?: string;
     transaction_status: "S" | "P" | "D" | "V";
     transaction_amount: { value: string; currency_code: string };
     transaction_initiation_date: string;
   };
-  payer_info?: { email_address?: string; payer_name?: { full_name?: string } };
+  payer_info?: { account_id?: string; email_address?: string; payer_name?: { full_name?: string } };
 }
 
 async function fetchWindow(accessToken: string, startDate: Date, endDate: Date): Promise<PayPalTransaction[]> {

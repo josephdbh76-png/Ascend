@@ -24,6 +24,9 @@ import { PrivacySettingsForm } from "./PrivacySettingsForm";
 import { MarketingConsentToggle } from "./MarketingConsentToggle";
 import { AccentThemeForm } from "./AccentThemeForm";
 import { ConnectedAccounts } from "./ConnectedAccounts";
+import type { ApiSourceState } from "./ApiSourceConnection";
+import { API_CONNECTORS, type ApiConnectorId } from "@/lib/connectors";
+import { bankConnectionAvailability } from "@/lib/enableBanking";
 import { DangerZone } from "./DangerZone";
 import { ExportDataButton } from "./ExportDataButton";
 import { SubscriptionCard } from "./SubscriptionCard";
@@ -60,6 +63,8 @@ export default async function SettingsPage() {
     subscription,
     isAdmin,
     trainings,
+    { data: apiSourceRows },
+    bankAvailability,
   ] = await Promise.all([
     supabase.from("businesses").select("*").eq("user_id", user.id).maybeSingle(),
     supabase
@@ -97,7 +102,39 @@ export default async function SettingsPage() {
     getSubscription(user.id),
     isCurrentUserAdmin(),
     listOwnerTrainings(user.id).catch(() => []),
+    supabase
+      .from("revenue_sources")
+      .select("id, provider, status, external_account_id")
+      .eq("user_id", user.id)
+      .in(
+        "provider",
+        API_CONNECTORS.map((c) => c.id),
+      ),
+    bankConnectionAvailability(),
   ]);
+
+  const { data: apiVerifications } = apiSourceRows?.length
+    ? await supabase
+        .from("verifications")
+        .select("revenue_source_id, status, error_message")
+        .in(
+          "revenue_source_id",
+          apiSourceRows.map((r) => r.id),
+        )
+    : { data: [] };
+  const apiSources = Object.fromEntries(
+    API_CONNECTORS.map((c) => {
+      const row = apiSourceRows?.find((r) => r.provider === c.id);
+      const verification = apiVerifications?.find((v) => v.revenue_source_id === row?.id);
+      const state: ApiSourceState = {
+        connected: row?.status === "connected",
+        status: row?.status === "connected" ? (verification?.status ?? "unverified") : "unverified",
+        accountLabel: row?.external_account_id ?? null,
+        errorMessage: verification?.error_message ?? null,
+      };
+      return [c.id, state];
+    }),
+  ) as Record<ApiConnectorId, ApiSourceState>;
 
   const now = new Date();
   const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
@@ -128,6 +165,8 @@ export default async function SettingsPage() {
           paypalStatus={paypalStatus}
           lemonSqueezyConnected={lemonSqueezySource?.status === "connected"}
           lemonSqueezyStatus={lemonSqueezyStatus}
+          apiSources={apiSources}
+          bankAvailable={bankAvailability === "production"}
         />
       </div>
     </Card>

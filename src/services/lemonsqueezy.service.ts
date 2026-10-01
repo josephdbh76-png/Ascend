@@ -1,7 +1,15 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyLemonSqueezyKey, fetchAllOrders, type LsOrder } from "@/lib/lemonsqueezy";
-import { upsertMonthlyRevenue, refreshRevenueVerifiedFlag } from "@/services/revenue.service";
+import {
+  refreshRevenueVerifiedFlag,
+  syncWindowStart,
+  addToMonth,
+  writeSourceMonths,
+  type MonthTotal,
+} from "@/services/revenue.service";
+import { euroConverter } from "@/lib/fx";
+import { decryptSecret, encryptSecret } from "@/lib/secrets";
 import { createNotificationForUser } from "@/services/notification.service";
 import { afterRevenueSync } from "@/services/progress.service";
 
@@ -11,7 +19,7 @@ const MONTHS_OF_HISTORY = 6;
 async function getStoredLemonSqueezyKey(revenueSourceId: string): Promise<string | null> {
   const admin = createAdminClient();
   const { data } = await admin.from("provider_credentials").select("client_secret").eq("revenue_source_id", revenueSourceId).maybeSingle();
-  return data?.client_secret ?? null;
+  return decryptSecret(data?.client_secret);
 }
 
 export async function connectLemonSqueezyWithKey(userId: string, apiKey: string) {
@@ -33,7 +41,7 @@ export async function connectLemonSqueezyWithKey(userId: string, apiKey: string)
 
   const { error: credentialError } = await admin
     .from("provider_credentials")
-    .upsert({ revenue_source_id: source.id, client_id: "", client_secret: apiKey }, { onConflict: "revenue_source_id" });
+    .upsert({ revenue_source_id: source.id, client_id: "", client_secret: encryptSecret(apiKey) }, { onConflict: "revenue_source_id" });
   if (credentialError) throw new Error(credentialError.message);
 
   await supabase.from("verifications").upsert(
@@ -45,13 +53,13 @@ export async function connectLemonSqueezyWithKey(userId: string, apiKey: string)
   return { source, syncResult };
 }
 
-function periodKeyFromIsoDate(iso: string): string {
-  const d = new Date(iso);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString().slice(0, 10);
-}
 
-function isRevenueBearingOrder(order: LsOrder): boolean {
-  return order.attributes.status === "paid" && !order.attributes.refunded;
+// A partially refunded order still counts for what was kept.
+function keptCents(order: LsOrder): number {
+  const a = order.attributes;
+  if (a.status !== "paid" && a.status !== "partial_refund") return 0;
+  if (a.refunded && a.status !== "partial_refund") return 0;
+  return Math.max(0, a.total - (a.refunded_amount ?? 0));
 }
 
 /** Mirrors syncShopifyRevenue's shape exactly — same downstream achievements/challenges/titles evaluation, fed from Lemon Squeezy's Orders API instead. */
@@ -75,35 +83,25 @@ export async function syncLemonSqueezyRevenue(userId: string, revenueSourceId: s
     return { success: false as const, error: message };
   }
 
-  const sinceDate = new Date();
-  sinceDate.setMonth(sinceDate.getMonth() - MONTHS_OF_HISTORY);
+  const sinceDate = syncWindowStart(MONTHS_OF_HISTORY);
 
   try {
-    const orders = await fetchAllOrders(apiKey, sinceDate);
-
-    const monthlyTotals = new Map<string, number>();
-    const monthlyTransactionCounts = new Map<string, number>();
-
+    const orders = (await fetchAllOrders(apiKey, sinceDate)).filter((o) => keptCents(o) > 0);
+    const toEur = await euroConverter(
+      orders.map((o) => o.attributes.currency),
+      sinceDate,
+    );
+    const months = new Map<string, MonthTotal>();
     for (const order of orders) {
-      if (!isRevenueBearingOrder(order)) continue;
-      const period = periodKeyFromIsoDate(order.attributes.created_at);
-      monthlyTotals.set(period, (monthlyTotals.get(period) ?? 0) + order.attributes.total);
-      monthlyTransactionCounts.set(period, (monthlyTransactionCounts.get(period) ?? 0) + 1);
-    }
-
-    for (const [period, amountCents] of monthlyTotals.entries()) {
-      await upsertMonthlyRevenue({
-        userId,
-        revenueSourceId,
-        period,
-        amountCents,
-        currency: "EUR",
-        isVerified: true,
-        transactionCount: monthlyTransactionCounts.get(period) ?? 0,
+      const at = order.attributes.created_at;
+      addToMonth(months, at, toEur(keptCents(order), order.attributes.currency, at), {
+        countsAsSale: true,
+        customerId: order.attributes.customer_id != null ? String(order.attributes.customer_id) : order.attributes.user_email,
       });
     }
+    const monthsWithRevenue = await writeSourceMonths(userId, revenueSourceId, months, sinceDate);
 
-    const hasVerifiableRevenue = monthlyTotals.size > 0;
+    const hasVerifiableRevenue = monthsWithRevenue > 0;
 
     await supabase
       .from("verifications")
@@ -130,7 +128,7 @@ export async function syncLemonSqueezyRevenue(userId: string, revenueSourceId: s
 
     return {
       success: true as const,
-      monthsSynced: monthlyTotals.size,
+      monthsSynced: monthsWithRevenue,
       isFirstVerification: !wasAlreadyVerified,
       currentRevenueCents,
       rank,

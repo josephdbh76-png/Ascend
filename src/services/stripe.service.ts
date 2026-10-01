@@ -1,7 +1,14 @@
 import "server-only";
 import { getStripe, isStripeTestKey } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { upsertMonthlyRevenue, refreshRevenueVerifiedFlag } from "@/services/revenue.service";
+import {
+  refreshRevenueVerifiedFlag,
+  syncWindowStart,
+  addToMonth,
+  writeSourceMonths,
+  type MonthTotal,
+} from "@/services/revenue.service";
+import { euroConverter } from "@/lib/fx";
 import { createNotificationForUser } from "@/services/notification.service";
 import { afterRevenueSync } from "@/services/progress.service";
 
@@ -132,6 +139,23 @@ export async function handleStripeOAuthCallback(code: string, userId: string) {
   return { source, syncResult };
 }
 
+/** Stripe customers and emails of the cofounders, whose own payments on the platform are tests. */
+async function cofounderPayers() {
+  const admin = createAdminClient();
+  const { data: cofounders } = await admin.from("profiles").select("id").eq("is_cofounder", true);
+  const ids = (cofounders ?? []).map((c) => c.id);
+  const customers = new Set<string>();
+  const emails = new Set<string>();
+  if (ids.length === 0) return { customers, emails };
+  const { data: subs } = await admin.from("subscriptions").select("stripe_customer_id").in("user_id", ids);
+  for (const s of subs ?? []) if (s.stripe_customer_id) customers.add(s.stripe_customer_id);
+  for (const id of ids) {
+    const { data } = await admin.auth.admin.getUserById(id);
+    if (data.user?.email) emails.add(data.user.email.toLowerCase());
+  }
+  return { customers, emails };
+}
+
 /**
  * Pulls succeeded charges for the connected account, aggregates them into
  * normalized monthly revenue snapshots, and marks the source verified
@@ -153,61 +177,96 @@ export async function syncStripeRevenue(
     .maybeSingle();
   const wasAlreadyVerified = verificationBefore?.status === "verified";
 
-  const sinceDate = new Date();
-  sinceDate.setMonth(sinceDate.getMonth() - MONTHS_OF_HISTORY);
+  const sinceDate = syncWindowStart(MONTHS_OF_HISTORY);
 
   try {
-    const monthlyTotals = new Map<string, number>();
-    const monthlyTransactionCounts = new Map<string, number>();
-    const monthlyCustomers = new Map<string, Set<string>>();
+    // Balance transactions rather than charges: they carry what was really
+    // collected (partial refunds and disputes subtract) in the account's
+    // settlement currency, whatever currency the customer paid in.
+    const SALES = new Set(["charge", "payment"]);
+    const COUNTED = new Set(["charge", "payment", "refund", "payment_refund", "payment_reversal", "payment_failure_refund", "refund_failure", "adjustment"]);
+    let movements: {
+      amount: number;
+      currency: string;
+      created: number;
+      sale: boolean;
+      customer: string | null;
+      refundOf: string | null;
+    }[] = [];
+    // On the platform's own account, a cofounder's purchases are tests, not revenue.
+    const ownPayers = stripeAccountId ? null : await cofounderPayers();
+    const skippedCharges = new Set<string>();
     let hasMore = true;
     let startingAfter: string | undefined;
 
     while (hasMore) {
-      const charges: Awaited<ReturnType<typeof stripe.charges.list>> = await stripe.charges.list(
+      const page: Awaited<ReturnType<typeof stripe.balanceTransactions.list>> = await stripe.balanceTransactions.list(
         {
           limit: 100,
           created: { gte: Math.floor(sinceDate.getTime() / 1000) },
           starting_after: startingAfter,
+          expand: ["data.source"],
         },
         stripeAccountId ? { stripeAccount: stripeAccountId } : undefined,
       );
 
-      for (const charge of charges.data) {
-        if (charge.status !== "succeeded" || charge.refunded) continue;
-        const period = periodKeyFromUnixSeconds(charge.created);
-        monthlyTotals.set(period, (monthlyTotals.get(period) ?? 0) + charge.amount);
-        monthlyTransactionCounts.set(period, (monthlyTransactionCounts.get(period) ?? 0) + 1);
-
-        const customerId = typeof charge.customer === "string" ? charge.customer : null;
-        if (customerId) {
-          if (!monthlyCustomers.has(period)) monthlyCustomers.set(period, new Set());
-          monthlyCustomers.get(period)!.add(customerId);
+      for (const bt of page.data) {
+        if (!COUNTED.has(bt.type)) continue;
+        // Only adjustments tied to a dispute (chargebacks and their reversals) affect revenue.
+        if (bt.type === "adjustment" && !(bt.source && typeof bt.source === "object" && bt.source.object === "dispute")) continue;
+        const source =
+          bt.source && typeof bt.source === "object"
+            ? (bt.source as {
+                id?: string;
+                customer?: unknown;
+                charge?: unknown;
+                receipt_email?: string | null;
+                billing_details?: { email?: string | null };
+              })
+            : null;
+        if (ownPayers && source) {
+          const email = (source.billing_details?.email ?? source.receipt_email ?? "").toLowerCase();
+          const fromCofounder =
+            (typeof source.customer === "string" && ownPayers.customers.has(source.customer)) ||
+            (email !== "" && ownPayers.emails.has(email));
+          if (fromCofounder && source.id) {
+            skippedCharges.add(source.id);
+            continue;
+          }
         }
+        movements.push({
+          refundOf: typeof source?.charge === "string" ? source.charge : null,
+          amount: bt.amount,
+          currency: bt.currency,
+          created: bt.created,
+          sale: SALES.has(bt.type),
+          customer: typeof source?.customer === "string" ? source.customer : null,
+        });
       }
 
-      hasMore = charges.has_more;
-      startingAfter = charges.data.at(-1)?.id;
+      hasMore = page.has_more;
+      startingAfter = page.data.at(-1)?.id;
     }
 
-    for (const [period, amountCents] of monthlyTotals.entries()) {
-      await upsertMonthlyRevenue({
-        userId,
-        revenueSourceId,
-        period,
-        amountCents,
-        currency: "EUR",
-        isVerified: true,
-        transactionCount: monthlyTransactionCounts.get(period) ?? 0,
-        customerCount: monthlyCustomers.get(period)?.size ?? 0,
-      });
+    // Newest first: a refund is listed before the charge it reverses.
+    movements = movements.filter((m) => !m.refundOf || !skippedCharges.has(m.refundOf));
+
+    const toEur = await euroConverter(
+      movements.map((m) => m.currency),
+      sinceDate,
+    );
+    const months = new Map<string, MonthTotal>();
+    for (const m of movements) {
+      const at = new Date(m.created * 1000);
+      addToMonth(months, at, toEur(m.amount, m.currency, at), { countsAsSale: m.sale, customerId: m.customer });
     }
+    const monthsWithRevenue = await writeSourceMonths(userId, revenueSourceId, months, sinceDate);
 
     // A successful API call with zero charges isn't a verified account —
     // it just means there's nothing to verify yet. Keep it "unverified"
     // (not "error": nothing went wrong, Stripe just has no data) so the
     // account can pick up a real verification the next time it's synced.
-    const hasVerifiableRevenue = monthlyTotals.size > 0;
+    const hasVerifiableRevenue = monthsWithRevenue > 0;
 
     await supabase
       .from("verifications")
@@ -252,7 +311,7 @@ export async function syncStripeRevenue(
 
     return {
       success: true as const,
-      monthsSynced: monthlyTotals.size,
+      monthsSynced: monthsWithRevenue,
       isFirstVerification: !wasAlreadyVerified,
       currentRevenueCents,
       rank,
@@ -283,7 +342,3 @@ export async function disconnectStripeSource(userId: string, revenueSourceId: st
     .eq("revenue_source_id", revenueSourceId);
 }
 
-function periodKeyFromUnixSeconds(seconds: number): string {
-  const d = new Date(seconds * 1000);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString().slice(0, 10);
-}

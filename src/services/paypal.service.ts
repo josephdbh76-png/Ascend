@@ -1,7 +1,15 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPayPalAccessToken, fetchTransactionsSince, type PayPalTransaction } from "@/lib/paypal";
-import { upsertMonthlyRevenue, refreshRevenueVerifiedFlag } from "@/services/revenue.service";
+import {
+  refreshRevenueVerifiedFlag,
+  syncWindowStart,
+  addToMonth,
+  writeSourceMonths,
+  type MonthTotal,
+} from "@/services/revenue.service";
+import { euroConverter, minorUnitFactor } from "@/lib/fx";
+import { decryptSecret, encryptSecret } from "@/lib/secrets";
 import { createNotificationForUser } from "@/services/notification.service";
 import { afterRevenueSync } from "@/services/progress.service";
 
@@ -14,7 +22,8 @@ async function getStoredPayPalCredentials(revenueSourceId: string): Promise<{ cl
     .select("client_id, client_secret")
     .eq("revenue_source_id", revenueSourceId)
     .maybeSingle();
-  return data ? { clientId: data.client_id, clientSecret: data.client_secret } : null;
+  const clientSecret = decryptSecret(data?.client_secret);
+  return data && clientSecret ? { clientId: data.client_id, clientSecret } : null;
 }
 
 /**
@@ -44,7 +53,10 @@ export async function connectPayPalWithCredentials(userId: string, clientId: str
 
   const { error: credentialError } = await admin
     .from("provider_credentials")
-    .upsert({ revenue_source_id: source.id, client_id: clientId, client_secret: clientSecret }, { onConflict: "revenue_source_id" });
+    .upsert(
+      { revenue_source_id: source.id, client_id: clientId, client_secret: encryptSecret(clientSecret) },
+      { onConflict: "revenue_source_id" },
+    );
   if (credentialError) throw new Error(credentialError.message);
 
   await supabase.from("verifications").upsert(
@@ -56,13 +68,21 @@ export async function connectPayPalWithCredentials(userId: string, clientId: str
   return { source, syncResult };
 }
 
-function periodKeyFromIsoDate(iso: string): string {
-  const d = new Date(iso);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString().slice(0, 10);
-}
 
-function isRevenueBearingTransaction(t: PayPalTransaction): boolean {
-  return t.transaction_info.transaction_status === "S" && parseFloat(t.transaction_info.transaction_amount.value) > 0;
+/**
+ * Only money received for a sale counts: payments (T00xx) in, refunds and
+ * reversals (T11xx) out. Bank top-ups, holds, currency conversions and
+ * transfers between balances are movements, not revenue.
+ */
+function revenueMovement(t: PayPalTransaction): { amount: number; sale: boolean } | null {
+  const info = t.transaction_info;
+  if (info.transaction_status !== "S") return null;
+  const code = info.transaction_event_code ?? "";
+  const value = parseFloat(info.transaction_amount.value);
+  if (!Number.isFinite(value) || value === 0) return null;
+  if (code.startsWith("T00") && value > 0) return { amount: value, sale: true };
+  if (code.startsWith("T11") && value < 0) return { amount: value, sale: false };
+  return null;
 }
 
 /** Mirrors syncShopifyRevenue's shape exactly — same downstream achievements/challenges/titles evaluation, fed from PayPal's Transaction Search API instead. */
@@ -99,36 +119,31 @@ export async function syncPayPalRevenue(
     return { success: false as const, error: message };
   }
 
-  const sinceDate = new Date();
-  sinceDate.setMonth(sinceDate.getMonth() - MONTHS_OF_HISTORY);
+  const sinceDate = syncWindowStart(MONTHS_OF_HISTORY);
 
   try {
     const transactions = await fetchTransactionsSince(accessToken, sinceDate);
+    const kept = transactions
+      .map((t) => ({ t, movement: revenueMovement(t) }))
+      .filter((x): x is { t: PayPalTransaction; movement: { amount: number; sale: boolean } } => x.movement !== null);
 
-    const monthlyTotals = new Map<string, number>();
-    const monthlyTransactionCounts = new Map<string, number>();
-
-    for (const t of transactions) {
-      if (!isRevenueBearingTransaction(t)) continue;
-      const period = periodKeyFromIsoDate(t.transaction_info.transaction_initiation_date);
-      const amountCents = Math.round(parseFloat(t.transaction_info.transaction_amount.value) * 100);
-      monthlyTotals.set(period, (monthlyTotals.get(period) ?? 0) + amountCents);
-      monthlyTransactionCounts.set(period, (monthlyTransactionCounts.get(period) ?? 0) + 1);
-    }
-
-    for (const [period, amountCents] of monthlyTotals.entries()) {
-      await upsertMonthlyRevenue({
-        userId,
-        revenueSourceId,
-        period,
-        amountCents,
-        currency: "EUR",
-        isVerified: true,
-        transactionCount: monthlyTransactionCounts.get(period) ?? 0,
+    const toEur = await euroConverter(
+      kept.map((x) => x.t.transaction_info.transaction_amount.currency_code),
+      sinceDate,
+    );
+    const months = new Map<string, MonthTotal>();
+    for (const { t, movement } of kept) {
+      const currency = t.transaction_info.transaction_amount.currency_code;
+      const at = t.transaction_info.transaction_initiation_date;
+      const minor = Math.round(movement.amount * minorUnitFactor(currency));
+      addToMonth(months, at, toEur(minor, currency, at), {
+        countsAsSale: movement.sale,
+        customerId: movement.sale ? (t.payer_info?.account_id ?? t.payer_info?.email_address ?? null) : null,
       });
     }
+    const monthsWithRevenue = await writeSourceMonths(userId, revenueSourceId, months, sinceDate);
 
-    const hasVerifiableRevenue = monthlyTotals.size > 0;
+    const hasVerifiableRevenue = monthsWithRevenue > 0;
 
     await supabase
       .from("verifications")
@@ -155,7 +170,7 @@ export async function syncPayPalRevenue(
 
     return {
       success: true as const,
-      monthsSynced: monthlyTotals.size,
+      monthsSynced: monthsWithRevenue,
       isFirstVerification: !wasAlreadyVerified,
       currentRevenueCents,
       rank,

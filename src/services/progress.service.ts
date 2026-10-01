@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotificationForUser } from "@/services/notification.service";
-import { nextRevenueMilestone } from "@/services/revenue.service";
+import { nextRevenueMilestone, pickReferenceMonths } from "@/services/revenue.service";
 import { normalizeRequirement, conditionDef, type ConditionType } from "@/lib/conditions";
 import { calculateGrowth } from "@/lib/utils";
 
@@ -34,11 +34,11 @@ export async function getMemberMetrics(userId: string): Promise<MemberMetrics> {
       admin.from("businesses").select("*").eq("user_id", userId).maybeSingle(),
       admin
         .from("revenue_snapshots")
-        .select("amount_cents, transaction_count, customer_count")
+        .select("period, amount_cents, transaction_count, customer_count")
         .eq("user_id", userId)
         .eq("is_verified", true)
         .order("period", { ascending: false })
-        .limit(2),
+        .limit(3),
       admin.from("follows").select("follower_id").eq("followee_id", userId),
       admin.rpc("get_user_rank", { p_user_id: userId, p_scope: "global", p_scope_value: "" }),
       admin.from("revenue_snapshots").select("created_at").eq("user_id", userId).order("created_at", { ascending: true }).limit(1),
@@ -56,8 +56,11 @@ export async function getMemberMetrics(userId: string): Promise<MemberMetrics> {
     followers = count ?? 0;
   }
 
-  const current = snapshots?.[0];
-  const previous = snapshots?.[1];
+  // Growth compares complete months (as the leaderboard does); thresholds
+  // also count the month in progress, so a goal reached today unlocks today.
+  const { reference: current, previous, inProgress } = pickReferenceMonths(snapshots ?? []);
+  const best = <K extends "amount_cents" | "customer_count" | "transaction_count">(key: K) =>
+    Math.max(Number(current?.[key] ?? 0), Number(inProgress?.[key] ?? 0));
   const verified = profile?.revenue_verified ?? false;
   const firstVerifiedAt = firstSnapshot?.[0]?.created_at;
   const verifiedDays =
@@ -71,10 +74,10 @@ export async function getMemberMetrics(userId: string): Promise<MemberMetrics> {
   ];
 
   return {
-    revenueCents: current?.amount_cents ?? 0,
+    revenueCents: best("amount_cents"),
     growthPercent: current && previous ? calculateGrowth(current.amount_cents, previous.amount_cents) : null,
-    customers: current?.customer_count ?? 0,
-    transactions: current?.transaction_count ?? 0,
+    customers: best("customer_count"),
+    transactions: best("transaction_count"),
     followers,
     globalRank: rankRows?.[0]?.rank ?? null,
     verified,

@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { RefreshCw, Unlink, Link2, Crown, ShoppingBag, Landmark, ListChecks, Wallet, Citrus } from "lucide-react";
+import { RefreshCw, Unlink, Link2, Crown, ShoppingBag, Landmark, ListChecks, Wallet, Citrus, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select } from "@/components/ui/Input";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";
 import { ManualRevenueCard } from "./ManualRevenueCard";
+import { ApiSourceConnection, type ApiSourceState } from "./ApiSourceConnection";
+import { API_CONNECTORS, connectorMeta, type ApiConnectorId } from "@/lib/connectors";
 import {
   connectShopifyAction,
   connectPayPalAction,
@@ -46,6 +48,8 @@ export function ConnectedAccounts({
   paypalStatus,
   lemonSqueezyConnected,
   lemonSqueezyStatus,
+  apiSources,
+  bankAvailable,
 }: {
   connected: boolean;
   status: VerificationStatus;
@@ -62,8 +66,13 @@ export function ConnectedAccounts({
   paypalStatus: VerificationStatus;
   lemonSqueezyConnected: boolean;
   lemonSqueezyStatus: VerificationStatus;
+  apiSources: Record<ApiConnectorId, ApiSourceState>;
+  bankAvailable: boolean;
 }) {
   const [pending, startTransition] = useTransition();
+  const [showMore, setShowMore] = useState(false);
+  const morePlatforms = API_CONNECTORS.filter((c) => c.id !== "qonto");
+  const hiddenPlatforms = morePlatforms.filter((c) => !apiSources[c.id].connected);
   const toast = useToast();
   const router = useRouter();
 
@@ -131,23 +140,55 @@ export function ConnectedAccounts({
 
       <ShopifyConnection connected={shopifyConnected} status={shopifyStatus} domain={shopifyDomain} />
 
-      <BankConnection
-        connected={bankConnected}
-        status={bankStatus}
-        connectedInstitutionName={bankInstitutionName}
-        revenueSourceId={bankRevenueSourceId}
-      />
-
       <PayPalConnection connected={paypalConnected} status={paypalStatus} />
 
       <LemonSqueezyConnection connected={lemonSqueezyConnected} status={lemonSqueezyStatus} />
 
-      <ManualRevenueCard declarations={declarations} />
+      {morePlatforms
+        .filter((c) => showMore || apiSources[c.id].connected)
+        .map((c) => (
+          <ApiSourceConnection key={c.id} meta={c} state={apiSources[c.id]} />
+        ))}
 
-      <div className="flex flex-col items-start gap-1 rounded-md border border-border bg-card p-4 opacity-60 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-        <p className="text-sm font-medium text-text-secondary">Paddle</p>
-        <span className="text-xs font-medium uppercase tracking-wide text-text-muted">Bientôt disponible</span>
-      </div>
+      {!showMore && hiddenPlatforms.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowMore(true)}
+          className="flex items-center justify-between gap-3 rounded-md border border-dashed border-border-strong p-4 text-left text-sm text-text-secondary transition-colors hover:border-gold/50 hover:text-text-primary"
+        >
+          <span>
+            Autres plateformes
+            <span className="mt-0.5 block text-xs text-text-muted">{hiddenPlatforms.map((c) => c.name).join(", ")}</span>
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0" />
+        </button>
+      )}
+
+      <p className="mt-2 text-xs font-medium uppercase tracking-wide text-text-muted">Compte bancaire</p>
+
+      <ApiSourceConnection meta={connectorMeta("qonto")!} state={apiSources.qonto} />
+
+      {bankAvailable || bankConnected ? (
+        <BankConnection
+          connected={bankConnected}
+          status={bankStatus}
+          connectedInstitutionName={bankInstitutionName}
+          revenueSourceId={bankRevenueSourceId}
+        />
+      ) : (
+        <div className="flex flex-col gap-1 rounded-md border border-border bg-card p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-text-secondary">Autres banques</p>
+            <span className="text-xs font-medium uppercase tracking-wide text-text-muted">Bientôt disponible</span>
+          </div>
+          <p className="text-xs leading-relaxed text-text-muted">
+            La connexion de toutes les banques arrive bientôt. En attendant, un compte Qonto se connecte
+            directement, et tu peux déclarer tes revenus ci-dessous avec un justificatif.
+          </p>
+        </div>
+      )}
+
+      <ManualRevenueCard declarations={declarations} />
     </div>
   );
 }

@@ -8,7 +8,8 @@ import { TransactionsList } from "./TransactionsList";
 
 export const metadata: Metadata = { title: "Mes transactions bancaires" };
 
-export default async function BankTransactionsPage() {
+export default async function BankTransactionsPage({ searchParams }: PageProps<"/app/settings/transactions">) {
+  const provider = (await searchParams).source === "qonto" ? "qonto" : "bank";
   const supabase = await createClient();
   const {
     data: { user },
@@ -19,7 +20,7 @@ export default async function BankTransactionsPage() {
     .from("revenue_sources")
     .select("id, status")
     .eq("user_id", user.id)
-    .eq("provider", "bank")
+    .eq("provider", provider)
     .maybeSingle();
 
   if (!source || source.status !== "connected") redirect("/app/settings#comptes-connectes");
@@ -35,7 +36,9 @@ export default async function BankTransactionsPage() {
         <h1 className="mt-3 text-2xl font-semibold tracking-tight text-text-primary">Mes transactions bancaires</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Coche les virements entrants qui correspondent à ton revenu professionnel. Le reste (virements
-          personnels, remboursements...) n&apos;est jamais compté.
+          personnels, apports, prêts, remboursements...) n&apos;est jamais compté.
+          {provider === "qonto" &&
+            " Les paiements de clients sont cochés d'avance : décoche ce qui n'est pas un revenu. Les versements de Stripe, PayPal ou d'une autre plateforme déjà connectée restent décochés pour ne pas compter deux fois les mêmes ventes."}
         </p>
       </div>
 

@@ -141,6 +141,6 @@ export const LEADERBOARD_FAQ = [
   },
   {
     q: "À quelle fréquence le classement est-il mis à jour ?",
-    a: "Les revenus sont synchronisés automatiquement depuis les sources connectées, et le classement public est rafraîchi toutes les heures.",
+    a: "Les revenus sont synchronisés automatiquement depuis les sources connectées, et le classement public est rafraîchi toutes les heures. Tout le monde est comparé sur le dernier mois complet : un mois qui vient de commencer ne fait chuter personne.",
   },
 ];

@@ -1,7 +1,15 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getShopifyAccessToken, fetchShopifyOrdersPage, isValidShopDomain, SHOPIFY_API_VERSION, type ShopifyOrder } from "@/lib/shopify";
-import { upsertMonthlyRevenue, refreshRevenueVerifiedFlag } from "@/services/revenue.service";
+import {
+  refreshRevenueVerifiedFlag,
+  syncWindowStart,
+  addToMonth,
+  writeSourceMonths,
+  type MonthTotal,
+} from "@/services/revenue.service";
+import { euroConverter, minorUnitFactor } from "@/lib/fx";
+import { decryptSecret, encryptSecret } from "@/lib/secrets";
 import { createNotificationForUser } from "@/services/notification.service";
 import { afterRevenueSync } from "@/services/progress.service";
 
@@ -17,7 +25,8 @@ async function getStoredShopifyCredentials(
     .select("client_id, client_secret")
     .eq("revenue_source_id", revenueSourceId)
     .maybeSingle();
-  return data ? { clientId: data.client_id, clientSecret: data.client_secret } : null;
+  const clientSecret = decryptSecret(data?.client_secret);
+  return data && clientSecret ? { clientId: data.client_id, clientSecret } : null;
 }
 
 /**
@@ -73,7 +82,10 @@ export async function connectShopifyWithCredentials(userId: string, shop: string
 
   const { error: credentialError } = await admin
     .from("provider_credentials")
-    .upsert({ revenue_source_id: source.id, client_id: clientId, client_secret: clientSecret }, { onConflict: "revenue_source_id" });
+    .upsert(
+      { revenue_source_id: source.id, client_id: clientId, client_secret: encryptSecret(clientSecret) },
+      { onConflict: "revenue_source_id" },
+    );
   if (credentialError) throw new Error(credentialError.message);
 
   await supabase.from("verifications").upsert(
@@ -90,13 +102,14 @@ export async function connectShopifyWithCredentials(userId: string, shop: string
   return { source, syncResult };
 }
 
-function periodKeyFromIsoDate(iso: string): string {
-  const d = new Date(iso);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString().slice(0, 10);
-}
 
+// current_total_price already excludes refunded items, so a partially
+// refunded order still counts for what was kept.
 function isRevenueBearingOrder(order: ShopifyOrder): boolean {
-  return order.cancelled_at == null && (order.financial_status === "paid" || order.financial_status === "partially_paid");
+  return (
+    order.cancelled_at == null &&
+    ["paid", "partially_paid", "partially_refunded"].includes(order.financial_status)
+  );
 }
 
 /**
@@ -128,14 +141,10 @@ export async function syncShopifyRevenue(userId: string, revenueSourceId: string
     return { success: false as const, error: message };
   }
 
-  const sinceDate = new Date();
-  sinceDate.setMonth(sinceDate.getMonth() - MONTHS_OF_HISTORY);
+  const sinceDate = syncWindowStart(MONTHS_OF_HISTORY);
 
   try {
-    const monthlyTotals = new Map<string, number>();
-    const monthlyTransactionCounts = new Map<string, number>();
-    const monthlyCustomers = new Map<string, Set<number>>();
-
+    const sales: { amount: number; currency: string; at: string; customer: string | null }[] = [];
     let url: string | null =
       `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/orders.json?status=any&limit=250&created_at_min=${sinceDate.toISOString()}`;
 
@@ -143,35 +152,25 @@ export async function syncShopifyRevenue(userId: string, revenueSourceId: string
       const { orders, nextUrl } = await fetchShopifyOrdersPage(url, accessToken);
       for (const order of orders) {
         if (!isRevenueBearingOrder(order)) continue;
-        const period = periodKeyFromIsoDate(order.created_at);
-        // Shopify prices are decimal strings ("129.99"), everywhere else in
-        // ASCEND revenue is integer cents — convert once, at the boundary.
-        const amountCents = Math.round(parseFloat(order.current_total_price) * 100);
-        monthlyTotals.set(period, (monthlyTotals.get(period) ?? 0) + amountCents);
-        monthlyTransactionCounts.set(period, (monthlyTransactionCounts.get(period) ?? 0) + 1);
-
-        if (order.customer?.id != null) {
-          if (!monthlyCustomers.has(period)) monthlyCustomers.set(period, new Set());
-          monthlyCustomers.get(period)!.add(order.customer.id);
-        }
+        const money = order.current_total_price_set?.shop_money;
+        const currency = money?.currency_code ?? order.currency ?? "EUR";
+        const amount = Math.round(parseFloat(money?.amount ?? order.current_total_price) * minorUnitFactor(currency));
+        sales.push({ amount, currency, at: order.created_at, customer: order.customer?.id != null ? String(order.customer.id) : null });
       }
       url = nextUrl;
     }
 
-    for (const [period, amountCents] of monthlyTotals.entries()) {
-      await upsertMonthlyRevenue({
-        userId,
-        revenueSourceId,
-        period,
-        amountCents,
-        currency: "EUR",
-        isVerified: true,
-        transactionCount: monthlyTransactionCounts.get(period) ?? 0,
-        customerCount: monthlyCustomers.get(period)?.size ?? 0,
-      });
+    const toEur = await euroConverter(
+      sales.map((s) => s.currency),
+      sinceDate,
+    );
+    const months = new Map<string, MonthTotal>();
+    for (const sale of sales) {
+      addToMonth(months, sale.at, toEur(sale.amount, sale.currency, sale.at), { countsAsSale: true, customerId: sale.customer });
     }
+    const monthsWithRevenue = await writeSourceMonths(userId, revenueSourceId, months, sinceDate);
 
-    const hasVerifiableRevenue = monthlyTotals.size > 0;
+    const hasVerifiableRevenue = monthsWithRevenue > 0;
 
     await supabase
       .from("verifications")
@@ -214,7 +213,7 @@ export async function syncShopifyRevenue(userId: string, revenueSourceId: string
 
     return {
       success: true as const,
-      monthsSynced: monthlyTotals.size,
+      monthsSynced: monthsWithRevenue,
       isFirstVerification: !wasAlreadyVerified,
       currentRevenueCents,
       rank,

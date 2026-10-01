@@ -23,7 +23,7 @@ import { listActiveBanners } from "@/services/banner.service";
 import { getActiveSeason, getUserSeasonStanding } from "@/services/season.service";
 import { DashboardBannerCarousel } from "@/components/dashboard/DashboardBannerCarousel";
 import { AutoRevenueSync } from "@/components/dashboard/AutoRevenueSync";
-import { isRevenueSyncStale } from "@/lib/revenueSync";
+import { isRevenueSyncStale, AUTO_SYNC_PROVIDERS } from "@/lib/revenueSync";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -60,7 +60,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/app/da
   const [
     { data: business },
     history,
-    { current, previous },
+    { current, previous, inProgress },
     verificationStatus,
     achievements,
     challenges,
@@ -87,7 +87,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/app/da
       .select("last_synced_at")
       .eq("user_id", user.id)
       .eq("status", "connected")
-      .in("provider", ["stripe", "shopify", "paypal", "lemonsqueezy"]),
+      .in("provider", [...AUTO_SYNC_PROVIDERS]),
   ]);
   const hasStaleSource = (connectedSources ?? []).some((s) => isRevenueSyncStale(s.last_synced_at));
   const replayTour = (await searchParams).visite === "1";
@@ -194,10 +194,16 @@ export default async function DashboardPage({ searchParams }: PageProps<"/app/da
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
-          label="Revenus mensuels"
+          label={current ? `Revenus · ${monthName(current.period)}` : "Revenus mensuels"}
           value={current ? <CurrencyCountUp value={current.amountCents} /> : "—"}
           icon={TrendingUp}
-          trend={previous ? `${formatCurrency(previous.amountCents)} le mois dernier` : undefined}
+          trend={
+            inProgress
+              ? `${capitalize(monthName(inProgress.period))} en cours : ${formatCurrency(inProgress.amountCents)}`
+              : previous
+                ? `${formatCurrency(previous.amountCents)} le mois précédent`
+                : undefined
+          }
           accent
         />
         <StatCard
@@ -392,6 +398,14 @@ export default async function DashboardPage({ searchParams }: PageProps<"/app/da
       </div>
     </div>
   );
+}
+
+function monthName(period: string) {
+  return new Intl.DateTimeFormat("fr-FR", { month: "long", timeZone: "UTC" }).format(new Date(`${period}T00:00:00Z`));
+}
+
+function capitalize(text: string) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function daysUntil(iso: string) {

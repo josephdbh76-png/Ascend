@@ -46,6 +46,9 @@ export interface ShopifyOrder {
   id: number;
   created_at: string;
   current_total_price: string;
+  /** Same total in the shop's own currency (after refunds and edits). */
+  current_total_price_set?: { shop_money: { amount: string; currency_code: string } };
+  currency?: string;
   financial_status: string;
   cancelled_at: string | null;
   customer: { id: number } | null;

@@ -100,7 +100,7 @@ export function PricingPlans({
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">{plan.name}</span>
                 {beta && plan.tier === "elite" ? (
-                  <Badge variant="gold">Offert pendant la bêta</Badge>
+                  <Badge variant="gold" className="whitespace-nowrap">Offert en bêta</Badge>
                 ) : isCurrent ? (
                   <Badge variant="gold">Actuel</Badge>
                 ) : (
@@ -137,7 +137,7 @@ export function PricingPlans({
                   loggedIn ? (
                     <>
                       <Button variant="secondary" disabled>
-                        {plan.tier === "elite" ? "Inclus pendant la bêta" : "Ouvre au lancement"}
+                        {plan.tier === "elite" ? "Inclus en bêta" : "Ouvre au lancement"}
                       </Button>
                       <p className="text-[11px] text-text-muted">Aucun paiement pendant la bêta.</p>
                     </>

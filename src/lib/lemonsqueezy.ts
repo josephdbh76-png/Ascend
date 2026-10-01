@@ -13,6 +13,9 @@ export interface LsOrder {
     user_email: string;
     created_at: string;
     refunded: boolean;
+    /** Cents already refunded (partial refunds), in the order currency. */
+    refunded_amount?: number;
+    customer_id?: number;
   };
 }
 

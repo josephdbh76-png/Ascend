@@ -5,7 +5,7 @@ import { createNotificationForUser } from "@/services/notification.service";
 import { rewardReferrerIfEligible } from "@/services/referral.service";
 import { calculateGrowth } from "@/lib/utils";
 import type { RevenuePoint } from "@/types";
-import type { VerificationStatus, RevenueReviewStatus } from "@/types/database.types";
+import type { VerificationStatus, RevenueReviewStatus, SourceProvider } from "@/types/database.types";
 
 interface UpsertMonthlyRevenueInput {
   userId: string;
@@ -90,6 +90,83 @@ export async function refreshRevenueVerifiedFlag(userId: string): Promise<boolea
   }
 
   return verified;
+}
+
+/** "YYYY-MM-01" (UTC) of a date. */
+export function periodKey(date: Date | string): string {
+  const d = new Date(date);
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString().slice(0, 10);
+}
+
+/**
+ * First day (UTC) of the month `months` months ago. Syncs start on a month
+ * boundary: starting mid-month would rewrite that month with half its sales.
+ */
+export function syncWindowStart(months: number): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - months, 1));
+}
+
+export interface MonthTotal {
+  amountCents: number;
+  transactions: number;
+  customers: number | null;
+}
+
+/** Adds one sale (or a negative refund) to a month in a monthly accumulator. */
+export function addToMonth(
+  months: Map<string, MonthTotal & { customerIds?: Set<string> }>,
+  at: Date | string,
+  amountCents: number,
+  opts: { countsAsSale?: boolean; customerId?: string | null } = {},
+) {
+  const period = periodKey(at);
+  const month = months.get(period) ?? { amountCents: 0, transactions: 0, customers: null, customerIds: new Set<string>() };
+  month.amountCents += amountCents;
+  if (opts.countsAsSale) month.transactions += 1;
+  if (opts.customerId) month.customerIds!.add(opts.customerId);
+  month.customers = month.customerIds!.size > 0 ? month.customerIds!.size : month.customers;
+  months.set(period, month);
+}
+
+/**
+ * Writes a source's months for the synced window and clears those that no
+ * longer hold revenue (refunded, cancelled), so a refund never leaves an old
+ * figure behind. Returns how many months have revenue.
+ */
+export async function writeSourceMonths(
+  userId: string,
+  revenueSourceId: string,
+  months: Map<string, MonthTotal>,
+  since: Date,
+): Promise<number> {
+  const admin = createAdminClient();
+  const { data: existing } = await admin
+    .from("revenue_source_snapshots")
+    .select("period")
+    .eq("revenue_source_id", revenueSourceId)
+    .gte("period", periodKey(since));
+
+  let withRevenue = 0;
+  for (const [period, month] of months) {
+    if (month.amountCents <= 0) continue;
+    withRevenue++;
+    await upsertMonthlyRevenue({
+      userId,
+      revenueSourceId,
+      period,
+      amountCents: month.amountCents,
+      currency: "EUR",
+      isVerified: true,
+      transactionCount: month.transactions,
+      customerCount: month.customers,
+    });
+  }
+  for (const row of existing ?? []) {
+    const month = months.get(row.period);
+    if (!month || month.amountCents <= 0) await setSourceRevenueForPeriod(userId, revenueSourceId, row.period, 0);
+  }
+  return withRevenue;
 }
 
 export async function upsertMonthlyRevenue(input: UpsertMonthlyRevenueInput) {
@@ -282,13 +359,30 @@ export async function getRevenueHistory(userId: string, months = 12): Promise<Re
     .reverse();
 }
 
+function currentMonthStart(): string {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().slice(0, 10);
+}
+
+/**
+ * Same rule as the leaderboard (member_reference_revenue): the reference is
+ * the last complete month; the month in progress is reported apart, and only
+ * stands in when there is no complete month yet. Rows must be newest first.
+ */
+export function pickReferenceMonths<T extends { period: string }>(rowsNewestFirst: T[]) {
+  const thisMonth = currentMonthStart();
+  const inProgress = rowsNewestFirst.find((r) => r.period >= thisMonth) ?? null;
+  const reference = rowsNewestFirst.find((r) => r.period < thisMonth) ?? inProgress;
+  const previous = reference ? (rowsNewestFirst.find((r) => r.period < reference.period) ?? null) : null;
+  return { reference, previous, inProgress: inProgress && inProgress !== reference ? inProgress : null };
+}
+
 export async function getCurrentRevenue(
   userId: string,
-): Promise<{ current: RevenuePoint | null; previous: RevenuePoint | null }> {
-  const history = await getRevenueHistory(userId, 2);
-  const current = history.at(-1) ?? null;
-  const previous = history.length > 1 ? history.at(-2)! : null;
-  return { current, previous };
+): Promise<{ current: RevenuePoint | null; previous: RevenuePoint | null; inProgress: RevenuePoint | null }> {
+  const history = await getRevenueHistory(userId, 3);
+  const { reference, previous, inProgress } = pickReferenceMonths([...history].reverse());
+  return { current: reference, previous, inProgress };
 }
 
 export function calculateMonthlyGrowth(current: number | null, previous: number | null) {
@@ -299,7 +393,7 @@ export function calculateMonthlyGrowth(current: number | null, previous: number 
 /** Checks one processor's connection + verification status, or null if that processor isn't connected at all. */
 async function getProcessorVerificationStatus(
   userId: string,
-  provider: "stripe" | "shopify" | "bank" | "paypal" | "lemonsqueezy",
+  provider: SourceProvider,
 ): Promise<VerificationStatus | null> {
   const supabase = await createClient();
   const { data: source } = await supabase
@@ -380,18 +474,25 @@ async function getManualVerificationStatus(userId: string): Promise<Verification
 const STATUS_PRIORITY: VerificationStatus[] = ["verified", "pending", "rejected", "disconnected", "unverified"];
 
 export async function getVerificationStatus(userId: string): Promise<VerificationStatus> {
-  const [stripeStatus, shopifyStatus, bankStatus, paypalStatus, lemonSqueezyStatus, manualStatus] = await Promise.all([
-    getProcessorVerificationStatus(userId, "stripe"),
-    getProcessorVerificationStatus(userId, "shopify"),
-    getProcessorVerificationStatus(userId, "bank"),
-    getProcessorVerificationStatus(userId, "paypal"),
-    getProcessorVerificationStatus(userId, "lemonsqueezy"),
+  const providers: SourceProvider[] = [
+    "stripe",
+    "shopify",
+    "bank",
+    "paypal",
+    "lemonsqueezy",
+    "qonto",
+    "mollie",
+    "paddle",
+    "gumroad",
+    "whop",
+    "woocommerce",
+  ];
+  const found = await Promise.all([
+    ...providers.map((p) => getProcessorVerificationStatus(userId, p)),
     getManualVerificationStatus(userId),
   ]);
 
-  const statuses = [stripeStatus, shopifyStatus, bankStatus, paypalStatus, lemonSqueezyStatus, manualStatus].filter(
-    (s): s is VerificationStatus => s != null,
-  );
+  const statuses = found.filter((s): s is VerificationStatus => s != null);
   if (statuses.length === 0) return "unverified";
 
   return STATUS_PRIORITY.find((p) => statuses.includes(p)) ?? "unverified";

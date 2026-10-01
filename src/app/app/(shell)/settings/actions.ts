@@ -23,6 +23,8 @@ import { verifyAndSaveSiret } from "@/services/siret.service";
 import { connectShopifyWithCredentials } from "@/services/shopify.service";
 import { connectPayPalWithCredentials } from "@/services/paypal.service";
 import { connectLemonSqueezyWithKey } from "@/services/lemonsqueezy.service";
+import { connectApiSource, syncApiSource, disconnectApiSource, isApiConnector } from "@/services/apiConnector.service";
+import type { ApiConnectorId } from "@/lib/connectors";
 import {
   listBankInstitutions,
   initiateBankConnection,
@@ -280,6 +282,61 @@ export async function connectLemonSqueezyAction(
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Impossible de connecter Lemon Squeezy." };
   }
+}
+
+type OwnApiSource =
+  | { ok: false; error: string }
+  | { ok: true; userId: string; provider: ApiConnectorId; source: { id: string; status: string } | null };
+
+async function ownApiSource(provider: string): Promise<OwnApiSource> {
+  if (!isApiConnector(provider)) return { ok: false, error: "Source inconnue." };
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { ok: false, error: "Tu n'es pas connecté." };
+  const { data: source } = await supabase
+    .from("revenue_sources")
+    .select("id, status")
+    .eq("user_id", userData.user.id)
+    .eq("provider", provider)
+    .maybeSingle();
+  return { ok: true, userId: userData.user.id, provider, source };
+}
+
+export async function connectApiSourceAction(
+  provider: string,
+  fields: Record<string, string>,
+): Promise<ActionResult<{ isFirstVerification: boolean; monthsSynced: number }>> {
+  const own = await ownApiSource(provider);
+  if (!own.ok) return { success: false, error: own.error };
+  try {
+    const result = await connectApiSource(own.userId, own.provider, fields ?? {});
+    if (!result.success) return { success: false, error: result.error };
+    revalidatePath("/app", "layout");
+    return { success: true, data: { isFirstVerification: result.isFirstVerification, monthsSynced: result.monthsSynced } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Impossible de connecter cette source." };
+  }
+}
+
+export async function syncApiSourceAction(
+  provider: string,
+): Promise<ActionResult<{ isFirstVerification: boolean; monthsSynced: number }>> {
+  const own = await ownApiSource(provider);
+  if (!own.ok) return { success: false, error: own.error };
+  if (own.source?.status !== "connected") return { success: false, error: "Cette source n'est pas connectée." };
+  const result = await syncApiSource(own.userId, own.provider, own.source.id);
+  if (!result.success) return { success: false, error: result.error };
+  revalidatePath("/app", "layout");
+  return { success: true, data: { isFirstVerification: result.isFirstVerification, monthsSynced: result.monthsSynced } };
+}
+
+export async function disconnectApiSourceAction(provider: string): Promise<ActionResult> {
+  const own = await ownApiSource(provider);
+  if (!own.ok) return { success: false, error: own.error };
+  if (!own.source) return { success: false, error: "Aucune connexion trouvée." };
+  await disconnectApiSource(own.userId, own.source.id);
+  revalidatePath("/app", "layout");
+  return { success: true, data: undefined };
 }
 
 export async function listBankInstitutionsAction(country: string): Promise<ActionResult<Aspsp[]>> {

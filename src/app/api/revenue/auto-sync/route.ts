@@ -4,7 +4,8 @@ import { syncStripeRevenue, PLATFORM_ACCOUNT_SENTINEL } from "@/services/stripe.
 import { syncShopifyRevenue } from "@/services/shopify.service";
 import { syncPayPalRevenue } from "@/services/paypal.service";
 import { syncLemonSqueezyRevenue } from "@/services/lemonsqueezy.service";
-import { isRevenueSyncStale } from "@/lib/revenueSync";
+import { isRevenueSyncStale, AUTO_SYNC_PROVIDERS } from "@/lib/revenueSync";
+import { isApiConnector, syncApiSource } from "@/services/apiConnector.service";
 
 export const maxDuration = 60;
 
@@ -25,7 +26,7 @@ export async function POST() {
     .select("id, provider, status, external_account_id, last_synced_at")
     .eq("user_id", user.id)
     .eq("status", "connected")
-    .in("provider", ["stripe", "shopify", "paypal", "lemonsqueezy"]);
+    .in("provider", [...AUTO_SYNC_PROVIDERS]);
 
   const { data: profile } = await supabase.from("profiles").select("is_cofounder").eq("id", user.id).maybeSingle();
   const stale = (sources ?? []).filter(
@@ -38,8 +39,9 @@ export async function POST() {
   let synced = 0;
   for (const source of stale) {
     try {
-      const result =
-        source.provider === "stripe"
+      const result = isApiConnector(source.provider)
+        ? await syncApiSource(user.id, source.provider, source.id)
+        : source.provider === "stripe"
           ? await syncStripeRevenue(
               user.id,
               source.id,
