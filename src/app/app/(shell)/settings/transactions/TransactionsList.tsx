@@ -76,6 +76,7 @@ export function TransactionsList({ initial }: { initial: BankTransactionRow[] })
                   key={t.id}
                   type="button"
                   onClick={() => toggle(t)}
+                  aria-pressed={t.isRevenue}
                   disabled={pendingIds.has(t.id)}
                   className="flex w-full items-center gap-3 p-3.5 text-left transition-colors hover:bg-card-active disabled:opacity-60"
                 >
