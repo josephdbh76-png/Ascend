@@ -20,7 +20,14 @@ import {
 
 const STEPS = ["Compte", "Activité", "Questions", "Bio", "Connexion"] as const;
 
-export function SignupWizard({ foundingSpotsLeft }: { foundingSpotsLeft: number | null }) {
+export function SignupWizard({
+  foundingSpotsLeft,
+  betaMode = false,
+}: {
+  foundingSpotsLeft: number | null;
+  /** Beta: everyone starts with Elite, so there is never a checkout after signup. */
+  betaMode?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const plan = searchParams.get("plan");
@@ -94,7 +101,7 @@ export function SignupWizard({ foundingSpotsLeft }: { foundingSpotsLeft: number 
       const result = await completeOnboardingAction();
       if (!result.success) return setError(result.error);
       track("signup_completed");
-      if (plan === "pro" || plan === "elite") {
+      if (!betaMode && (plan === "pro" || plan === "elite")) {
         hardNavigate(`/api/stripe/checkout?tier=${plan}&interval=${interval}${trial ? "&trial=1" : ""}`);
       } else if (connect) {
         track("stripe_connection_started");
@@ -156,6 +163,11 @@ export function SignupWizard({ foundingSpotsLeft }: { foundingSpotsLeft: number 
               <div>
                 <h1 className="text-xl font-semibold text-text-primary">Crée ton compte</h1>
                 <p className="mt-1 text-sm text-text-secondary">Gratuit, sans carte bancaire.</p>
+                {betaMode && (
+                  <p className="mt-2 inline-flex rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold">
+                    Bêta ouverte : accès Elite offert, aucun paiement
+                  </p>
+                )}
                 {foundingSpotsLeft != null && foundingSpotsLeft > 0 && !ref && (
                   <p className="mt-2 text-xs font-medium text-gold">
                     Plus que {foundingSpotsLeft} places de membre fondateur sur 500.

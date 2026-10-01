@@ -3,12 +3,20 @@ import { createClient } from "@/lib/supabase/server";
 import { getStripe, priceIdForTier, parseBillableTier, parseBillingInterval } from "@/lib/stripe";
 import { getOrCreateStripeCustomerId, isTrialEligible } from "@/services/subscription.service";
 import { getAppUrl } from "@/lib/utils";
+import { getBetaMode } from "@/services/platform.service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const TRIAL_DAYS = 14;
 
 export async function GET(request: NextRequest) {
   const appUrl = getAppUrl();
+  // Beta: no payment goes through ASCEND; the page explains why.
+  if ((await getBetaMode()).enabled) {
+    const closed = new URL("/app/settings", appUrl);
+    closed.searchParams.set("beta", "paiements");
+    closed.hash = "abonnement";
+    return NextResponse.redirect(closed);
+  }
   const tier = parseBillableTier(request.nextUrl.searchParams.get("tier"));
   const interval = parseBillingInterval(request.nextUrl.searchParams.get("interval"));
   const trialRequested = request.nextUrl.searchParams.get("trial") === "1";

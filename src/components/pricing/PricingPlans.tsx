@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Sparkles, ShieldCheck } from "lucide-react";
+import { Check, Sparkles, ShieldCheck, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { cn, formatCurrency } from "@/lib/utils";
 import { PLANS, ELITE_TRIAL_DAYS, annualSavingsPercent, annualMonthlyEquivalentCents } from "@/lib/pricing";
 import type { PlanDefinition } from "@/lib/pricing";
+import { BETA_COPY } from "@/lib/beta";
 
 export function PricingPlans({
   currentTier,
@@ -14,6 +15,7 @@ export function PricingPlans({
   loggedIn,
   className,
   compact,
+  beta = false,
 }: {
   /** Only passed in Réglages — highlights the member's current plan and disables its button. */
   currentTier?: PlanDefinition["tier"];
@@ -23,6 +25,8 @@ export function PricingPlans({
   loggedIn: boolean;
   className?: string;
   compact?: boolean;
+  /** Beta: Elite is offered and payments are closed — no checkout button. */
+  beta?: boolean;
 }) {
   const [interval, setInterval] = useState<"month" | "year">("month");
 
@@ -40,6 +44,12 @@ export function PricingPlans({
 
   return (
     <div className={className}>
+      {beta && (
+        <div className="mx-auto mb-6 flex max-w-3xl items-start gap-3 rounded-lg border border-gold/40 bg-gold/10 px-4 py-3 text-left text-sm text-text-primary">
+          <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+          <p>{loggedIn ? BETA_COPY.subscriptions : BETA_COPY.landing}</p>
+        </div>
+      )}
       <div className="mx-auto flex w-fit items-center gap-1 rounded-md border border-border bg-card p-1">
         <button
           onClick={() => setInterval("month")}
@@ -73,7 +83,7 @@ export function PricingPlans({
         {PLANS.map((plan) => {
           const isCurrent = currentTier === plan.tier;
           const priceCents = interval === "year" && plan.annualCents != null ? plan.annualCents : plan.monthlyCents;
-          const showTrialCta = plan.tier === "elite" && trialEligible && !isCurrent;
+          const showTrialCta = !beta && plan.tier === "elite" && trialEligible && !isCurrent;
 
           return (
             <div
@@ -89,7 +99,9 @@ export function PricingPlans({
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">{plan.name}</span>
-                {isCurrent ? (
+                {beta && plan.tier === "elite" ? (
+                  <Badge variant="gold">Offert pendant la bêta</Badge>
+                ) : isCurrent ? (
                   <Badge variant="gold">Actuel</Badge>
                 ) : (
                   plan.highlighted && <Badge variant="gold">Recommandé</Badge>
@@ -121,7 +133,20 @@ export function PricingPlans({
               </ul>
 
               <div className="mt-6 flex flex-col gap-2">
-                {isCurrent ? (
+                {beta && plan.tier !== "free" ? (
+                  loggedIn ? (
+                    <>
+                      <Button variant="secondary" disabled>
+                        {plan.tier === "elite" ? "Inclus pendant la bêta" : "Ouvre au lancement"}
+                      </Button>
+                      <p className="text-[11px] text-text-muted">Aucun paiement pendant la bêta.</p>
+                    </>
+                  ) : (
+                    <Button href="/signup" variant={plan.highlighted ? "primary" : "secondary"}>
+                      Rejoindre la bêta
+                    </Button>
+                  )
+                ) : isCurrent ? (
                   <Button variant="secondary" disabled>
                     Formule actuelle
                   </Button>
@@ -147,11 +172,22 @@ export function PricingPlans({
       </div>
 
       <p className="mx-auto mt-6 flex max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-center text-xs text-text-muted">
-        <span className="flex items-center gap-1.5">
-          <ShieldCheck className="h-3.5 w-3.5 text-gold" /> Paiement sécurisé par Stripe
-        </span>
-        <span>Sans engagement, résiliable en 2 clics</span>
-        <span>Tarif bêta conservé tant que ton abonnement reste actif</span>
+        {beta ? (
+          <>
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-gold" /> Aucune carte bancaire pendant la bêta
+            </span>
+            <span>Les tarifs ci-dessus s&apos;appliqueront au lancement officiel</span>
+          </>
+        ) : (
+          <>
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-gold" /> Paiement sécurisé par Stripe
+            </span>
+            <span>Sans engagement, résiliable en 2 clics</span>
+            <span>Tarif bêta conservé tant que ton abonnement reste actif</span>
+          </>
+        )}
       </p>
     </div>
   );

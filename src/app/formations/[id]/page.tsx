@@ -12,6 +12,7 @@ import { TrainingCover } from "@/components/trainings/TrainingCover";
 import { TrainingOffer } from "@/components/trainings/TrainingOffer";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { getCurrentViewer } from "@/services/viewer.service";
+import { getBetaMode } from "@/services/platform.service";
 import { getTrainingForViewer, listPublishedTrainings, recordTrainingEvent } from "@/services/training.service";
 import { TRAINING_FORMATS, themeLabel, trainingPath } from "@/lib/trainings";
 import { LEGAL } from "@/lib/legal";
@@ -48,7 +49,7 @@ const STATUS_NOTICE = {
 
 export default async function TrainingPage({ params }: PageProps<"/formations/[id]">) {
   const { id } = await params;
-  const [t, viewer] = await Promise.all([loadTraining(id), getCurrentViewer()]);
+  const [t, viewer, beta] = await Promise.all([loadTraining(id), getCurrentViewer(), getBetaMode()]);
   if (!t) notFound();
 
   if (t.status === "published") {
@@ -166,6 +167,7 @@ export default async function TrainingPage({ params }: PageProps<"/formations/[i
                 audience: t.audience,
               }}
               signedIn={Boolean(viewer.userId)}
+              beta={beta.enabled}
             />
             <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-5">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-text-muted">Proposée par</p>

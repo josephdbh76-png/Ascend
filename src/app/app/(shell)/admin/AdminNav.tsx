@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Users, Flag, Gem, GraduationCap, Mail, Megaphone, CreditCard } from "lucide-react";
+import { BarChart3, Users, Flag, Gem, GraduationCap, Mail, Megaphone, CreditCard, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
@@ -14,6 +14,7 @@ const SECTIONS = [
   { href: "/app/admin/emails", label: "E-mails", icon: Mail },
   { href: "/app/admin/marketing", label: "Marketing", icon: Megaphone },
   { href: "/app/admin/facturation", label: "Facturation", icon: CreditCard },
+  { href: "/app/admin/parametres", label: "Paramètres", icon: SlidersHorizontal },
 ];
 
 export function AdminNav({ badges }: { badges?: Partial<Record<string, number>> }) {

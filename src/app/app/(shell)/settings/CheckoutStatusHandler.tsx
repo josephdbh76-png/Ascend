@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
+import { BETA_COPY } from "@/lib/beta";
 import { SubscriptionSuccessModal } from "@/components/subscription/SubscriptionSuccessModal";
 import type { SubscriptionTier } from "@/types/database.types";
 
@@ -30,7 +31,10 @@ export function CheckoutStatusHandler() {
     const error = searchParams.get("checkout_error");
     const checkout = searchParams.get("checkout");
 
-    if (error) {
+    if (searchParams.get("beta") === "paiements") {
+      toast.show(BETA_COPY.subscriptions, "info");
+      router.replace(`${pathname}#abonnement`);
+    } else if (error) {
       toast.show(ERROR_MESSAGES[error] ?? "Impossible de finaliser le paiement pour le moment.", "error");
       router.replace(pathname);
     } else if (checkout === "success") {

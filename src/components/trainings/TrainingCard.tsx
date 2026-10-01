@@ -21,7 +21,7 @@ export function TrainingCard({ training: t }: { training: Training }) {
           )}
           {discount != null && (
             <span className="flex items-center gap-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-[#0a0a0a]">
-              {t.audience === "elite" && <Lock className="h-3 w-3" />}-{discount} %{t.audience === "elite" ? " Elite" : " membres"}
+              {!t.offerUnlocked && <Lock className="h-3 w-3" />}-{discount} %{t.audience === "elite" ? " Elite" : " Pro et Elite"}
             </span>
           )}
         </div>
@@ -48,10 +48,17 @@ export function TrainingCard({ training: t }: { training: Training }) {
             </span>
           </div>
           <div className="shrink-0 text-right">
-            {t.memberPriceCents != null ? (
+            {t.memberPriceCents != null && t.offerUnlocked ? (
               <>
                 <p className="text-xs text-text-muted line-through">{formatPrice(t.priceCents)}</p>
                 <p className="text-sm font-semibold text-gold">{formatPrice(t.memberPriceCents)}</p>
+              </>
+            ) : t.memberPriceCents != null ? (
+              <>
+                <p className="text-sm font-semibold text-text-primary">{formatPrice(t.priceCents)}</p>
+                <p className="flex items-center justify-end gap-1 text-[11px] font-medium text-gold">
+                  <Lock className="h-3 w-3" /> {formatPrice(t.memberPriceCents)} avec {t.audience === "elite" ? "Elite" : "Pro"}
+                </p>
               </>
             ) : (
               <p className="text-sm font-semibold text-text-primary">{t.priceCents === 0 ? "Gratuit" : formatPrice(t.priceCents)}</p>

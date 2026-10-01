@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getTitleCatalog, getUserTitles, getTitleCompletionRates } from "@/services/title.service";
 import { getProfile } from "@/services/profile.service";
+import { getBetaMode } from "@/services/platform.service";
 import {
   getSellerAccountStatus,
   listMyTradeableTitles,
@@ -22,7 +23,7 @@ export default async function TitlesPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [catalog, owned, completionRates, sellerStatus, tradeableTitles, myListings, activeListings, recentSales, profile] =
+  const [catalog, owned, completionRates, sellerStatus, tradeableTitles, myListings, activeListings, recentSales, profile, beta] =
     await Promise.all([
       getTitleCatalog(),
       getUserTitles(user.id),
@@ -33,6 +34,7 @@ export default async function TitlesPage() {
       listActiveMarketplaceListings(user.id),
       listRecentSales(),
       getProfile(user.id),
+      getBetaMode(),
     ]);
 
   return (
@@ -48,6 +50,7 @@ export default async function TitlesPage() {
       </div>
       <TitlesTabs
         username={profile?.username ?? ""}
+        paymentsClosed={beta.enabled}
         catalog={catalog}
         owned={owned}
         completionRates={completionRates}

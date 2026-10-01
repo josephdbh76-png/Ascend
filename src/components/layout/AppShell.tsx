@@ -3,8 +3,9 @@ import { AppMobileHeader, AppBottomNav } from "./AppMobileNav";
 import { AppDataRefresher } from "./AppDataRefresher";
 import { InstallPrompt } from "./InstallPrompt";
 import type { NotificationItem } from "./NotificationBell";
+import { getBetaMode } from "@/services/platform.service";
 
-export function AppShell({
+export async function AppShell({
   username,
   avatarUrl,
   firstName,
@@ -23,10 +24,12 @@ export function AppShell({
   unreadMessageCount?: number;
   children: React.ReactNode;
 }) {
+  const beta = await getBetaMode();
   return (
     <div className="min-h-screen bg-bg-primary">
       <AppDataRefresher />
       <AppSidebar
+        beta={beta.enabled}
         username={username}
         avatarUrl={avatarUrl}
         firstName={firstName}
@@ -36,6 +39,7 @@ export function AppShell({
         unreadMessageCount={unreadMessageCount}
       />
       <AppMobileHeader
+        beta={beta.enabled}
         notifications={notifications}
         unreadCount={unreadCount}
         isAdmin={isAdmin}

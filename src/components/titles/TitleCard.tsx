@@ -43,6 +43,7 @@ export function TitleCard({
   interactive = true,
   completionRate,
   shareUsername,
+  paymentsClosed = false,
 }: {
   id: string;
   name: string;
@@ -62,6 +63,8 @@ export function TitleCard({
   completionRate?: number;
   /** Owner's username: shows the share button on an owned title. */
   shareUsername?: string;
+  /** Beta: paid titles are not on sale. */
+  paymentsClosed?: boolean;
 }) {
   const Icon = ICONS[icon] ?? Gem;
   const [pending, startTransition] = useTransition();
@@ -177,6 +180,13 @@ export function TitleCard({
                 "Afficher sur mon profil"
               )}
             </Button>
+          ) : isPurchasable && paymentsClosed ? (
+            <>
+              <Button size="sm" variant="secondary" className="w-full" disabled>
+                En vente au lancement
+              </Button>
+              <p className="mt-2 text-center text-[10px] text-text-muted">Aucun paiement pendant la bêta.</p>
+            </>
           ) : isPurchasable ? (
             <>
               <Button

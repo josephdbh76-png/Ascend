@@ -36,6 +36,9 @@ import { VerificationCTA } from "@/components/dashboard/VerificationCTA";
 import { AchievementUnlockGate } from "@/components/dashboard/AchievementUnlockGate";
 import { ActivationChecklist } from "@/components/dashboard/ActivationChecklist";
 import { ProductTour } from "@/components/onboarding/ProductTour";
+import { BetaNotice } from "@/components/dashboard/BetaNotice";
+import { getBetaMode } from "@/services/platform.service";
+import { LEGAL } from "@/lib/legal";
 import { RankTransition } from "@/components/motion/RankTransition";
 import { CurrencyCountUp, PercentCountUp, PlainCountUp, RankCountUp } from "@/components/motion/CountUp";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
@@ -88,6 +91,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/app/da
   ]);
   const hasStaleSource = (connectedSources ?? []).some((s) => isRevenueSyncStale(s.last_synced_at));
   const replayTour = (await searchParams).visite === "1";
+  const beta = await getBetaMode();
   const showTour = replayTour || !profile.hasSeenTutorial;
   const season = await getActiveSeason();
   const seasonStanding = season ? await getUserSeasonStanding(season.id, user.id) : null;
@@ -137,6 +141,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/app/da
         <StripeStatusToast />
       </Suspense>
       {hasStaleSource && <AutoRevenueSync />}
+
+      {beta.enabled && <BetaNotice since={beta.since} contactEmail={LEGAL.contactEmail} />}
 
       {showTour && (
         <ProductTour

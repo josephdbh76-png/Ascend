@@ -431,6 +431,17 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["extra_businesses"]["Row"]>;
         Relationships: [];
       };
+      platform_settings: {
+        Row: {
+          key: string;
+          value: Record<string, unknown>;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: { key: string; value: Record<string, unknown>; updated_at?: string; updated_by?: string | null };
+        Update: Partial<Database["public"]["Tables"]["platform_settings"]["Row"]>;
+        Relationships: [];
+      };
       trainings: {
         Row: {
           id: string;

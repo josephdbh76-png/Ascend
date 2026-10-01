@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Archive, ExternalLink, Eye, MousePointerClick, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Archive, ExternalLink, Eye, Lock, MousePointerClick, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -32,7 +32,7 @@ const STATUS: Record<TrainingStatus, { label: string; className: string }> = {
   archived: { label: "Archivée", className: "border-border-strong text-text-muted" },
 };
 
-export function TrainingsManager({ initial }: { initial: Training[] }) {
+export function TrainingsManager({ initial, canCreate }: { initial: Training[]; canCreate: boolean }) {
   const [items, setItems] = useState(initial);
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<TrainingFormState>(EMPTY_TRAINING);
@@ -205,8 +205,29 @@ export function TrainingsManager({ initial }: { initial: Training[] }) {
         </ul>
       )}
 
+      {!canCreate && (
+        <div className="flex flex-col items-start gap-3 rounded-md border border-gold/30 bg-gold/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="flex items-start gap-2 text-sm text-text-secondary">
+            <Lock className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+            <span>
+              Proposer une formation est réservé aux membres Elite : elle apparaît alors sur ton profil, dans le catalogue et
+              dans le Réseau.{items.length > 0 && " Tes formations déjà en ligne restent modifiables."}
+            </span>
+          </p>
+          <Button href="#abonnement" size="sm" className="shrink-0">
+            Passer Elite
+          </Button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-3">
-        <Button type="button" size="sm" variant="secondary" onClick={openNew} disabled={activeCount >= MAX_TRAININGS_PER_MEMBER}>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={openNew}
+          disabled={!canCreate || activeCount >= MAX_TRAININGS_PER_MEMBER}
+        >
           <Plus className="h-3.5 w-3.5" /> Proposer une formation
         </Button>
         {items.length > 0 && (

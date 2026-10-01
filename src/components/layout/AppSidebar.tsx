@@ -26,7 +26,9 @@ export function AppSidebar({
   unreadCount,
   isAdmin,
   unreadMessageCount = 0,
+  beta = false,
 }: {
+  beta?: boolean;
   username: string;
   avatarUrl: string | null;
   firstName: string | null;
@@ -51,6 +53,14 @@ export function AppSidebar({
       <div className="flex h-16 items-center justify-between px-5">
         <Link href="/app/dashboard" className="text-base font-semibold tracking-tight text-text-primary">
           ASCEND
+          {beta && (
+            <span
+            title="Version bêta : Elite offert, aucun paiement"
+            className="ml-2 rounded-full border border-gold/40 bg-gold/10 px-1.5 py-0.5 align-middle text-[9px] font-bold tracking-wider text-gold"
+          >
+            BÊTA
+          </span>
+          )}
         </Link>
         <span data-tour="notifications">
           <NotificationBell initial={notifications} unreadCount={unreadCount} align="left" />

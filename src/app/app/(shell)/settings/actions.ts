@@ -18,7 +18,7 @@ import {
 } from "@/services/training.service";
 import { normalizeWebsite } from "@/lib/business";
 import { toFriendlyAuthError } from "@/lib/errors";
-import { getSubscription, hasProAccess } from "@/services/subscription.service";
+import { getSubscription, hasProAccess, hasEliteAccess } from "@/services/subscription.service";
 import { verifyAndSaveSiret } from "@/services/siret.service";
 import { connectShopifyWithCredentials } from "@/services/shopify.service";
 import { connectPayPalWithCredentials } from "@/services/paypal.service";
@@ -594,6 +594,16 @@ export async function saveTrainingAction(
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+
+  if (!id) {
+    const subscription = await getSubscription(userData.user.id);
+    if (!hasEliteAccess(subscription.tier)) {
+      return {
+        success: false,
+        error: "Proposer une formation est réservé aux membres Elite. Tes formations déjà en ligne restent modifiables.",
+      };
+    }
+  }
 
   const result = await saveOwnerTraining(userData.user.id, input, id);
   if (!result.ok) return { success: false, error: result.error };

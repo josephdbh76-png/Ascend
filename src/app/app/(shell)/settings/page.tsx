@@ -11,7 +11,7 @@ import {
   getLemonSqueezyVerificationStatus,
   getRevenueDeclarations,
 } from "@/services/revenue.service";
-import { getSubscription, hasProAccess } from "@/services/subscription.service";
+import { getSubscription, hasProAccess, hasEliteAccess } from "@/services/subscription.service";
 import { isCurrentUserAdmin } from "@/services/admin.service";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -221,7 +221,7 @@ export default async function SettingsPage() {
 
       <Card id="formations" className="scroll-mt-6 p-6" elevated>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">Mes formations</h2>
-        <TrainingsManager initial={trainings} />
+        <TrainingsManager initial={trainings} canCreate={hasEliteAccess(subscription.tier)} />
       </Card>
 
       <Card className="p-6" elevated>

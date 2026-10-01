@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getBetaMode } from "@/services/platform.service";
+import { BETA_COPY } from "@/lib/beta";
 import { createClient } from "@/lib/supabase/server";
 import { setActiveTitle } from "@/services/title.service";
 import { createListing, cancelListing } from "@/services/marketplace.service";
@@ -24,6 +26,7 @@ export async function createListingAction(userTitleId: string, priceCents: numbe
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+  if ((await getBetaMode()).enabled) return { success: false, error: BETA_COPY.marketplace };
 
   try {
     await createListing(userData.user.id, userTitleId, priceCents);

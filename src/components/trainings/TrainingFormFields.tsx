@@ -216,9 +216,9 @@ export function TrainingFormFields({
           />
         </Field>
         <Field
-          label="Prix membres ASCEND (€)"
+          label="Prix membres Pro et Elite (€)"
           htmlFor="training-member-price"
-          hint={discount != null ? `Soit -${discount} % pour les membres.` : "Optionnel, inférieur au prix public."}
+          hint={discount != null ? `Soit -${discount} % pour les abonnés.` : "Optionnel, inférieur au prix public. Les membres gratuits voient le prix public."}
         >
           <Input
             id="training-member-price"
@@ -229,7 +229,7 @@ export function TrainingFormFields({
           />
         </Field>
       </div>
-      <Field label="Code promo" htmlFor="training-code" hint="Optionnel. Visible uniquement par les membres concernés.">
+      <Field label="Code promo" htmlFor="training-code" hint="Optionnel. Visible uniquement par les abonnés concernés.">
         <Input
           id="training-code"
           value={f.promoCode}
@@ -250,7 +250,7 @@ export function TrainingFormFields({
           <span>
             <span className="font-medium text-text-primary">Réserver l&apos;offre aux membres Elite</span>
             <span className="mt-0.5 block text-xs text-text-muted">
-              Les autres membres voient la formation et le prix barré, mais pas le code.
+              Sinon elle est ouverte aux Pro et aux Elite. Les autres voient le prix public et ce qu&apos;ils économiseraient.
             </span>
           </span>
         </label>

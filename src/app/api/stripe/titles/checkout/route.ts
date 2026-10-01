@@ -4,9 +4,16 @@ import { getStripe } from "@/lib/stripe";
 import { getPurchasableTitle } from "@/services/title.service";
 import { getOrCreateStripeCustomerId } from "@/services/subscription.service";
 import { getAppUrl } from "@/lib/utils";
+import { getBetaMode } from "@/services/platform.service";
 
 export async function GET(request: NextRequest) {
   const appUrl = getAppUrl();
+  // Beta: no payment goes through ASCEND; the page explains why.
+  if ((await getBetaMode()).enabled) {
+    const closed = new URL("/app/titles", appUrl);
+    closed.searchParams.set("beta", "paiements");
+    return NextResponse.redirect(closed);
+  }
   const titleId = request.nextUrl.searchParams.get("title");
   const titlesUrl = new URL("/app/titles", appUrl);
 

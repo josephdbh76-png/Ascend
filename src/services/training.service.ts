@@ -64,10 +64,16 @@ export const ANONYMOUS_VIEWER: TrainingViewer = { userId: null, tier: null };
 
 const WEEK_MS = 7 * 86_400_000;
 
+/**
+ * The member price and code are a paid-plan perk: Pro and Elite for a
+ * regular offer, Elite only when the creator reserved it. Free members see
+ * the public price (and what they would pay with Pro or Elite).
+ */
 function offerUnlocked(row: TrainingDbRow, viewer: TrainingViewer): boolean {
   if (!viewer.userId) return false;
   if (viewer.isAdmin || row.owner_id === viewer.userId) return true;
-  return row.audience === "members" || viewer.tier === "elite";
+  if (row.audience === "elite") return viewer.tier === "elite";
+  return viewer.tier === "pro" || viewer.tier === "elite";
 }
 
 type Stats = Map<string, { views: number; clicks: number }>;

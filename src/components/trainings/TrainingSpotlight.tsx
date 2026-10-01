@@ -34,7 +34,7 @@ export function TrainingSpotlight({ trainings, isOwner }: { trainings: Training[
                       <span className="font-semibold text-gold">{formatPrice(t.memberPriceCents)}</span>{" "}
                       <span className="text-text-muted line-through">{formatPrice(t.priceCents)}</span>{" "}
                       <span className="text-xs text-text-secondary">
-                        pour les membres {t.audience === "elite" ? "Elite" : "ASCEND"}
+                        avec {t.audience === "elite" ? "Elite" : "Pro ou Elite"}
                         {discount != null && ` (-${discount} %)`}
                       </span>
                     </>

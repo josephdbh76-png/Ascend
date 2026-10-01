@@ -61,6 +61,7 @@ import {
   adminSaveTraining,
 } from "@/services/training.service";
 import type { TrainingInput } from "@/lib/validations";
+import { setBetaMode } from "@/services/platform.service";
 
 const TIERS: SubscriptionTier[] = ["free", "pro", "elite"];
 
@@ -594,4 +595,22 @@ export async function adminSaveTrainingAction(
   if (!result.ok) return { success: false, error: result.error };
   revalidateTrainings();
   return { success: true, data: { id: result.id } };
+}
+
+// ---------------------------------------------------------------- platform
+
+export async function setBetaModeAction(enabled: boolean): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  try {
+    await setBetaMode(enabled, user!.id);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+  // Every page reads the plan: refresh them all, including the static signup page.
+  revalidatePath("/", "layout");
+  return { success: true, data: undefined };
 }

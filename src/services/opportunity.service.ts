@@ -258,9 +258,14 @@ export interface CreateOpportunityInput {
   targetStage: OpportunityStage;
 }
 
+/**
+ * Written with the service role: the caller (server action) has already
+ * checked the plan, including Elite offered during the beta, which the
+ * database policy (real Elite subscription only) cannot see.
+ */
 export async function createOpportunity(authorId: string, input: CreateOpportunityInput) {
-  const supabase = await createClient();
-  const { error } = await supabase.from("opportunities").insert({
+  const admin = createAdminClient();
+  const { error } = await admin.from("opportunities").insert({
     author_id: authorId,
     type: input.type,
     title: input.title,
@@ -370,7 +375,10 @@ export async function applyToOpportunity(
   if (!opportunity || opportunity.status !== "open") throw new Error("Cette opportunité n'est plus disponible.");
   if (opportunity.author_id === applicantId) throw new Error("Tu ne peux pas postuler à ta propre opportunité.");
 
-  const { data: application, error } = await supabase
+  // Service role for the same reason as createOpportunity: Pro members (and
+  // the beta) are allowed by the server action, the policy only knows Elite.
+  const admin = createAdminClient();
+  const { data: application, error } = await admin
     .from("opportunity_applications")
     .insert({ opportunity_id: opportunityId, applicant_id: applicantId, message })
     .select("id")
@@ -381,7 +389,7 @@ export async function applyToOpportunity(
   }
 
   if (attachments.length > 0) {
-    const { error: attachmentError } = await supabase.from("opportunity_application_attachments").insert(
+    const { error: attachmentError } = await admin.from("opportunity_application_attachments").insert(
       attachments.map((a) => ({
         application_id: application.id,
         file_path: a.filePath,

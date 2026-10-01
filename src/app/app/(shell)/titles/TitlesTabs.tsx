@@ -5,6 +5,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { TitleCard } from "@/components/titles/TitleCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MarketplaceTab } from "./MarketplaceTab";
+import { BETA_COPY } from "@/lib/beta";
 import { Gem } from "lucide-react";
 import type { TitleRow, EarnedTitle } from "@/types";
 import type { SellerAccountStatus, TradeableOwnedTitle, MarketplaceListing } from "@/services/marketplace.service";
@@ -26,8 +27,11 @@ export function TitlesTabs({
   activeListings,
   recentSales,
   username,
+  paymentsClosed = false,
 }: {
   username: string;
+  /** Beta: paid titles and the Marché are closed. */
+  paymentsClosed?: boolean;
   catalog: TitleRow[];
   owned: EarnedTitle[];
   completionRates?: Record<string, number>;
@@ -63,13 +67,15 @@ export function TitlesTabs({
 
       {tab === "exclusive" && exclusiveTitles.length > 0 && (
         <p className="rounded-md border border-gold/25 bg-gold/5 px-4 py-3 text-xs text-text-secondary">
-          Éditions limitées. Une fois épuisé, un titre ne se trouve plus que sur le
-          Marché, revendu par son propriétaire au prix qu&apos;il fixe.
+          {paymentsClosed
+            ? BETA_COPY.titles
+            : "Éditions limitées. Une fois épuisé, un titre ne se trouve plus que sur le Marché, revendu par son propriétaire au prix qu'il fixe."}
         </p>
       )}
 
       {tab === "market" ? (
         <MarketplaceTab
+          paymentsClosed={paymentsClosed}
           sellerStatus={sellerStatus}
           tradeableTitles={tradeableTitles}
           myListings={myListings}
@@ -101,6 +107,7 @@ export function TitlesTabs({
               isActive={ownedByid.get(t.id)?.isActive}
               completionRate={completionRates?.[t.id]}
               shareUsername={ownedIds.has(t.id) ? username : undefined}
+              paymentsClosed={paymentsClosed}
             />
           ))}
         </div>

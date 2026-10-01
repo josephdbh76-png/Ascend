@@ -14,7 +14,7 @@ export const PLANS: PlanDefinition[] = [
     name: "GRATUIT",
     monthlyCents: 0,
     annualCents: null,
-    features: ["Profil", "Vérification", "Classement", "Accomplissements", "Défis", "Titres"],
+    features: ["Profil", "Vérification", "Classement", "Accomplissements", "Défis", "Titres", "Formations au prix public"],
   },
   {
     tier: "pro",
@@ -23,10 +23,11 @@ export const PLANS: PlanDefinition[] = [
     annualCents: 19000, // 2 mois offerts
     features: [
       "Tout Gratuit",
+      "Prix membres et codes sur les formations",
+      "Opportunités : consulter et postuler (5 par mois)",
       "Analyses avancées",
       "Profil personnalisable (thèmes)",
       "10 messages par mois",
-      "5 candidatures aux opportunités par mois",
     ],
   },
   {
@@ -36,9 +37,11 @@ export const PLANS: PlanDefinition[] = [
     annualCents: 35100, // 3 mois offerts
     features: [
       "Tout Pro",
-      "Messages et opportunités illimités",
+      "Proposer tes formations, en vitrine sur ton profil",
+      "Publier des opportunités, candidatures illimitées",
+      "Messages illimités",
       "Réseau de fondateurs, recherche par ville",
-      "Bons plans exclusifs (formations à prix réduit)",
+      "Offres de formation réservées Elite",
       "Support dédié",
     ],
     highlighted: true,

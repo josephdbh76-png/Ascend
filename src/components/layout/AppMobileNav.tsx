@@ -28,7 +28,9 @@ export function AppMobileHeader({
   unreadCount,
   isAdmin,
   unreadMessageCount = 0,
+  beta = false,
 }: {
+  beta?: boolean;
   notifications: NotificationItem[];
   unreadCount: number;
   isAdmin?: boolean;
@@ -52,6 +54,14 @@ export function AppMobileHeader({
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-bg-primary/95 px-4 backdrop-blur lg:hidden">
         <Link href="/app/dashboard" className="text-base font-semibold tracking-tight text-text-primary">
           ASCEND
+          {beta && (
+            <span
+            title="Version bêta : Elite offert, aucun paiement"
+            className="ml-2 rounded-full border border-gold/40 bg-gold/10 px-1.5 py-0.5 align-middle text-[9px] font-bold tracking-wider text-gold"
+          >
+            BÊTA
+          </span>
+          )}
         </Link>
         <div className="flex items-center gap-1">
           <span data-tour="mobile-notifications">

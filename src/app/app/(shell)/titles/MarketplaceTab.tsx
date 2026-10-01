@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ShoppingBag, Tag, TrendingUp, X, Clock } from "lucide-react";
+import { ShoppingBag, Tag, TrendingUp, X, Clock, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
+import { BETA_COPY } from "@/lib/beta";
 import { cn, formatCurrency, timeAgo } from "@/lib/utils";
 import { TITLE_ICONS, TITLE_RARITY_STYLES, TITLE_RARITY_LABELS } from "@/lib/titleDisplay";
 import { createListingAction, cancelListingAction } from "./actions";
@@ -32,7 +33,10 @@ export function MarketplaceTab({
   myListings,
   activeListings,
   recentSales,
+  paymentsClosed = false,
 }: {
+  /** Beta: nothing can be bought or sold through ASCEND. */
+  paymentsClosed?: boolean;
   sellerStatus: SellerAccountStatus;
   tradeableTitles: TradeableOwnedTitle[];
   myListings: MarketplaceListing[];
@@ -90,8 +94,14 @@ export function MarketplaceTab({
 
   return (
     <div className="flex flex-col gap-8">
+      {paymentsClosed && (
+        <div className="flex items-start gap-3 rounded-md border border-gold/40 bg-gold/10 p-4 text-sm text-text-primary">
+          <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+          <p>{BETA_COPY.marketplace}</p>
+        </div>
+      )}
       {/* Only owners of resellable titles need a seller account; buyers never do. */}
-      {!sellerStatus.payoutsEnabled && items.length > 0 && (
+      {!paymentsClosed && !sellerStatus.payoutsEnabled && items.length > 0 && (
         <div className="flex flex-col items-start gap-3 rounded-md border border-gold/30 bg-gold/5 p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-text-secondary">
             {sellerStatus.connected
@@ -137,7 +147,13 @@ export function MarketplaceTab({
                   <p className="truncate text-sm font-medium text-text-primary">{t.name}</p>
                   <p className="text-xs text-text-muted">{TITLE_RARITY_LABELS[t.rarity]}</p>
                 </div>
-                <Button size="sm" variant="secondary" onClick={() => setModalTitle(t)} disabled={!sellerStatus.payoutsEnabled}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setModalTitle(t)}
+                  disabled={paymentsClosed || !sellerStatus.payoutsEnabled}
+                  title={paymentsClosed ? "La vente ouvre au lancement officiel." : undefined}
+                >
                   <Tag className="h-3.5 w-3.5" /> Vendre
                 </Button>
               </div>
@@ -200,9 +216,15 @@ export function MarketplaceTab({
                 <p className="flex items-center gap-1 text-[11px] text-text-muted">
                   <Clock className="h-3 w-3" /> Mis en vente {timeAgo(l.createdAt)}
                 </p>
-                <Button href={`/api/marketplace/checkout?listing=${l.id}`} size="sm">
-                  Acheter · {formatCurrency(l.priceCents)}
-                </Button>
+                {paymentsClosed ? (
+                  <Button size="sm" variant="secondary" disabled>
+                    Achat au lancement · {formatCurrency(l.priceCents)}
+                  </Button>
+                ) : (
+                  <Button href={`/api/marketplace/checkout?listing=${l.id}`} size="sm">
+                    Acheter · {formatCurrency(l.priceCents)}
+                  </Button>
+                )}
               </div>
             ))}
           </div>

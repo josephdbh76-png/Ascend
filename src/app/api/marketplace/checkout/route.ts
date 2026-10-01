@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createListingCheckoutSession } from "@/services/marketplace.service";
 import { getAppUrl } from "@/lib/utils";
+import { getBetaMode } from "@/services/platform.service";
 
 export async function GET(request: NextRequest) {
   const appUrl = getAppUrl();
+  // Beta: no payment goes through ASCEND; the page explains why.
+  if ((await getBetaMode()).enabled) {
+    const closed = new URL("/app/titles", appUrl);
+    closed.searchParams.set("beta", "paiements");
+    return NextResponse.redirect(closed);
+  }
   const listingId = request.nextUrl.searchParams.get("listing");
   const titlesUrl = new URL("/app/titles", appUrl);
 

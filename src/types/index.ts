@@ -184,7 +184,12 @@ export interface EarnedTitle {
 }
 
 export interface SubscriptionInfo {
+  /** Access level to use for every feature check (Elite for everyone during the beta). */
   tier: SubscriptionTier;
+  /** What the member actually pays for (billing screens). */
+  paidTier: SubscriptionTier;
+  /** The beta is on: Elite is offered and payments are closed. */
+  beta: boolean;
   status: SubscriptionStatus;
   currentPeriodEnd: string | null;
   hasStripeCustomer: boolean;

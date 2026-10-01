@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
+import { BETA_COPY } from "@/lib/beta";
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_title: "Titre inconnu.",
@@ -32,7 +33,10 @@ export function PurchaseStatusToast() {
       setTimeout(() => router.refresh(), 7000);
     };
 
-    if (error) {
+    if (searchParams.get("beta") === "paiements") {
+      toast.show(BETA_COPY.titles, "info");
+      router.replace(pathname);
+    } else if (error) {
       toast.show(ERROR_MESSAGES[error] ?? "Achat impossible pour le moment.", "error");
       router.replace(pathname);
     } else if (purchase === "success") {

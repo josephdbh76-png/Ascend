@@ -2,28 +2,33 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getBetaMode } from "@/services/platform.service";
 import type { SubscriptionInfo } from "@/types";
 import type { SubscriptionTier } from "@/types/database.types";
 
 export const getSubscription = cache(async (userId: string): Promise<SubscriptionInfo> => {
   const supabase = await createClient();
-  const [{ data, error }, { data: profile }] = await Promise.all([
+  const [{ data, error }, { data: profile }, beta] = await Promise.all([
     supabase
       .from("subscriptions")
       .select("tier, status, current_period_end, stripe_customer_id, billing_interval, trial_used, trial_ends_at")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase.from("profiles").select("pro_credit_until").eq("id", userId).maybeSingle(),
+    getBetaMode(),
   ]);
   if (error) throw new Error(error.message);
 
-  const tier = data?.tier ?? "free";
+  const paidTier = data?.tier ?? "free";
   const hasActiveReferralCredit = !!profile?.pro_credit_until && new Date(profile.pro_credit_until) > new Date();
+  // A referral credit only ever upgrades a free tier — it never
+  // downgrades or otherwise interferes with a real Elite subscription.
+  const tier = paidTier === "free" && hasActiveReferralCredit ? "pro" : paidTier;
 
   return {
-    // A referral credit only ever upgrades a free tier — it never
-    // downgrades or otherwise interferes with a real Elite subscription.
-    tier: tier === "free" && hasActiveReferralCredit ? "pro" : tier,
+    tier: beta.enabled ? "elite" : tier,
+    paidTier,
+    beta: beta.enabled,
     status: data?.status ?? "active",
     currentPeriodEnd: data?.current_period_end ?? null,
     hasStripeCustomer: data?.stripe_customer_id != null,

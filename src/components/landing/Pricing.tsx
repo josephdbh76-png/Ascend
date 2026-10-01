@@ -3,6 +3,7 @@ import { ParallaxBlob } from "@/components/landing/ParallaxBlob";
 import { PricingPlans } from "@/components/pricing/PricingPlans";
 import { createClient } from "@/lib/supabase/server";
 import { isTrialEligible } from "@/services/subscription.service";
+import { getBetaMode } from "@/services/platform.service";
 
 export async function Pricing() {
   const supabase = await createClient();
@@ -10,7 +11,7 @@ export async function Pricing() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const trialEligible = user ? await isTrialEligible(user.id) : true;
+  const [trialEligible, beta] = await Promise.all([user ? isTrialEligible(user.id) : Promise.resolve(true), getBetaMode()]);
 
   return (
     <section id="tarifs" className="relative overflow-hidden border-b border-border">
@@ -22,7 +23,7 @@ export async function Pricing() {
           </h2>
         </Reveal>
         <Reveal as="div" delay={0.1}>
-          <PricingPlans trialEligible={trialEligible} loggedIn={!!user} className="mt-12" />
+          <PricingPlans trialEligible={trialEligible} loggedIn={!!user} beta={beta.enabled} className="mt-12" />
         </Reveal>
       </div>
     </section>
