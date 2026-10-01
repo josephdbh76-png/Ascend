@@ -403,29 +403,49 @@ export async function disconnectBankAction(revenueSourceId: string): Promise<Act
   return { success: true, data: undefined };
 }
 
-/** The proof was sent straight to storage by the browser (see lib/uploadClient). */
+const MAX_DECLARED_MONTHS = 12;
+
+/** "YYYY-MM-01" of the current month and the 11 before it. */
+function declarablePeriods(): string[] {
+  const now = new Date();
+  return Array.from({ length: MAX_DECLARED_MONTHS }, (_, i) =>
+    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)).toISOString().slice(0, 10),
+  );
+}
+
+/**
+ * One or several months declared with one proof (an export can cover a few
+ * months). The proof was sent straight to storage by the browser.
+ */
 export async function submitRevenueDeclarationAction(input: {
-  amount: string;
+  entries: { period: string; amount: string }[];
   label: string;
   proofPath: string;
-}): Promise<ActionResult> {
+}): Promise<ActionResult<{ count: number }>> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
   const userId = userData.user.id;
 
-  const amount = Number.parseFloat(String(input?.amount ?? "").replace(",", "."));
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return { success: false, error: "Indique un montant valide." };
+  const allowed = new Set(declarablePeriods());
+  const entries = Array.isArray(input?.entries) ? input.entries : [];
+  if (entries.length === 0) return { success: false, error: "Ajoute au moins un mois." };
+  if (entries.length > MAX_DECLARED_MONTHS) return { success: false, error: `${MAX_DECLARED_MONTHS} mois au maximum par envoi.` };
+  const seen = new Set<string>();
+  const rows: { period: string; amountCents: number }[] = [];
+  for (const e of entries) {
+    const period = String(e?.period ?? "");
+    if (!allowed.has(period)) return { success: false, error: "Tu peux déclarer le mois en cours et les 11 précédents." };
+    if (seen.has(period)) return { success: false, error: "Un même mois apparaît deux fois." };
+    seen.add(period);
+    const amount = Number.parseFloat(String(e?.amount ?? "").replace(/\s/g, "").replace(",", "."));
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 10_000_000) return { success: false, error: "Indique un montant valide pour chaque mois." };
+    rows.push({ period, amountCents: Math.round(amount * 100) });
   }
-  const amountCents = Math.round(amount * 100);
   const label = String(input?.label ?? "").trim().slice(0, 120);
 
-  const now = new Date();
-  const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-
   if (!input?.proofPath) {
-    return { success: false, error: "Une preuve (facture, export comptable, capture bancaire...) est obligatoire." };
+    return { success: false, error: "Une preuve (export de paiements, facture, capture du tableau de bord...) est obligatoire." };
   }
   let proofPath: string;
   try {
@@ -435,10 +455,10 @@ export async function submitRevenueDeclarationAction(input: {
   }
 
   try {
-    await submitRevenueDeclaration({ userId, period, label, amountCents, proofPath });
+    for (const r of rows) await submitRevenueDeclaration({ userId, period: r.period, label, amountCents: r.amountCents, proofPath });
     await evaluateChallengeProgress(userId);
-
-    return { success: true, data: undefined };
+    revalidatePath("/app/settings");
+    return { success: true, data: { count: rows.length } };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }

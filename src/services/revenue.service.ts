@@ -239,6 +239,30 @@ export interface RevenueDeclaration {
   createdAt: string;
 }
 
+/** Declarations of the last `months` months (current one included), newest month first. */
+export async function getRecentRevenueDeclarations(userId: string, months = 12): Promise<RevenueDeclaration[]> {
+  const supabase = await createClient();
+  const now = new Date();
+  const since = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1)).toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from("revenue_declarations")
+    .select("id, period, label, amount_cents, review_status, rejection_reason, created_at")
+    .eq("user_id", userId)
+    .gte("period", since)
+    .order("period", { ascending: false })
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((d) => ({
+    id: d.id,
+    period: d.period,
+    label: d.label,
+    amountCents: d.amount_cents,
+    reviewStatus: d.review_status,
+    rejectionReason: d.rejection_reason,
+    createdAt: d.created_at,
+  }));
+}
+
 export async function getRevenueDeclarations(userId: string, period: string): Promise<RevenueDeclaration[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -541,6 +565,8 @@ export interface PendingRevenueReview {
   amountCents: number;
   submittedAt: string;
   proofUrl: string | null;
+  /** Declarations sent with the same file share it. */
+  proofPath: string;
 }
 
 /** Admin-only — callers must check isCurrentUserAdmin() first, this trusts them. */
@@ -575,12 +601,60 @@ export async function getPendingRevenueReviews(): Promise<PendingRevenueReview[]
         amountCents: d.amount_cents,
         submittedAt: d.created_at,
         proofUrl: signed?.signedUrl ?? null,
+        proofPath: d.proof_path,
       };
     }),
   );
 }
 
 /** Admin-only — callers must check isCurrentUserAdmin() first, this trusts them. */
+/** Challenges, league and titles follow the newly verified months. */
+async function refreshProgressQuietly(userId: string) {
+  try {
+    const { refreshMemberProgress } = await import("@/services/progress.service");
+    await refreshMemberProgress(userId);
+  } catch (err) {
+    console.error("Progress refresh after review failed:", err);
+  }
+}
+
+/**
+ * Approves several months sent with the same proof at once (one export
+ * covering a few months), with a single notification.
+ */
+export async function approveRevenueDeclarations(declarationIds: string[], adminUserId: string): Promise<number> {
+  if (declarationIds.length === 0) return 0;
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("revenue_declarations")
+    .update({ review_status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: adminUserId, rejection_reason: null })
+    .in("id", declarationIds)
+    .eq("review_status", "pending")
+    .select("user_id, period, amount_cents");
+  if (error) throw new Error(error.message);
+  const rows = data ?? [];
+  const byUser = new Map<string, { periods: Set<string>; total: number }>();
+  for (const r of rows) {
+    const entry = byUser.get(r.user_id) ?? { periods: new Set<string>(), total: 0 };
+    entry.periods.add(r.period);
+    entry.total += r.amount_cents;
+    byUser.set(r.user_id, entry);
+  }
+  for (const [userId, { periods, total }] of byUser) {
+    for (const period of periods) await recomputeManualSnapshot(userId, period);
+    await refreshRevenueVerifiedFlag(userId);
+    await refreshProgressQuietly(userId);
+    await createNotificationForUser({
+      userId,
+      type: "revenue_review_completed",
+      title: periods.size > 1 ? `${periods.size} mois de revenus vérifiés` : "Revenu déclaré vérifié",
+      body: `Tes déclarations (${(total / 100).toLocaleString("fr-FR")} € au total) ont été validées et comptent désormais comme des revenus vérifiés.`,
+      metadata: { periods: [...periods] },
+    });
+  }
+  return rows.length;
+}
+
 export async function approveRevenueDeclaration(declarationId: string, adminUserId: string) {
   const admin = createAdminClient();
   const { data: declaration, error } = await admin
@@ -593,6 +667,7 @@ export async function approveRevenueDeclaration(declarationId: string, adminUser
 
   await recomputeManualSnapshot(declaration.user_id, declaration.period);
   await refreshRevenueVerifiedFlag(declaration.user_id);
+  await refreshProgressQuietly(declaration.user_id);
 
   await createNotificationForUser({
     userId: declaration.user_id,

@@ -9,7 +9,7 @@ import {
   getBankVerificationStatus,
   getPayPalVerificationStatus,
   getLemonSqueezyVerificationStatus,
-  getRevenueDeclarations,
+  getRecentRevenueDeclarations,
 } from "@/services/revenue.service";
 import { getSubscription, hasProAccess, hasEliteAccess } from "@/services/subscription.service";
 import { isCurrentUserAdmin } from "@/services/admin.service";
@@ -136,9 +136,7 @@ export default async function SettingsPage() {
     }),
   ) as Record<ApiConnectorId, ApiSourceState>;
 
-  const now = new Date();
-  const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-  const declarations = await getRevenueDeclarations(user.id, currentPeriod);
+  const declarations = await getRecentRevenueDeclarations(user.id, 12);
 
   const connectedAccountsCard = (
     <Card id="comptes-connectes" className="scroll-mt-6 p-6" elevated>

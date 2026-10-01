@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isCurrentUserAdmin, adminSetTier, adminSetIsAdmin } from "@/services/admin.service";
 import { syncPurchasableTitleStripeProducts } from "@/services/title.service";
-import { approveRevenueDeclaration, rejectRevenueDeclaration } from "@/services/revenue.service";
+import { approveRevenueDeclaration,
+  approveRevenueDeclarations, rejectRevenueDeclaration } from "@/services/revenue.service";
 import { syncAnnualPrices, updateElitePricing, type AnnualPriceSyncResult, type ElitePriceUpdateResult } from "@/services/subscription.service";
 import {
   getAudienceCount,
@@ -139,6 +140,20 @@ export async function adminApproveRevenueDeclarationAction(declarationId: string
   }
   revalidatePath("/app/admin", "layout");
   return { success: true, data: undefined };
+}
+
+export async function adminApproveRevenueDeclarationsAction(declarationIds: string[]): Promise<ActionResult<{ count: number }>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };
+  try {
+    const count = await approveRevenueDeclarations(declarationIds.slice(0, 50), userData.user.id);
+    revalidatePath("/app/admin", "layout");
+    return { success: true, data: { count } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
 }
 
 export async function adminRejectRevenueDeclarationAction(declarationId: string, reason: string): Promise<ActionResult> {

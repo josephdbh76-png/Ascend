@@ -25,8 +25,9 @@ export const UPLOAD_RULES: Record<UploadKind, UploadRule> = {
   "revenue-proof": {
     bucket: "revenue-proofs",
     maxBytes: 10 * MB,
-    types: ["application/pdf", ...IMAGES],
-    typesLabel: "PDF, PNG, JPEG ou WebP",
+    // CSV: the payments export of Whop, Stripe, Gumroad...
+    types: ["application/pdf", ...IMAGES, "text/csv", "application/vnd.ms-excel"],
+    typesLabel: "PDF, image ou export CSV",
     imageMaxSide: 2800,
     publicBucket: false,
   },
@@ -50,6 +51,8 @@ export const EXTENSIONS: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/webp": "webp",
   "application/pdf": "pdf",
+  "text/csv": "csv",
+  "application/vnd.ms-excel": "csv",
   "application/msword": "doc",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
 };
