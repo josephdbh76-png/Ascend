@@ -2,7 +2,7 @@ import "server-only";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getResend, resendFromAddress } from "@/lib/resend";
+import { getResend, resendFromAddress, resendReplyTo } from "@/lib/resend";
 import { renderEmailHtml } from "@/lib/emailRender";
 import { getAppUrl } from "@/lib/utils";
 
@@ -44,6 +44,7 @@ export async function refundCheckoutSession(
   try {
     await getResend().emails.send({
       from: resendFromAddress(),
+      replyTo: resendReplyTo(),
       to: email,
       subject: "Ton paiement ASCEND a été remboursé",
       html: renderEmailHtml(

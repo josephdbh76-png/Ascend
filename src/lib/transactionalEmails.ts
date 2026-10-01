@@ -64,6 +64,13 @@ export function transactionalEmailContent(
         ctaLabel: "Voir mes réglages",
         ctaPath: "/app/settings#revenus",
       };
+    case "revenue_reminder":
+      return {
+        subject: params.title,
+        body: `${greeting}\n\n${params.body}`,
+        ctaLabel: "Déclarer mes revenus",
+        ctaPath: "/app/settings?connecter=manuel#comptes-connectes",
+      };
     case "referral_rewarded":
       return {
         subject: params.title,

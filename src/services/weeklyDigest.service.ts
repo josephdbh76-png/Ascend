@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getResend, resendFromAddress } from "@/lib/resend";
+import { getResend, resendFromAddress, resendReplyTo } from "@/lib/resend";
 import { renderEmailHtml } from "@/lib/emailRender";
 import { getEmailsByUserIds } from "@/services/email-campaign.service";
 import { getAppUrl } from "@/lib/utils";
@@ -125,6 +125,7 @@ export async function sendWeeklyDigests(): Promise<{ sent: number; eligible: num
         try {
           await resend.emails.send({
             from: resendFromAddress(),
+            replyTo: resendReplyTo(),
             to: emailById.get(r.userId)!,
             subject: "Ton récap de la semaine sur ASCEND",
             html: renderEmailHtml(buildDigestBody(r.firstName, r.signal), {

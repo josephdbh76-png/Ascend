@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getResend, resendFromAddress } from "@/lib/resend";
+import { getResend, resendFromAddress, resendReplyTo } from "@/lib/resend";
 import { renderEmailHtml } from "@/lib/emailRender";
 import { getAppUrl } from "@/lib/utils";
 import type { CampaignAudience, CampaignHistoryRow, EmailTemplateRow } from "@/lib/emailCampaignDisplay";
@@ -98,6 +98,7 @@ export async function sendCampaignPreview(toEmail: string, subject: string, body
   const unsubscribeUrl = `${getAppUrl()}/api/email/unsubscribe?token=preview`;
   await resend.emails.send({
     from: resendFromAddress(),
+    replyTo: resendReplyTo(),
     to: toEmail,
     subject: `[Aperçu] ${subject}`,
     html: renderEmailHtml(body, { unsubscribeUrl }),
@@ -122,6 +123,7 @@ export async function sendCampaign(input: {
       batch.map((r) =>
         resend.emails.send({
           from: resendFromAddress(),
+          replyTo: resendReplyTo(),
           to: r.email,
           subject: input.subject,
           html: renderEmailHtml(input.body, {

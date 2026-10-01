@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendManualRevenueReminders } from "@/services/revenue.service";
 
 /**
  * Runs the `capture_leaderboard_snapshot` Postgres function (see
@@ -22,5 +23,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  // Once a month (this cron runs daily): remind manual declarers of last month.
+  let reminders = 0;
+  if (new Date().getUTCDate() === 2) {
+    reminders = await sendManualRevenueReminders().catch((err) => {
+      console.error("Revenue reminders failed:", err);
+      return 0;
+    });
+  }
+
+  return NextResponse.json({ success: true, reminders });
 }

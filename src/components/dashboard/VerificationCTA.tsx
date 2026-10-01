@@ -5,8 +5,17 @@ import { motion } from "framer-motion";
 import { useReducedMotionSafe } from "@/lib/useReducedMotionSafe";
 import { Crown, Link2, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { VERIFICATION_OPTIONS, type VerificationOption } from "@/lib/verificationOptions";
 
-export function VerificationCTA({ foundingMemberNumber }: { foundingMemberNumber: number | null }) {
+export function VerificationCTA({
+  foundingMemberNumber,
+  suggestions,
+}: {
+  foundingMemberNumber: number | null;
+  /** From the signup survey ("Où encaisses-tu ?"); Stripe when unknown. */
+  suggestions: VerificationOption[];
+}) {
+  const primary = suggestions[0];
   const reduced = useReducedMotionSafe();
 
   return (
@@ -21,8 +30,8 @@ export function VerificationCTA({ foundingMemberNumber }: { foundingMemberNumber
           <h2 className="text-base font-semibold text-text-primary">Vérifie tes revenus pour entrer au classement</h2>
         </div>
         <p className="mt-1 text-sm text-text-secondary">
-          Connecte ta source de revenus : ton rang, ta croissance et tes premiers accomplissements
-          apparaissent en quelques secondes.
+          Connecte ta plateforme ou déclare tes revenus avec un justificatif : ton rang, ta croissance et tes premiers
+          accomplissements apparaissent dans la foulée.
         </p>
         {foundingMemberNumber != null && (
           <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-gold">
@@ -37,11 +46,14 @@ export function VerificationCTA({ foundingMemberNumber }: { foundingMemberNumber
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-        <Button href="/api/stripe/connect" className="shrink-0">
-          <Link2 className="h-4 w-4" /> Connecter Stripe
+        <Button href={primary.href} className="shrink-0">
+          <Link2 className="h-4 w-4" /> Connecter {primary.name}
         </Button>
         <Link href="/app/settings#comptes-connectes" className="text-xs text-text-muted hover:text-text-primary">
-          PayPal, Shopify, banque ou déclaration manuelle
+          Autre plateforme
+        </Link>
+        <Link href={VERIFICATION_OPTIONS.manuel.href} className="text-xs text-text-muted hover:text-text-primary">
+          Déclarer avec un justificatif
         </Link>
       </div>
     </motion.div>

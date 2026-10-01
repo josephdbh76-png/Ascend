@@ -37,9 +37,9 @@ type Row = { key: string; period: string; amount: string };
 const newRow = (period: string): Row => ({ key: crypto.randomUUID(), period, amount: "" });
 const parseAmount = (v: string) => Number.parseFloat(v.replace(/\s/g, "").replace(",", "."));
 
-export function ManualRevenueCard({ declarations }: { declarations: RevenueDeclaration[] }) {
+export function ManualRevenueCard({ declarations, autoOpen = false }: { declarations: RevenueDeclaration[]; autoOpen?: boolean }) {
   const months = declarableMonths();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
   const [rows, setRows] = useState<Row[]>(() => [newRow(months[1])]);
   const [label, setLabel] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
@@ -94,14 +94,36 @@ export function ManualRevenueCard({ declarations }: { declarations: RevenueDecla
         <div>
           <p className="text-sm font-medium text-text-primary">Déclaration manuelle</p>
           <p className="mt-1 text-xs text-text-muted">
-            Sans rien connecter : tu déclares tes revenus mois par mois, avec un justificatif, et l&apos;équipe les vérifie. Tu peux
-            déclarer jusqu&apos;à 12 mois en arrière pour avoir ton historique.
+            Sans rien connecter : tu déclares tes revenus mois par mois, avec un justificatif, et l&apos;équipe les vérifie.
           </p>
         </div>
         <Button size="sm" onClick={() => setOpen(true)} className="shrink-0">
           <Plus className="h-3.5 w-3.5" /> Déclarer
         </Button>
       </div>
+
+      <details className="group mt-3 rounded-md border border-border bg-card px-3 py-2 text-xs text-text-secondary" open={declarations.length === 0}>
+        <summary className="cursor-pointer select-none font-medium text-text-primary">Comment ça marche</summary>
+        <ul className="mt-2 flex flex-col gap-1.5 pb-1 leading-relaxed">
+          <li>
+            <span className="font-medium text-text-primary">Quand déclarer :</span> au début de chaque mois, déclare le mois qui vient de se
+            terminer. Pour ton historique, tu peux ajouter jusqu&apos;à 12 mois passés d&apos;un coup.
+          </li>
+          <li>
+            <span className="font-medium text-text-primary">Justificatif :</span> l&apos;export de tes paiements (Whop, Stripe...), une
+            capture de ton tableau de bord où l&apos;on voit ton nom de compte et les montants, ou tes relevés. Un même fichier peut couvrir
+            plusieurs mois.
+          </li>
+          <li>
+            <span className="font-medium text-text-primary">Vérification :</span> l&apos;équipe contrôle chaque mois avant qu&apos;il compte,
+            et tu reçois une notification dès qu&apos;il est validé.
+          </li>
+          <li>
+            <span className="font-medium text-text-primary">Pour rester au classement :</span> fais valider un nouveau mois au moins tous
+            les 2 mois. Les mois déjà validés restent vérifiés. Le 2 de chaque mois, on te rappelle de déclarer le mois précédent.
+          </li>
+        </ul>
+      </details>
 
       {byMonth.size > 0 && (
         <div className="mt-4 flex flex-col gap-3 border-t border-border pt-3">

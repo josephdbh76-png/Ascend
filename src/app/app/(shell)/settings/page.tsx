@@ -32,10 +32,12 @@ import { ExportDataButton } from "./ExportDataButton";
 import { SubscriptionCard } from "./SubscriptionCard";
 import { SecuritySettings } from "./SecuritySettings";
 import { CheckoutStatusHandler } from "./CheckoutStatusHandler";
+import { HashFocus } from "@/components/ui/HashFocus";
 
 export const metadata: Metadata = { title: "Réglages" };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: PageProps<"/app/settings">) {
+  const focusSource = (await searchParams).connecter;
   const supabase = await createClient();
   const {
     data: { user },
@@ -165,6 +167,7 @@ export default async function SettingsPage() {
           lemonSqueezyStatus={lemonSqueezyStatus}
           apiSources={apiSources}
           bankAvailable={bankAvailability === "production"}
+          focus={typeof focusSource === "string" ? focusSource : null}
         />
       </div>
     </Card>
@@ -175,6 +178,7 @@ export default async function SettingsPage() {
       <Suspense fallback={null}>
         <CheckoutStatusHandler />
       </Suspense>
+      <HashFocus />
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Réglages</h1>
@@ -205,7 +209,7 @@ export default async function SettingsPage() {
         <SubscriptionCard subscription={subscription} />
       </Card>
 
-      <Card className="p-6" elevated>
+      <Card id="profil" className="scroll-mt-6 p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Profil</h2>
         <ProfileSettingsForm
           initial={{
@@ -226,7 +230,7 @@ export default async function SettingsPage() {
         <AccentThemeForm initial={profile.accentTheme} locked={!hasProAccess(subscription.tier)} />
       </Card>
 
-      <Card className="p-6" elevated>
+      <Card id="activite" className="scroll-mt-6 p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Activité principale</h2>
         <BusinessSettingsForm
           initial={{

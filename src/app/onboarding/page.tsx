@@ -22,7 +22,7 @@ export default async function OnboardingPage() {
 
   const { data: survey } = await supabase
     .from("signup_surveys")
-    .select("user_id")
+    .select("user_id, payment_platforms")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -32,6 +32,7 @@ export default async function OnboardingPage() {
         <OnboardingWizard
           startStep={profile.onboardingStep}
           hasSurvey={!!survey}
+          platforms={survey?.payment_platforms ?? []}
           initial={{
             firstName: profile.firstName ?? "",
             lastName: profile.lastName ?? "",

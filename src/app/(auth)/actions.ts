@@ -18,7 +18,7 @@ import { toFriendlyAuthError } from "@/lib/errors";
 import { getAppUrl } from "@/lib/utils";
 import { isUsernameAvailable } from "@/services/profile.service";
 import { resolveReferrerId, recordReferral } from "@/services/referral.service";
-import { getResend, resendFromAddress } from "@/lib/resend";
+import { getResend, resendFromAddress, resendReplyTo } from "@/lib/resend";
 import { renderEmailHtml } from "@/lib/emailRender";
 import { welcomeEmailContent } from "@/lib/transactionalEmails";
 import { isEmailTypeEnabledPlatformWide } from "@/services/notification.service";
@@ -243,6 +243,7 @@ export async function completeOnboardingAction(): Promise<ActionResult> {
       );
       await getResend().emails.send({
         from: resendFromAddress(),
+        replyTo: resendReplyTo(),
         to: userData.user.email,
         subject: content.subject,
         html: renderEmailHtml(content.body, {

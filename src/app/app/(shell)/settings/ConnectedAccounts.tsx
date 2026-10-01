@@ -50,6 +50,7 @@ export function ConnectedAccounts({
   lemonSqueezyStatus,
   apiSources,
   bankAvailable,
+  focus,
 }: {
   connected: boolean;
   status: VerificationStatus;
@@ -68,9 +69,18 @@ export function ConnectedAccounts({
   lemonSqueezyStatus: VerificationStatus;
   apiSources: Record<ApiConnectorId, ApiSourceState>;
   bankAvailable: boolean;
+  /** A source to open straight away (?connecter=whop), from onboarding or the dashboard. */
+  focus?: string | null;
 }) {
   const [pending, startTransition] = useTransition();
-  const [showMore, setShowMore] = useState(false);
+  const [showMore, setShowMore] = useState(() => API_CONNECTORS.some((c) => c.id === focus && c.id !== "qonto"));
+
+  useEffect(() => {
+    if (!focus) return;
+    const id = focus === "manuel" ? "revenus" : `source-${focus}`;
+    const t = setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+    return () => clearTimeout(t);
+  }, [focus]);
   const morePlatforms = API_CONNECTORS.filter((c) => c.id !== "qonto");
   const hiddenPlatforms = morePlatforms.filter((c) => !apiSources[c.id].connected);
   const toast = useToast();
@@ -109,7 +119,7 @@ export function ConnectedAccounts({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between rounded-md border border-border-strong bg-card-elevated p-4">
+      <div id="source-stripe" className="flex items-center justify-between rounded-md border border-border-strong bg-card-elevated p-4">
         <div>
           <p className="text-sm font-medium text-text-primary">Stripe</p>
           <div className="mt-1">
@@ -138,16 +148,16 @@ export function ConnectedAccounts({
         </div>
       </div>
 
-      <ShopifyConnection connected={shopifyConnected} status={shopifyStatus} domain={shopifyDomain} />
+      <ShopifyConnection connected={shopifyConnected} status={shopifyStatus} domain={shopifyDomain} initiallyOpen={focus === "shopify"} />
 
-      <PayPalConnection connected={paypalConnected} status={paypalStatus} />
+      <PayPalConnection connected={paypalConnected} status={paypalStatus} initiallyOpen={focus === "paypal"} />
 
-      <LemonSqueezyConnection connected={lemonSqueezyConnected} status={lemonSqueezyStatus} />
+      <LemonSqueezyConnection connected={lemonSqueezyConnected} status={lemonSqueezyStatus} initiallyOpen={focus === "lemonsqueezy"} />
 
       {morePlatforms
         .filter((c) => showMore || apiSources[c.id].connected)
         .map((c) => (
-          <ApiSourceConnection key={c.id} meta={c} state={apiSources[c.id]} />
+          <ApiSourceConnection key={c.id} meta={c} state={apiSources[c.id]} initiallyOpen={focus === c.id} />
         ))}
 
       {!showMore && hiddenPlatforms.length > 0 && (
@@ -166,7 +176,7 @@ export function ConnectedAccounts({
 
       <p className="mt-2 text-xs font-medium uppercase tracking-wide text-text-muted">Compte bancaire</p>
 
-      <ApiSourceConnection meta={connectorMeta("qonto")!} state={apiSources.qonto} />
+      <ApiSourceConnection meta={connectorMeta("qonto")!} state={apiSources.qonto} initiallyOpen={focus === "qonto"} />
 
       {bankAvailable || bankConnected ? (
         <BankConnection
@@ -188,7 +198,7 @@ export function ConnectedAccounts({
         </div>
       )}
 
-      <ManualRevenueCard declarations={declarations} />
+      <ManualRevenueCard declarations={declarations} autoOpen={focus === "manuel"} />
     </div>
   );
 }
@@ -197,15 +207,17 @@ function ShopifyConnection({
   connected,
   status,
   domain,
+  initiallyOpen = false,
 }: {
   connected: boolean;
   status: VerificationStatus;
   domain: string | null;
+  initiallyOpen?: boolean;
 }) {
   const [shop, setShop] = useState("");
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(initiallyOpen);
   const [pending, startTransition] = useTransition();
   const toast = useToast();
   const router = useRouter();
@@ -242,7 +254,7 @@ function ShopifyConnection({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4">
+    <div id="source-shopify" className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-text-primary">Shopify</p>
@@ -341,13 +353,15 @@ function ShopifyConnection({
 function PayPalConnection({
   connected,
   status,
+  initiallyOpen = false,
 }: {
   connected: boolean;
   status: VerificationStatus;
+  initiallyOpen?: boolean;
 }) {
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(initiallyOpen);
   const [pending, startTransition] = useTransition();
   const toast = useToast();
   const router = useRouter();
@@ -384,7 +398,7 @@ function PayPalConnection({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4">
+    <div id="source-paypal" className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-text-primary">PayPal</p>
@@ -462,12 +476,14 @@ function PayPalConnection({
 function LemonSqueezyConnection({
   connected,
   status,
+  initiallyOpen = false,
 }: {
   connected: boolean;
   status: VerificationStatus;
+  initiallyOpen?: boolean;
 }) {
   const [apiKey, setApiKey] = useState("");
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(initiallyOpen);
   const [pending, startTransition] = useTransition();
   const toast = useToast();
   const router = useRouter();
@@ -504,7 +520,7 @@ function LemonSqueezyConnection({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4">
+    <div id="source-lemonsqueezy" className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-text-primary">Lemon Squeezy</p>

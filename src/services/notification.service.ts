@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getResend, resendFromAddress } from "@/lib/resend";
+import { getResend, resendFromAddress, resendReplyTo } from "@/lib/resend";
 import { renderEmailHtml } from "@/lib/emailRender";
 import { transactionalEmailContent } from "@/lib/transactionalEmails";
 import { getAppUrl } from "@/lib/utils";
@@ -56,6 +56,7 @@ async function sendTransactionalEmail(userId: string, type: NotificationType, ti
     const appUrl = getAppUrl();
     await getResend().emails.send({
       from: resendFromAddress(),
+      replyTo: resendReplyTo(),
       to: email,
       subject: content.subject,
       html: renderEmailHtml(content.body, {
@@ -207,6 +208,7 @@ const EMAIL_TOGGLE_LABELS: Record<string, string> = {
   application_status_changed: "Statut de candidature (acceptée/refusée)",
   verification_completed: "Revenus vérifiés",
   revenue_review_completed: "Déclaration de revenu (validée/refusée)",
+  revenue_reminder: "Rappel mensuel de déclaration",
   referral_rewarded: "Parrainage récompensé",
 };
 

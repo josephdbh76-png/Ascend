@@ -9,12 +9,12 @@ export const LEGAL = {
   siret: null as string | null,
   address: null as string | null,
   publicationDirector: null as string | null,
-  contactEmail: "joseph.dbh76@gmail.com",
+  contactEmail: "ascend.proof@gmail.com",
   host: {
     name: "Vercel Inc.",
     address: "440 N Barranca Ave #4133, Covina, CA 91723, États-Unis",
     website: "https://vercel.com",
   },
   dataHost: { name: "Supabase Inc.", website: "https://supabase.com" },
-  lastUpdated: "29 septembre 2026",
+  lastUpdated: "1er octobre 2026",
 };

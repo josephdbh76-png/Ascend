@@ -51,7 +51,8 @@ export type NotificationType =
   | "referral_rewarded"
   | "payment_refunded"
   | "season_reward"
-  | "training_review_completed";
+  | "training_review_completed"
+  | "revenue_reminder";
 export type TrainingStatus = "pending" | "published" | "rejected" | "archived";
 export type TrainingFormat = "online" | "live" | "coaching" | "in_person";
 export type TrainingAudience = "members" | "elite";

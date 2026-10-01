@@ -88,6 +88,14 @@ const PREVIEW_DEFINITIONS: PreviewDefinition[] = [
     sampleBody: "Ta déclaration « Ventes Q3 » de 12 500 € a été validée et compte désormais comme un revenu vérifié.",
   },
   {
+    key: "revenue_reminder",
+    label: "Rappel de déclaration",
+    trigger: "Envoyé le 2 de chaque mois aux membres qui déclarent leurs revenus à la main, si le mois précédent n'est pas encore déclaré.",
+    type: "revenue_reminder",
+    sampleTitle: "Déclare tes revenus de septembre",
+    sampleBody: "Ajoute le montant de septembre avec ton justificatif : tes revenus restent vérifiés et tu gardes ta place au classement.",
+  },
+  {
     key: "revenue_review_rejected",
     label: "Déclaration refusée",
     trigger: "Envoyé quand un admin refuse une déclaration de revenu manuelle.",

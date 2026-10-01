@@ -65,6 +65,7 @@ export function ProfileSettingsForm({
     <form onSubmit={submit} className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
         <button
+          id="photo"
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploadingAvatar}
@@ -115,8 +116,9 @@ export function ProfileSettingsForm({
           <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
         </Field>
       </div>
-      <Field label="Bio" hint={`${form.bio.length}/280`}>
+      <Field label="Bio" htmlFor="bio" hint={`${form.bio.length}/280`}>
         <Textarea
+          id="bio"
           rows={3}
           maxLength={280}
           value={form.bio}

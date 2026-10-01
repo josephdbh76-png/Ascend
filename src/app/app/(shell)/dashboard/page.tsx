@@ -24,6 +24,7 @@ import { getSubscription } from "@/services/subscription.service";
 import { getActiveSeason, getUserSeasonStanding } from "@/services/season.service";
 import { getSeasonLeague } from "@/services/league.service";
 import { league as leagueDef } from "@/lib/leagues";
+import { suggestedVerification } from "@/lib/verificationOptions";
 import { DashboardBannerCarousel } from "@/components/dashboard/DashboardBannerCarousel";
 import { AutoRevenueSync } from "@/components/dashboard/AutoRevenueSync";
 import { isRevenueSyncStale, AUTO_SYNC_PROVIDERS } from "@/lib/revenueSync";
@@ -74,7 +75,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/app/da
     banners,
     { data: connectedSources },
   ] = await Promise.all([
-    supabase.from("businesses").select("name, category").eq("user_id", user.id).maybeSingle(),
+    supabase.from("businesses").select("name, category, description").eq("user_id", user.id).maybeSingle(),
     getRevenueHistory(user.id, 12),
     getCurrentRevenue(user.id),
     getVerificationStatus(user.id),
@@ -93,6 +94,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/app/da
       .in("provider", [...AUTO_SYNC_PROVIDERS]),
   ]);
   const hasStaleSource = (connectedSources ?? []).some((s) => isRevenueSyncStale(s.last_synced_at));
+  const { data: survey } = await supabase.from("signup_surveys").select("payment_platforms").eq("user_id", user.id).maybeSingle();
+  const surveyPlatforms = survey?.payment_platforms ?? [];
   const replayTour = (await searchParams).visite === "1";
   const beta = await getBetaMode();
   const showTour = replayTour || !profile.hasSeenTutorial;
@@ -187,15 +190,17 @@ export default async function DashboardPage({ searchParams }: PageProps<"/app/da
 
       <ActivationChecklist
         items={[
-          { label: "Ajoute une bio et le nom de ton activité", done: !!profile.bio && !!business?.name, href: "/app/settings" },
+          { label: "Ajoute ta photo de profil", done: !!profile.avatarUrl, href: "/app/settings#photo" },
+          { label: "Écris ta bio", done: !!profile.bio?.trim(), href: "/app/settings#bio" },
+          { label: "Décris ton activité", done: !!business?.description?.trim(), href: "/app/settings#main-business-description" },
+          { label: "Ajoute tes compétences", done: profile.skills.length > 0, href: "/app/settings#main-business-skills" },
           { label: "Vérifie tes revenus", done: isVerified, href: "/app/settings#comptes-connectes" },
-          { label: "Ajoute tes compétences", done: profile.skills.length > 0, href: "/app/settings" },
-          { label: "Débloque ton premier accomplissement", done: achievements.length > 0, href: "/app/achievements" },
+          { label: "Réussis ton premier défi de saison", done: challenges.some((c) => c.status === "completed"), href: "/app/challenges" },
         ]}
       />
 
       {!isVerified && (
-        <VerificationCTA foundingMemberNumber={profile.foundingMemberNumber} />
+        <VerificationCTA foundingMemberNumber={profile.foundingMemberNumber} suggestions={suggestedVerification(surveyPlatforms)} />
       )}
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">

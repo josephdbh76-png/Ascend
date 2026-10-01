@@ -194,7 +194,7 @@ export function ProductTour({
         title: isVerified ? "Tu es prêt" : "Dernière étape : vérifier tes revenus",
         body: isVerified
           ? "Tes revenus sont vérifiés. Relève ton premier défi de saison pour marquer tes premiers points."
-          : "Connecte Stripe, Shopify, PayPal, Lemon Squeezy ou ta banque en lecture seule. Deux minutes, et tu entres au classement.",
+          : "Connecte ta plateforme (Stripe, Whop, Gumroad, Shopify, PayPal...) en lecture seule, ou déclare tes revenus avec un justificatif. Et tu entres au classement.",
       },
     ];
     return all.filter((s) => (isDesktop ? s.desktop !== null : s.mobile !== null));

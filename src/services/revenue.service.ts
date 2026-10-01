@@ -608,6 +608,38 @@ export async function getPendingRevenueReviews(): Promise<PendingRevenueReview[]
 }
 
 /** Admin-only — callers must check isCurrentUserAdmin() first, this trusts them. */
+/**
+ * On the 2nd of the month: members who declare by hand and haven't declared
+ * last month yet get a reminder (once per month).
+ */
+export async function sendManualRevenueReminders(now = new Date()): Promise<number> {
+  const admin = createAdminClient();
+  const period = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)).toISOString().slice(0, 10);
+  const monthName = new Intl.DateTimeFormat("fr-FR", { month: "long", timeZone: "UTC" }).format(new Date(`${period}T00:00:00Z`));
+  const { data: sources } = await admin.from("revenue_sources").select("user_id").eq("provider", "manual").eq("status", "connected");
+  const userIds = [...new Set((sources ?? []).map((s) => s.user_id))];
+  if (userIds.length === 0) return 0;
+  const [{ data: declared }, { data: reminded }, { data: profiles }] = await Promise.all([
+    admin.from("revenue_declarations").select("user_id").eq("period", period).in("user_id", userIds),
+    admin.from("notifications").select("user_id").eq("type", "revenue_reminder").contains("metadata", { period }).in("user_id", userIds),
+    admin.from("profiles").select("id").in("id", userIds).eq("is_demo", false),
+  ]);
+  const skip = new Set([...(declared ?? []), ...(reminded ?? [])].map((r) => r.user_id));
+  let sent = 0;
+  for (const p of profiles ?? []) {
+    if (skip.has(p.id)) continue;
+    await createNotificationForUser({
+      userId: p.id,
+      type: "revenue_reminder",
+      title: `Déclare tes revenus de ${monthName}`,
+      body: `Ajoute le montant de ${monthName} avec ton justificatif : tes revenus restent vérifiés et tu gardes ta place au classement.`,
+      metadata: { period },
+    });
+    sent++;
+  }
+  return sent;
+}
+
 /** Challenges, league and titles follow the newly verified months. */
 async function refreshProgressQuietly(userId: string) {
   try {

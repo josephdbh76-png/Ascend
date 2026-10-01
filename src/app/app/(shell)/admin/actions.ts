@@ -17,7 +17,7 @@ import {
   deleteEmailTemplate,
 } from "@/services/email-campaign.service";
 import { renderTransactionalEmailPreview } from "@/lib/transactionalEmailPreviews";
-import { getResend, resendFromAddress } from "@/lib/resend";
+import { getResend, resendFromAddress, resendReplyTo } from "@/lib/resend";
 import {
   createInfluencer,
   setInfluencerStatus,
@@ -266,6 +266,7 @@ export async function sendTransactionalEmailPreviewAction(key: string): Promise<
   try {
     await getResend().emails.send({
       from: resendFromAddress(),
+      replyTo: resendReplyTo(),
       to: userData.user.email,
       subject: `[Aperçu] ${preview.subject}`,
       html: preview.html,

@@ -1,5 +1,6 @@
 import "server-only";
 import { Resend } from "resend";
+import { LEGAL } from "@/lib/legal";
 
 let _resend: Resend | null = null;
 
@@ -20,4 +21,9 @@ export function getResend(): Resend {
  */
 export function resendFromAddress(): string {
   return process.env.RESEND_FROM_EMAIL || "ASCEND <onboarding@resend.dev>";
+}
+
+/** Replies to any ASCEND email land in the team's shared inbox. */
+export function resendReplyTo(): string {
+  return LEGAL.contactEmail;
 }

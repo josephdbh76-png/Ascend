@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import { BUSINESS_CATEGORIES, COUNTRIES } from "@/lib/constants";
 import { track } from "@/lib/analytics";
+import { suggestedVerification, VERIFICATION_OPTIONS } from "@/lib/verificationOptions";
 import { SignupSurvey } from "@/components/onboarding/SignupSurvey";
 import { saveProfileStepAction, saveBioStepAction, completeOnboardingAction } from "../(auth)/actions";
 import type { OnboardingStep } from "@/types/database.types";
@@ -17,10 +18,12 @@ const SCREEN_FOR_STEP: Record<OnboardingStep, number> = { profile: 1, business: 
 export function OnboardingWizard({
   startStep,
   hasSurvey,
+  platforms: surveyPlatforms,
   initial,
 }: {
   startStep: OnboardingStep;
   hasSurvey: boolean;
+  platforms: string[];
   initial: {
     firstName: string;
     lastName: string;
@@ -44,6 +47,8 @@ export function OnboardingWizard({
     businessName: initial.businessName,
   });
   const [bio, setBio] = useState(initial.bio);
+  const [platforms, setPlatforms] = useState(surveyPlatforms);
+  const suggestions = suggestedVerification(platforms);
 
   function submitProfile() {
     setError(null);
@@ -64,17 +69,18 @@ export function OnboardingWizard({
     });
   }
 
-  function skipOrConnect(connect: boolean) {
+  /** Ends onboarding, then goes to the chosen way of verifying (or the dashboard). */
+  function finish(href: string | null) {
     setError(null);
     startTransition(async () => {
       const result = await completeOnboardingAction();
       if (!result.success) return setError(result.error);
       track("signup_completed");
-      if (connect) {
+      if (href?.startsWith("/api/")) {
         track("stripe_connection_started");
-        hardNavigate("/api/stripe/connect");
+        hardNavigate(href);
       } else {
-        router.push("/app/dashboard");
+        router.push(href ?? "/app/dashboard");
         router.refresh();
       }
     });
@@ -125,7 +131,14 @@ export function OnboardingWizard({
         </div>
       )}
 
-      {step === 2 && <SignupSurvey onDone={() => setStep(Math.max(3, resumeAt))} />}
+      {step === 2 && (
+        <SignupSurvey
+          onDone={(picked) => {
+            setPlatforms(picked);
+            setStep(Math.max(3, resumeAt));
+          }}
+        />
+      )}
 
       {step === 3 && (
         <div className="flex flex-col gap-4">
@@ -145,16 +158,58 @@ export function OnboardingWizard({
       {step === 4 && (
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-text-primary">Vérifie tes performances</h1>
+            <h1 className="text-xl font-semibold text-text-primary">Vérifie tes revenus</h1>
             <p className="mt-1 text-sm text-text-secondary">
-              Connecte Stripe pour vérifier ton activité et apparaître au classement.
+              C&apos;est ce qui te fait entrer au classement. Lecture seule : ASCEND ne peut ni payer ni rien modifier.
             </p>
           </div>
-          <Button onClick={() => skipOrConnect(true)} disabled={pending}>
-            Connecter Stripe <ArrowRight className="h-4 w-4" />
-          </Button>
-          <Button onClick={() => skipOrConnect(false)} disabled={pending} variant="secondary">
-            Passer cette étape
+          <div className="flex flex-col gap-2">
+            {suggestions.map((o, i) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => finish(o.href)}
+                disabled={pending}
+                className={
+                  i === 0
+                    ? "flex items-center justify-between gap-3 rounded-md border border-gold bg-gold/10 px-4 py-3 text-left transition-colors hover:bg-gold/15 disabled:opacity-60"
+                    : "flex items-center justify-between gap-3 rounded-md border border-border-strong bg-card px-4 py-3 text-left transition-colors hover:border-gold/50 disabled:opacity-60"
+                }
+              >
+                <span>
+                  <span className="block text-sm font-medium text-text-primary">Connecter {o.name}</span>
+                  <span className="block text-xs text-text-muted">{o.hint}</span>
+                </span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-gold" />
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => finish("/app/settings#comptes-connectes")}
+              disabled={pending}
+              className="flex items-center justify-between gap-3 rounded-md border border-border-strong bg-card px-4 py-3 text-left transition-colors hover:border-gold/50 disabled:opacity-60"
+            >
+              <span>
+                <span className="block text-sm font-medium text-text-primary">Une autre plateforme</span>
+                <span className="block text-xs text-text-muted">Stripe, Whop, Gumroad, Shopify, PayPal, Qonto...</span>
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-text-muted" />
+            </button>
+            <button
+              type="button"
+              onClick={() => finish(VERIFICATION_OPTIONS.manuel.href)}
+              disabled={pending}
+              className="flex items-center justify-between gap-3 rounded-md border border-border-strong bg-card px-4 py-3 text-left transition-colors hover:border-gold/50 disabled:opacity-60"
+            >
+              <span>
+                <span className="block text-sm font-medium text-text-primary">Déclarer avec un justificatif</span>
+                <span className="block text-xs text-text-muted">Sans rien connecter, vérifié par l&apos;équipe</span>
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-text-muted" />
+            </button>
+          </div>
+          <Button onClick={() => finish(null)} disabled={pending} variant="ghost">
+            Plus tard
           </Button>
         </div>
       )}

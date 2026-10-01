@@ -18,9 +18,17 @@ export interface ApiSourceState {
   errorMessage: string | null;
 }
 
-export function ApiSourceConnection({ meta, state }: { meta: ConnectorMeta; state: ApiSourceState }) {
+export function ApiSourceConnection({
+  meta,
+  state,
+  initiallyOpen = false,
+}: {
+  meta: ConnectorMeta;
+  state: ApiSourceState;
+  initiallyOpen?: boolean;
+}) {
   const [values, setValues] = useState<Record<string, string>>({});
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(initiallyOpen && !state.connected);
   const [pending, startTransition] = useTransition();
   const toast = useToast();
   const router = useRouter();
@@ -71,7 +79,7 @@ export function ApiSourceConnection({ meta, state }: { meta: ConnectorMeta; stat
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4">
+    <div id={`source-${meta.id}`} className="flex flex-col gap-3 rounded-md border border-border-strong bg-card-elevated p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-medium text-text-primary">

@@ -26,7 +26,7 @@ const GOAL_PITCH: Record<string, string> = {
   motivation: "Tes défis et ta progression démarrent dès que tes revenus sont vérifiés. C'est l'étape suivante.",
 };
 
-export function SignupSurvey({ onDone }: { onDone: () => void }) {
+export function SignupSurvey({ onDone }: { onDone: (platforms: string[]) => void }) {
   const [q, setQ] = useState(0);
   const [source, setSource] = useState("");
   const [referrer, setReferrer] = useState("");
@@ -166,7 +166,7 @@ export function SignupSurvey({ onDone }: { onDone: () => void }) {
                 <p className="text-lg font-semibold text-text-primary">Bienvenue dans la bêta privée</p>
               )}
               <p className="text-sm text-text-secondary">{GOAL_PITCH[goal]}</p>
-              <Button onClick={onDone} className="mt-2 w-full">
+              <Button onClick={() => onDone(platforms)} className="mt-2 w-full">
                 Continuer <ArrowRight className="h-4 w-4" />
               </Button>
             </div>

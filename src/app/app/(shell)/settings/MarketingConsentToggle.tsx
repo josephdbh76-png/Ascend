@@ -36,6 +36,7 @@ const GRANULAR_TYPES: { type: string; label: string }[] = [
   { type: "application_status_changed", label: "Statut de mes candidatures" },
   { type: "verification_completed", label: "Vérification de mes revenus" },
   { type: "revenue_review_completed", label: "Déclaration de revenu (validée/refusée)" },
+  { type: "revenue_reminder", label: "Rappel mensuel pour déclarer mes revenus" },
 ];
 
 export function MarketingConsentToggle({

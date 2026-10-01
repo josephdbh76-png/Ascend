@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles, UserPlus, MessageCircle, Compass, FileCheck, Gift, RotateCcw, Crown, GraduationCap } from "lucide-react";
+import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles, UserPlus, MessageCircle, Compass, FileCheck, Gift, RotateCcw, Crown, GraduationCap, CalendarClock } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
 import { markAllNotificationsReadAction } from "@/app/app/(shell)/actions";
 import type { NotificationType } from "@/types/database.types";
@@ -32,6 +32,7 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   payment_refunded: RotateCcw,
   season_reward: Crown,
   training_review_completed: GraduationCap,
+  revenue_reminder: CalendarClock,
 };
 
 function notificationHref(n: NotificationItem): string | null {
@@ -43,6 +44,9 @@ function notificationHref(n: NotificationItem): string | null {
   }
   if (n.type === "revenue_review_completed") {
     return "/app/settings#revenus";
+  }
+  if (n.type === "revenue_reminder") {
+    return "/app/settings?connecter=manuel#comptes-connectes";
   }
   if (n.type === "new_application" || n.type === "application_status_changed") {
     return "/app/opportunities";
