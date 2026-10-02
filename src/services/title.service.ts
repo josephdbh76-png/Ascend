@@ -6,8 +6,9 @@ import { grantTitleToMember } from "@/services/progress.service";
 import { getStripe } from "@/lib/stripe";
 import type { TitleRow, EarnedTitle } from "@/types";
 import type { TitleRarity } from "@/types/database.types";
+import type { TitleSaleWindow } from "@/lib/titleSale";
 
-export type ActiveTitleInfo = { name: string; icon: string; rarity: TitleRarity };
+export type ActiveTitleInfo = { name: string; icon: string; rarity: TitleRarity; editionNumber: number | null };
 
 /** Bulk-fetches each user's currently-displayed title, keyed by user id — used
  * wherever a member's name appears in a list (leaderboard, network, ...). */
@@ -16,12 +17,17 @@ export async function getActiveTitlesByUserIds(userIds: string[]): Promise<Map<s
   const supabase = await createClient();
   const { data } = await supabase
     .from("user_titles")
-    .select("user_id, titles(name, icon, rarity)")
+    .select("user_id, edition_number, titles(name, icon, rarity)")
     .eq("is_active", true)
     .in("user_id", userIds);
 
   return new Map(
-    (data ?? []).filter((d) => d.titles).map((d) => [d.user_id, d.titles as unknown as ActiveTitleInfo]),
+    (data ?? [])
+      .filter((d) => d.titles)
+      .map((d) => {
+        const title = d.titles as unknown as Omit<ActiveTitleInfo, "editionNumber">;
+        return [d.user_id, { ...title, editionNumber: d.edition_number }];
+      }),
   );
 }
 
@@ -53,7 +59,7 @@ export async function getUserTitles(userId: string): Promise<EarnedTitle[]> {
   const supabase = await createClient();
   const { data: owned, error } = await supabase
     .from("user_titles")
-    .select("title_id, acquired_at, acquisition_type, is_active")
+    .select("title_id, acquired_at, acquisition_type, is_active, edition_number")
     .eq("user_id", userId)
     .order("acquired_at", { ascending: false });
 
@@ -80,6 +86,8 @@ export async function getUserTitles(userId: string): Promise<EarnedTitle[]> {
         acquiredAt: o.acquired_at,
         acquisitionType: o.acquisition_type,
         isActive: o.is_active,
+        editionNumber: o.edition_number,
+        supply: def.supply,
       };
     });
 }
@@ -156,13 +164,15 @@ export interface PurchasableTitle {
   priceCents: number;
   stripePriceId: string | null;
   remainingSupply: number | null;
+  saleWindow: TitleSaleWindow;
+  requiredTier: "pro" | "elite" | null;
 }
 
 export async function getPurchasableTitle(titleId: string): Promise<PurchasableTitle | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("titles")
-    .select("id, name, type, price_cents, stripe_price_id, remaining_supply")
+    .select("id, name, type, price_cents, stripe_price_id, remaining_supply, sale_starts_at, sale_ends_at, launch_sale_days, required_tier")
     .eq("id", titleId)
     .eq("type", "purchasable")
     .maybeSingle();
@@ -174,6 +184,8 @@ export async function getPurchasableTitle(titleId: string): Promise<PurchasableT
     priceCents: data.price_cents,
     stripePriceId: data.stripe_price_id,
     remainingSupply: data.remaining_supply,
+    saleWindow: { sale_starts_at: data.sale_starts_at, sale_ends_at: data.sale_ends_at, launch_sale_days: data.launch_sale_days },
+    requiredTier: data.required_tier,
   };
 }
 
@@ -199,25 +211,35 @@ export async function grantPurchasedTitle(userId: string, titleId: string): Prom
 }
 
 /**
- * One-time (idempotent) setup: creates a real Stripe Product + Price for
- * every purchasable title that doesn't have one yet. Safe to re-run — it
- * skips titles that already have a stripe_price_id, so it also picks up
- * any new purchasable title added to the catalog later.
+ * Idempotent: gives every purchasable title a Stripe Price matching its
+ * price in ASCEND. New titles get a Product + Price; a title whose price
+ * changed gets a new Price on its Product (Stripe prices can't be edited)
+ * and the old one is archived. Safe to re-run after any catalogue change.
  */
-export async function syncPurchasableTitleStripeProducts(): Promise<{ created: string[] }> {
+export async function syncPurchasableTitleStripeProducts(): Promise<{ created: string[]; updated: string[] }> {
   const admin = createAdminClient();
   const { data: titles, error } = await admin
     .from("titles")
     .select("id, name, description, price_cents, stripe_price_id")
-    .eq("type", "purchasable")
-    .is("stripe_price_id", null);
+    .eq("type", "purchasable");
   if (error) throw new Error(error.message);
 
   const stripe = getStripe();
   const created: string[] = [];
+  const updated: string[] = [];
 
   for (const title of titles ?? []) {
     if (title.price_cents == null) continue;
+    if (title.stripe_price_id) {
+      const current = await stripe.prices.retrieve(title.stripe_price_id);
+      if (current.unit_amount === title.price_cents && current.active) continue;
+      const productId = typeof current.product === "string" ? current.product : current.product.id;
+      const price = await stripe.prices.create({ product: productId, unit_amount: title.price_cents, currency: "eur" });
+      await admin.from("titles").update({ stripe_price_id: price.id }).eq("id", title.id);
+      if (current.active) await stripe.prices.update(current.id, { active: false });
+      updated.push(title.id);
+      continue;
+    }
     const product = await stripe.products.create({ name: `ASCEND — ${title.name}`, description: title.description });
     const price = await stripe.prices.create({
       product: product.id,
@@ -228,5 +250,5 @@ export async function syncPurchasableTitleStripeProducts(): Promise<{ created: s
     created.push(title.id);
   }
 
-  return { created };
+  return { created, updated };
 }

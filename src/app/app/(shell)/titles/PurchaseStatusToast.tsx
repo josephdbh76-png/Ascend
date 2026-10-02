@@ -10,6 +10,11 @@ const ERROR_MESSAGES: Record<string, string> = {
   already_owned: "Tu possèdes déjà ce titre.",
   not_available: "Ce titre n'est pas encore disponible à l'achat.",
   sold_out: "Ce titre est épuisé.",
+  sale_not_started: "La vente de ce titre n'a pas encore commencé.",
+  sale_ended: "La vente de ce titre est terminée. Il ne se trouve plus que sur le Marché.",
+  elite_only: "Ce titre est réservé aux membres Elite en boutique. Tu peux aussi le trouver sur le Marché.",
+  pro_only: "Ce titre est réservé aux membres Pro et Elite en boutique. Tu peux aussi le trouver sur le Marché.",
+  price_updating: "Le prix de ce titre est en cours de mise à jour. Réessaie dans quelques minutes.",
 };
 
 export function PurchaseStatusToast() {

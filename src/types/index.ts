@@ -170,6 +170,11 @@ export interface TitleRow {
   remaining_supply: number | null;
   requirement: Record<string, unknown>;
   tradeable: boolean;
+  sale_starts_at: string | null;
+  sale_ends_at: string | null;
+  launch_sale_days: number | null;
+  /** Only members on this plan can buy it in the Boutique (anyone can on the Marché). */
+  required_tier: "pro" | "elite" | null;
 }
 
 export interface EarnedTitle {
@@ -181,6 +186,9 @@ export interface EarnedTitle {
   acquiredAt: string;
   acquisitionType: "earned" | "purchased";
   isActive: boolean;
+  /** This copy's number, for limited titles. */
+  editionNumber: number | null;
+  supply: number | null;
 }
 
 export interface SubscriptionInfo {

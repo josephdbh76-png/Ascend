@@ -605,6 +605,10 @@ export interface Database {
           stripe_price_id: string | null;
           requirement: Record<string, unknown>;
           tradeable: boolean;
+          sale_starts_at: string | null;
+          sale_ends_at: string | null;
+          launch_sale_days: number | null;
+          required_tier: "pro" | "elite" | null;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["titles"]["Row"]> & {
@@ -626,6 +630,7 @@ export interface Database {
           acquired_at: string;
           acquisition_type: "earned" | "purchased";
           is_active: boolean;
+          edition_number: number | null;
         };
         Insert: Partial<Omit<Database["public"]["Tables"]["user_titles"]["Row"], "id">> & {
           user_id: string;
@@ -1020,7 +1025,8 @@ export interface Database {
         Row: {
           id: string;
           seller_id: string;
-          user_title_id: string;
+          /** Cleared once the copy changed hands: a sold listing outlives it. */
+          user_title_id: string | null;
           title_id: string;
           price_cents: number;
           status: "active" | "sold" | "cancelled";
@@ -1028,6 +1034,7 @@ export interface Database {
           commission_cents: number | null;
           stripe_checkout_session_id: string | null;
           view_count: number;
+          edition_number: number | null;
           created_at: string;
           sold_at: string | null;
         };

@@ -8,7 +8,14 @@ import { MarketplaceTab } from "./MarketplaceTab";
 import { BETA_COPY } from "@/lib/beta";
 import { Gem, ShoppingBag, UserRound, Repeat } from "lucide-react";
 import type { TitleRow, EarnedTitle } from "@/types";
-import type { SellerAccountStatus, TradeableOwnedTitle, MarketplaceListing } from "@/services/marketplace.service";
+import { titleSaleState } from "@/lib/titleSale";
+import type { SubscriptionTier } from "@/types/database.types";
+import type {
+  SellerAccountStatus,
+  TradeableOwnedTitle,
+  MarketplaceListing,
+  TitleMarketStats,
+} from "@/services/marketplace.service";
 
 // Says what the shop is for — owning a scarce title and being free to resell
 // it — without ever promising a gain: presenting a purchase by its possible
@@ -38,9 +45,13 @@ export function TitlesTabs({
   username,
   paymentsClosed = false,
   payoutsPanel,
+  memberTier,
+  marketStats = {},
 }: {
   /** Active sellers: their balance and payouts, rendered on the server. */
   payoutsPanel?: ReactNode;
+  memberTier?: SubscriptionTier;
+  marketStats?: Record<string, TitleMarketStats>;
   username: string;
   /** Beta: paid titles and the Marché are closed. */
   paymentsClosed?: boolean;
@@ -61,9 +72,17 @@ export function TitlesTabs({
 
   const ownedTitles = catalog.filter((t) => ownedIds.has(t.id));
   const availableTitles = catalog.filter((t) => t.type === "earned" && !ownedIds.has(t.id));
+  // Timed sales first (the clock is the point), gone-for-good last, then by price.
+  const shelf = (t: TitleRow) => {
+    const sale = titleSaleState(t);
+    if (sale.kind === "ended" || (t.supply != null && (t.remaining_supply ?? 0) <= 0)) return 3;
+    if (sale.kind === "open") return 0;
+    if (sale.kind === "atLaunch" || sale.kind === "upcoming") return 1;
+    return 2;
+  };
   const exclusiveTitles = catalog
     .filter((t) => t.type === "purchasable")
-    .sort((a, b) => (b.price_cents ?? 0) - (a.price_cents ?? 0));
+    .sort((a, b) => shelf(a) - shelf(b) || (b.price_cents ?? 0) - (a.price_cents ?? 0));
 
   const lists: Record<string, TitleRow[]> = {
     owned: ownedTitles,
@@ -75,7 +94,7 @@ export function TitlesTabs({
 
   return (
     <div className="flex flex-col gap-6">
-      <Tabs items={TABS} defaultValue={initialTab} onChange={setTab} className="sm:w-fit" />
+      <Tabs items={TABS} value={tab} onChange={setTab} className="sm:w-fit" />
 
       {tab === "exclusive" && exclusiveTitles.length > 0 && (
         <div className="flex flex-col gap-3">
@@ -104,6 +123,7 @@ export function TitlesTabs({
         <MarketplaceTab
           paymentsClosed={paymentsClosed}
           payoutsPanel={payoutsPanel}
+          marketStats={marketStats}
           sellerStatus={sellerStatus}
           tradeableTitles={tradeableTitles}
           myListings={myListings}
@@ -136,6 +156,15 @@ export function TitlesTabs({
               completionRate={completionRates?.[t.id]}
               shareUsername={ownedIds.has(t.id) ? username : undefined}
               paymentsClosed={paymentsClosed}
+              editionNumber={ownedByid.get(t.id)?.editionNumber}
+              saleWindow={t}
+              requiredTier={t.required_tier}
+              memberTier={memberTier}
+              market={marketStats[t.id]}
+              onShowMarket={() => {
+                setTab("market");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
             />
           ))}
         </div>

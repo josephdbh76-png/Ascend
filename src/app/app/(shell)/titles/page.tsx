@@ -4,12 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { getTitleCatalog, getUserTitles, getTitleCompletionRates } from "@/services/title.service";
 import { getProfile } from "@/services/profile.service";
 import { getBetaMode } from "@/services/platform.service";
+import { getSubscription } from "@/services/subscription.service";
 import {
   getSellerAccountStatus,
   listMyTradeableTitles,
   listMyListings,
   listActiveMarketplaceListings,
   listRecentSales,
+  getTitleMarketStats,
 } from "@/services/marketplace.service";
 import { TitlesTabs } from "./TitlesTabs";
 import { PurchaseStatusToast } from "./PurchaseStatusToast";
@@ -24,8 +26,20 @@ export default async function TitlesPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [catalog, owned, completionRates, sellerStatus, tradeableTitles, myListings, activeListings, recentSales, profile, beta] =
-    await Promise.all([
+  const [
+    catalog,
+    owned,
+    completionRates,
+    sellerStatus,
+    tradeableTitles,
+    myListings,
+    activeListings,
+    recentSales,
+    profile,
+    beta,
+    subscription,
+    marketStats,
+  ] = await Promise.all([
       getTitleCatalog(),
       getUserTitles(user.id),
       getTitleCompletionRates(),
@@ -36,6 +50,8 @@ export default async function TitlesPage() {
       listRecentSales(),
       getProfile(user.id),
       getBetaMode(),
+      getSubscription(user.id),
+      getTitleMarketStats(),
     ]);
 
   return (
@@ -60,6 +76,8 @@ export default async function TitlesPage() {
         myListings={myListings}
         activeListings={activeListings}
         recentSales={recentSales}
+        memberTier={subscription.tier}
+        marketStats={marketStats}
         payoutsPanel={
           // Streamed: reading the balance from Stripe must not hold up the page.
           sellerStatus.payoutsEnabled ? (

@@ -83,12 +83,15 @@ export default function TermsPage() {
         régularisation, l&apos;abonnement prend fin et le compte repasse en formule Gratuite.
       </p>
 
-      <h2 className={h2}>5. Titres exclusifs</h2>
+      <h2 className={h2}>5. Titres de la Boutique</h2>
       <p>
-        Un titre exclusif est un contenu numérique affiché sur ton profil ASCEND, vendu en édition limitée
-        ou ouverte. Il est livré immédiatement après confirmation du paiement. Un titre ne confère aucun
-        droit de propriété intellectuelle, aucune valeur financière garantie et ne peut être échangé
-        contre de l&apos;argent en dehors du Marché ASCEND.
+        Un titre de la Boutique est un contenu numérique affiché sur ton profil ASCEND, vendu en édition
+        limitée ou ouverte. Chaque exemplaire d&apos;une édition limitée porte un numéro, qui le suit s&apos;il
+        est revendu. Certains titres ne sont vendus que pendant une période indiquée sur le titre, ou
+        seulement aux membres d&apos;une formule d&apos;abonnement : une fois sa vente terminée ou son édition
+        épuisée, un titre n&apos;est jamais remis en vente par ASCEND. Il est livré immédiatement après
+        confirmation du paiement. Un titre ne confère aucun droit de propriété intellectuelle, aucune
+        valeur financière garantie et ne peut être échangé contre de l&apos;argent en dehors du Marché ASCEND.
       </p>
       <p>
         Si un titre s&apos;épuise pendant ton paiement, tu es remboursé intégralement et

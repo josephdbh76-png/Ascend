@@ -95,7 +95,7 @@ export async function adminSetIsAdminAction(targetUserId: string, isAdmin: boole
   return { success: true, data: undefined };
 }
 
-export async function adminSyncTitleStripeProductsAction(): Promise<ActionResult<{ created: string[] }>> {
+export async function adminSyncTitleStripeProductsAction(): Promise<ActionResult<{ created: string[]; updated: string[] }>> {
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
 
   try {

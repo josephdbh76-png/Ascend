@@ -29,6 +29,32 @@ export async function setBetaMode(enabled: boolean, adminUserId: string): Promis
     .from("platform_settings")
     .upsert({ key: "beta", value: { enabled, since }, updated_at: new Date().toISOString(), updated_by: adminUserId });
   if (error) throw new Error(error.message);
+  if (!enabled) await startLaunchSales();
+}
+
+/**
+ * Official launch: titles on sale "N days from the launch" get their dates
+ * now. Only once — turning the beta back on and off never restarts them.
+ */
+async function startLaunchSales(): Promise<void> {
+  const admin = createAdminClient();
+  const { data: titles, error } = await admin
+    .from("titles")
+    .select("id, launch_sale_days")
+    .not("launch_sale_days", "is", null)
+    .is("sale_starts_at", null);
+  if (error) throw new Error(error.message);
+  const now = Date.now();
+  for (const title of titles ?? []) {
+    const { error: updateError } = await admin
+      .from("titles")
+      .update({
+        sale_starts_at: new Date(now).toISOString(),
+        sale_ends_at: new Date(now + title.launch_sale_days! * 24 * 60 * 60 * 1000).toISOString(),
+      })
+      .eq("id", title.id);
+    if (updateError) throw new Error(updateError.message);
+  }
 }
 
 /** Figures shown next to the switch in the admin. */

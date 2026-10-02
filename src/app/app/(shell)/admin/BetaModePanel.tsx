@@ -60,6 +60,7 @@ export function BetaModePanel({
           <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Quand vous la désactivez</p>
           <ul className="mt-2 flex list-disc flex-col gap-1.5 pl-4 text-sm text-text-secondary">
             <li>Chacun retrouve son abonnement réel (gratuit pour la plupart) et les paiements rouvrent.</li>
+            <li>Les titres vendus « 7 jours au lancement » (Pionnier) sont mis en vente : leur compte à rebours démarre.</li>
             <li>Les formations publiées pendant la bêta restent en ligne.</li>
             <li>Pour prolonger quelqu&apos;un, passez son compte en Elite dans Membres.</li>
           </ul>

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import { getPurchasableTitle } from "@/services/title.service";
-import { getOrCreateStripeCustomerId } from "@/services/subscription.service";
+import { getOrCreateStripeCustomerId, getSubscription, hasEliteAccess, hasProAccess } from "@/services/subscription.service";
+import { titleSaleState } from "@/lib/titleSale";
 import { getAppUrl } from "@/lib/utils";
 import { getBetaMode } from "@/services/platform.service";
 
@@ -54,9 +55,28 @@ export async function GET(request: NextRequest) {
       titlesUrl.searchParams.set("purchase_error", "sold_out");
       return NextResponse.redirect(titlesUrl);
     }
+    const sale = titleSaleState(title.saleWindow);
+    if (sale.kind === "atLaunch" || sale.kind === "upcoming" || sale.kind === "ended") {
+      titlesUrl.searchParams.set("purchase_error", sale.kind === "ended" ? "sale_ended" : "sale_not_started");
+      return NextResponse.redirect(titlesUrl);
+    }
+    if (title.requiredTier) {
+      const { tier } = await getSubscription(user.id);
+      if (!(title.requiredTier === "elite" ? hasEliteAccess(tier) : hasProAccess(tier))) {
+        titlesUrl.searchParams.set("purchase_error", title.requiredTier === "elite" ? "elite_only" : "pro_only");
+        return NextResponse.redirect(titlesUrl);
+      }
+    }
 
     const customerId = await getOrCreateStripeCustomerId(user.id, user.email!);
     const stripe = getStripe();
+
+    // A price changed in ASCEND but not yet synced to Stripe would charge the old amount.
+    const stripePrice = await stripe.prices.retrieve(title.stripePriceId);
+    if (stripePrice.unit_amount !== title.priceCents || !stripePrice.active) {
+      titlesUrl.searchParams.set("purchase_error", "price_updating");
+      return NextResponse.redirect(titlesUrl);
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -71,6 +91,8 @@ export async function GET(request: NextRequest) {
       cancel_url: `${appUrl}/app/titles?purchase=cancelled`,
       client_reference_id: user.id,
       metadata: { kind: "title_purchase", user_id: user.id, title_id: title.id },
+      // Stripe's shortest window: a timed sale can't be paid a day after it closed.
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
       locale: "fr",
     });
 

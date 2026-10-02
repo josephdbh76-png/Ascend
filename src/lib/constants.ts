@@ -194,7 +194,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "À quoi servent les titres ?",
-    a: "Un titre s'affiche sur ton profil public, à côté de ton nom. Certains se gagnent (classement, croissance, régularité), d'autres sont vendus en édition limitée. Une fois épuisés, les titres exclusifs ne s'obtiennent plus qu'auprès des membres qui les possèdent, sur le Marché.",
+    a: "Un titre s'affiche sur ton profil public, à côté de ton nom. Certains se gagnent (classement, croissance, régularité), d'autres sont vendus dans la Boutique en édition limitée et numérotée, parfois pendant quelques jours seulement. Une fois épuisés ou leur vente terminée, ils ne s'obtiennent plus qu'auprès des membres qui les possèdent, sur le Marché.",
   },
   {
     q: "Puis-je essayer Elite gratuitement ?",

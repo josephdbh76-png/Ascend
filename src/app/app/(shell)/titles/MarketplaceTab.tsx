@@ -19,11 +19,17 @@ import {
   MIN_LISTING_PRICE_CENTS,
 } from "@/lib/marketplaceCommission";
 import { SELLER_PAYOUT_DAY, exactEuros } from "@/lib/sellerPayouts";
+import { formatEdition } from "@/lib/titleSale";
 
 function formatPercentRate(rate: number): string {
   return `${(rate * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`;
 }
-import type { SellerAccountStatus, TradeableOwnedTitle, MarketplaceListing } from "@/services/marketplace.service";
+import type {
+  SellerAccountStatus,
+  TradeableOwnedTitle,
+  MarketplaceListing,
+  TitleMarketStats,
+} from "@/services/marketplace.service";
 
 function TitleBadge({ icon, rarity }: { icon: string; rarity: keyof typeof TITLE_RARITY_STYLES }) {
   const Icon = TITLE_ICONS[icon] ?? TITLE_ICONS.gem;
@@ -43,7 +49,10 @@ export function MarketplaceTab({
   recentSales,
   paymentsClosed = false,
   payoutsPanel,
+  marketStats = {},
 }: {
+  /** Per title: copies on sale, cheapest one, latest resale. */
+  marketStats?: Record<string, TitleMarketStats>;
   /** Beta: nothing can be bought or sold through ASCEND. */
   paymentsClosed?: boolean;
   /** Active sellers: balance and payouts (server-rendered). */
@@ -85,6 +94,8 @@ export function MarketplaceTab({
           status: "active",
           createdAt: new Date().toISOString(),
           soldAt: null,
+          editionNumber: modalTitle.editionNumber,
+          titleSupply: modalTitle.supply,
         },
         ...prev,
       ]);
@@ -162,7 +173,10 @@ export function MarketplaceTab({
                 <TitleBadge icon={t.icon} rarity={t.rarity} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-text-primary">{t.name}</p>
-                  <p className="text-xs text-text-muted">{TITLE_RARITY_LABELS[t.rarity]}</p>
+                  <p className="text-xs text-text-muted">
+                    {TITLE_RARITY_LABELS[t.rarity]}
+                    {t.editionNumber != null && ` · ${formatEdition(t.editionNumber, t.supply)}`}
+                  </p>
                 </div>
                 <Button
                   size="sm"
@@ -191,7 +205,10 @@ export function MarketplaceTab({
                 <div className="flex items-center gap-3">
                   <TitleBadge icon={l.titleIcon} rarity={l.titleRarity} />
                   <div>
-                    <p className="text-sm font-medium text-text-primary">{l.titleName}</p>
+                    <p className="text-sm font-medium text-text-primary">
+                      {l.titleName}
+                      {l.editionNumber != null && <span className="ml-1.5 text-xs font-semibold text-gold">{formatEdition(l.editionNumber, l.titleSupply)}</span>}
+                    </p>
                     <p className="text-xs text-text-muted">
                       {formatCurrency(l.priceCents)} ·{" "}
                       {l.status === "sold" ? "Vendu" : l.status === "cancelled" ? "Annulée" : "En vente"}
@@ -224,15 +241,23 @@ export function MarketplaceTab({
                 <div className="flex items-center gap-3">
                   <TitleBadge icon={l.titleIcon} rarity={l.titleRarity} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-text-primary">{l.titleName}</p>
+                    <p className="truncate text-sm font-medium text-text-primary">
+                      {l.titleName}
+                      {l.editionNumber != null && <span className="ml-1.5 text-xs font-semibold text-gold">{formatEdition(l.editionNumber, l.titleSupply)}</span>}
+                    </p>
                     <p className="text-xs text-text-muted">
                       par @{l.sellerUsername} · {TITLE_RARITY_LABELS[l.titleRarity]}
                     </p>
                   </div>
                 </div>
-                <p className="flex items-center gap-1 text-[11px] text-text-muted">
-                  <Clock className="h-3 w-3" /> Mis en vente {timeAgo(l.createdAt)}
-                </p>
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-text-muted">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> Mis en vente {timeAgo(l.createdAt)}
+                  </span>
+                  {marketStats[l.titleId]?.lastSaleCents != null && (
+                    <span>Dernière vente : {formatCurrency(marketStats[l.titleId].lastSaleCents!)}</span>
+                  )}
+                </div>
                 {paymentsClosed ? (
                   <Button size="sm" variant="secondary" disabled>
                     Achat au lancement · {formatCurrency(l.priceCents)}
@@ -248,7 +273,7 @@ export function MarketplaceTab({
         )}
       </section>
 
-      <Modal open={modalTitle !== null} onClose={() => setModalTitle(null)} title={`Vendre « ${modalTitle?.name ?? ""} »`}>
+      <Modal open={modalTitle !== null} onClose={() => setModalTitle(null)} title={`Vendre « ${modalTitle?.name ?? ""} »${modalTitle?.editionNumber != null ? ` ${formatEdition(modalTitle.editionNumber, modalTitle.supply)}` : ""}`}>
         <form onSubmit={submitListing} className="flex flex-col gap-4">
           <Field
             label="Prix de vente (€)"

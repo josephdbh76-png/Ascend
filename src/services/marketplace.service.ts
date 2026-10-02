@@ -214,6 +214,8 @@ export interface TradeableOwnedTitle {
   name: string;
   icon: string;
   rarity: TitleRarity;
+  editionNumber: number | null;
+  supply: number | null;
 }
 
 /** Titles this member owns, are marked tradeable, and don't already have an active listing. */
@@ -221,7 +223,7 @@ export async function listMyTradeableTitles(userId: string): Promise<TradeableOw
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("user_titles")
-    .select("id, title_id, titles(name, icon, rarity, tradeable)")
+    .select("id, title_id, edition_number, titles(name, icon, rarity, tradeable, supply)")
     .eq("user_id", userId);
   if (error) throw new Error(error.message);
 
@@ -238,8 +240,16 @@ export async function listMyTradeableTitles(userId: string): Promise<TradeableOw
       return title?.tradeable && !listedIds.has(row.id);
     })
     .map((row) => {
-      const title = row.titles as unknown as { name: string; icon: string; rarity: TitleRarity };
-      return { userTitleId: row.id, titleId: row.title_id, name: title.name, icon: title.icon, rarity: title.rarity };
+      const title = row.titles as unknown as { name: string; icon: string; rarity: TitleRarity; supply: number | null };
+      return {
+        userTitleId: row.id,
+        titleId: row.title_id,
+        name: title.name,
+        icon: title.icon,
+        rarity: title.rarity,
+        editionNumber: row.edition_number,
+        supply: title.supply,
+      };
     });
 }
 
@@ -255,6 +265,8 @@ export interface MarketplaceListing {
   status: "active" | "sold" | "cancelled";
   createdAt: string;
   soldAt: string | null;
+  editionNumber: number | null;
+  titleSupply: number | null;
 }
 
 type ListingRow = {
@@ -265,7 +277,8 @@ type ListingRow = {
   status: "active" | "sold" | "cancelled";
   created_at: string;
   sold_at: string | null;
-  titles: { name: string; icon: string; rarity: TitleRarity } | null;
+  edition_number: number | null;
+  titles: { name: string; icon: string; rarity: TitleRarity; supply: number | null } | null;
   profiles: { username: string } | null;
 };
 
@@ -282,16 +295,22 @@ function mapListing(row: ListingRow): MarketplaceListing {
     status: row.status,
     createdAt: row.created_at,
     soldAt: row.sold_at,
+    editionNumber: row.edition_number,
+    titleSupply: row.titles?.supply ?? null,
   };
 }
+
+const LISTING_COLUMNS =
+  "id, title_id, seller_id, price_cents, status, created_at, sold_at, edition_number, titles(name, icon, rarity, supply), profiles!seller_id(username)";
 
 /** The browsable "buy" feed — everyone else's active listings. */
 export async function listActiveMarketplaceListings(excludeSellerId: string | null): Promise<MarketplaceListing[]> {
   const supabase = await createClient();
   let query = supabase
     .from("title_listings")
-    .select("id, title_id, seller_id, price_cents, status, created_at, sold_at, titles(name, icon, rarity), profiles!seller_id(username)")
+    .select(LISTING_COLUMNS)
     .eq("status", "active")
+    .not("user_title_id", "is", null)
     .order("created_at", { ascending: false });
   if (excludeSellerId) query = query.neq("seller_id", excludeSellerId);
 
@@ -304,19 +323,59 @@ export async function listMyListings(userId: string): Promise<MarketplaceListing
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("title_listings")
-    .select("id, title_id, seller_id, price_cents, status, created_at, sold_at, titles(name, icon, rarity), profiles!seller_id(username)")
+    .select(LISTING_COLUMNS)
     .eq("seller_id", userId)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => mapListing(row as unknown as ListingRow));
 }
 
+export interface TitleMarketStats {
+  /** Copies on sale right now. */
+  listedCount: number;
+  /** Cheapest copy on sale. */
+  floorCents: number | null;
+  /** Price of the latest resale. */
+  lastSaleCents: number | null;
+}
+
+/** Per title, what the Marché shows about it: facts only, never a gain. */
+export async function getTitleMarketStats(): Promise<Record<string, TitleMarketStats>> {
+  // Admin client: RLS shows a sold listing to its seller and buyer only,
+  // and only titles and prices are read here — never who bought.
+  const admin = createAdminClient();
+  const [{ data: active }, { data: sold }] = await Promise.all([
+    admin.from("title_listings").select("title_id, price_cents").eq("status", "active").not("user_title_id", "is", null),
+    admin
+      .from("title_listings")
+      .select("title_id, price_cents")
+      .eq("status", "sold")
+      .order("sold_at", { ascending: false })
+      .limit(500),
+  ]);
+
+  const stats: Record<string, TitleMarketStats> = {};
+  const entry = (titleId: string) => (stats[titleId] ??= { listedCount: 0, floorCents: null, lastSaleCents: null });
+  for (const l of active ?? []) {
+    const s = entry(l.title_id);
+    s.listedCount += 1;
+    s.floorCents = s.floorCents == null ? l.price_cents : Math.min(s.floorCents, l.price_cents);
+  }
+  for (const l of sold ?? []) {
+    const s = entry(l.title_id);
+    if (s.lastSaleCents == null) s.lastSaleCents = l.price_cents;
+  }
+  return stats;
+}
+
 /** Recent sales across the whole marketplace — the FOMO ticker. */
 export async function listRecentSales(limit = 8): Promise<MarketplaceListing[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  // Admin client: RLS shows a sold listing to its seller and buyer only, so
+  // everyone else saw an empty ticker. The columns read never include the buyer.
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("title_listings")
-    .select("id, title_id, seller_id, price_cents, status, created_at, sold_at, titles(name, icon, rarity), profiles!seller_id(username)")
+    .select(LISTING_COLUMNS)
     .eq("status", "sold")
     .order("sold_at", { ascending: false })
     .limit(limit);
@@ -334,7 +393,7 @@ export async function createListing(sellerId: string, userTitleId: string, price
   const admin = createAdminClient();
   const { data: userTitle } = await admin
     .from("user_titles")
-    .select("id, title_id, user_id, titles(tradeable)")
+    .select("id, title_id, user_id, edition_number, titles(tradeable)")
     .eq("id", userTitleId)
     .eq("user_id", sellerId)
     .maybeSingle();
@@ -347,6 +406,7 @@ export async function createListing(sellerId: string, userTitleId: string, price
     user_title_id: userTitleId,
     title_id: userTitle.title_id,
     price_cents: priceCents,
+    edition_number: userTitle.edition_number,
   });
   if (error) {
     if (error.code === "23505") throw new Error("Ce titre a déjà une annonce active.");
@@ -438,17 +498,18 @@ export async function finalizeListingSale(
   const admin = createAdminClient();
   const { data: listing, error: readError } = await admin
     .from("title_listings")
-    .select("id, seller_id, user_title_id, title_id, price_cents, status, stripe_checkout_session_id")
+    .select("id, seller_id, user_title_id, title_id, price_cents, status, stripe_checkout_session_id, edition_number")
     .eq("id", listingId)
     .maybeSingle();
   if (readError) throw new Error(readError.message);
   if (!listing) return "unavailable";
   // Redelivery after a partial failure: finish the (idempotent) transfer, no second notification.
   if (listing.stripe_checkout_session_id === session.id) {
-    await transferListedTitle(listing.user_title_id, buyerId, listing.title_id);
+    await transferListedTitle(listing, buyerId);
     return "already_processed";
   }
-  if (listing.status !== "active") return "unavailable"; // sold to someone else or withdrawn meanwhile
+  // Sold to someone else, withdrawn meanwhile, or the seller's copy is gone.
+  if (listing.status !== "active" || !listing.user_title_id) return "unavailable";
 
   const commissionCents = commissionCentsForPrice(listing.price_cents);
 
@@ -469,7 +530,7 @@ export async function finalizeListingSale(
   if (claimError) throw new Error(claimError.message);
   if (!claimed?.length) return "unavailable";
 
-  await transferListedTitle(listing.user_title_id, buyerId, listing.title_id);
+  await transferListedTitle(listing, buyerId);
 
   const { data: title } = await admin.from("titles").select("name").eq("id", listing.title_id).maybeSingle();
 
@@ -495,13 +556,28 @@ export async function finalizeListingSale(
   return "sold";
 }
 
-/** The seller loses the title, the buyer gains it: a scarce collectible, never duplicated. */
-async function transferListedTitle(sellerUserTitleId: string, buyerId: string, titleId: string) {
+/** The seller loses the title, the buyer gains it — same copy, same number: a scarce collectible, never duplicated. */
+async function transferListedTitle(
+  listing: { user_title_id: string | null; title_id: string; edition_number: number | null },
+  buyerId: string,
+) {
   const admin = createAdminClient();
-  const { error: removeError } = await admin.from("user_titles").delete().eq("id", sellerUserTitleId);
-  if (removeError) throw new Error(removeError.message);
+  if (listing.user_title_id) {
+    // Deleting the seller's copy clears user_title_id on the listing.
+    const { error: removeError } = await admin.from("user_titles").delete().eq("id", listing.user_title_id);
+    if (removeError) throw new Error(removeError.message);
+  } else {
+    // Redelivery with the seller's copy already gone: done, unless granting
+    // the buyer failed right after it — then nobody holds this copy.
+    const holder = admin.from("user_titles").select("id").eq("title_id", listing.title_id);
+    const { data: held } = await (listing.edition_number != null
+      ? holder.eq("edition_number", listing.edition_number)
+      : holder.eq("user_id", buyerId)
+    ).limit(1);
+    if (held?.length) return;
+  }
   const { error: grantError } = await admin.from("user_titles").upsert(
-    { user_id: buyerId, title_id: titleId, acquisition_type: "purchased" },
+    { user_id: buyerId, title_id: listing.title_id, acquisition_type: "purchased", edition_number: listing.edition_number },
     { onConflict: "user_id,title_id" },
   );
   if (grantError) throw new Error(grantError.message);

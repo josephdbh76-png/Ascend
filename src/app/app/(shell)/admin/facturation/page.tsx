@@ -16,10 +16,12 @@ export default function AdminBillingPage() {
 
       <AdminSection
         title="Titres payants"
-        description="Crée le produit et le prix Stripe de chaque titre à vendre qui n'en a pas encore."
+        description="Donne à chaque titre de la Boutique un prix Stripe identique à son prix sur ASCEND : crée les nouveaux, met à jour ceux dont le prix a changé."
         action={<TitleStripeSyncButton />}
       >
-        <p className="text-xs text-text-muted">À relancer après l&apos;ajout d&apos;un titre payant au catalogue.</p>
+        <p className="text-xs text-text-muted">
+          À relancer après chaque ajout de titre ou changement de prix. Tant que ce n&apos;est pas fait, le titre concerné ne peut pas être acheté.
+        </p>
       </AdminSection>
 
       <AdminSection title="Tarifs annuels" description="Crée les prix Stripe annuels (Pro, Elite) sur les mêmes produits que les prix mensuels.">

@@ -1,9 +1,14 @@
 import { cn } from "@/lib/utils";
 import { TITLE_ICONS, TITLE_RARITY_STYLES } from "@/lib/titleDisplay";
+import { formatEdition } from "@/lib/titleSale";
 import type { TitleRarity } from "@/types/database.types";
 
 /** Small rarity-colored pill shown next to a member's name wherever they appear in a list. */
-export function TitleBadge({ title }: { title: { name: string; icon: string; rarity: TitleRarity } }) {
+export function TitleBadge({
+  title,
+}: {
+  title: { name: string; icon: string; rarity: TitleRarity; editionNumber?: number | null };
+}) {
   const Icon = TITLE_ICONS[title.icon] ?? TITLE_ICONS.gem;
   return (
     <span
@@ -15,6 +20,7 @@ export function TitleBadge({ title }: { title: { name: string; icon: string; rar
     >
       <Icon className="h-2.5 w-2.5" />
       {title.name}
+      {title.editionNumber != null && ` ${formatEdition(title.editionNumber)}`}
     </span>
   );
 }

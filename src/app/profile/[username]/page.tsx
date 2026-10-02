@@ -222,6 +222,8 @@ export default async function PublicProfilePage({
                 rarity={t.rarity}
                 owned
                 isActive={t.isActive}
+                editionNumber={t.editionNumber}
+                supply={t.supply}
                 interactive={isOwner}
                 shareUsername={isOwner ? profile.username : undefined}
               />

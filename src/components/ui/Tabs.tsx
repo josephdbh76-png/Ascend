@@ -11,19 +11,23 @@ export interface TabItem {
 export function Tabs({
   items,
   defaultValue,
+  value,
   onChange,
   className,
 }: {
   items: TabItem[];
   defaultValue?: string;
+  /** Controlled mode: the parent owns the active tab (and can switch it). */
+  value?: string;
   onChange?: (value: string) => void;
   className?: string;
 }) {
-  const [active, setActive] = useState(defaultValue ?? items[0]?.value);
+  const [uncontrolled, setActive] = useState(defaultValue ?? items[0]?.value);
+  const active = value ?? uncontrolled;
 
-  function select(value: string) {
-    setActive(value);
-    onChange?.(value);
+  function select(next: string) {
+    setActive(next);
+    onChange?.(next);
   }
 
   return (

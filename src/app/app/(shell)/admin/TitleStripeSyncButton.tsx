@@ -14,10 +14,13 @@ export function TitleStripeSyncButton() {
     startTransition(async () => {
       const result = await adminSyncTitleStripeProductsAction();
       if (!result.success) return toast.show(result.error, "error");
+      const { created, updated } = result.data;
       toast.show(
-        result.data.created.length > 0
-          ? `${result.data.created.length} titre(s) synchronisé(s) avec Stripe.`
-          : "Tous les titres ont déjà un prix Stripe.",
+        created.length + updated.length > 0
+          ? [created.length && `${created.length} titre(s) créé(s)`, updated.length && `${updated.length} prix mis à jour`]
+              .filter(Boolean)
+              .join(", ") + " dans Stripe."
+          : "Tous les titres ont déjà le bon prix dans Stripe.",
         "success",
       );
     });

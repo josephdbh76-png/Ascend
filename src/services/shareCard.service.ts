@@ -175,8 +175,8 @@ export async function loadShareCard(kind: ShareKind, username: string, id: strin
 
   if (kind === "title") {
     const [{ data: owned }, { data: def }, footnote] = await Promise.all([
-      supabase.from("user_titles").select("acquired_at").eq("user_id", userId).eq("title_id", id!).maybeSingle(),
-      supabase.from("titles").select("name, description, icon, rarity").eq("id", id!).maybeSingle(),
+      supabase.from("user_titles").select("acquired_at, edition_number").eq("user_id", userId).eq("title_id", id!).maybeSingle(),
+      supabase.from("titles").select("name, description, icon, rarity, supply").eq("id", id!).maybeSingle(),
       scarcityLine("title", id!),
     ]);
     if (!owned || !def) return null;
@@ -188,8 +188,9 @@ export async function loadShareCard(kind: ShareKind, username: string, id: strin
       icon: def.icon || "gem",
       rarity: def.rarity,
       rarityLabel: RARITY_LABELS[def.rarity],
-      bigStat: null,
-      statCaption: null,
+      // A numbered copy is the brag: "n°7, sur 30 exemplaires".
+      bigStat: owned.edition_number != null ? `n°${owned.edition_number}` : null,
+      statCaption: owned.edition_number != null && def.supply ? `sur ${def.supply} exemplaires` : null,
       dateLabel: monthLabel(owned.acquired_at),
       footnote,
       member,

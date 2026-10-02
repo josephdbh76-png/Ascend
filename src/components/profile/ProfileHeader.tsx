@@ -6,6 +6,7 @@ import { MessageButton } from "@/components/network/MessageButton";
 import { cn, formatCurrency, formatCurrencyRange, formatPercent, initials } from "@/lib/utils";
 import { COUNTRIES, ACCENT_THEMES } from "@/lib/constants";
 import { activityLabel, categoryLabel } from "@/lib/business";
+import { formatEdition } from "@/lib/titleSale";
 import type { PublicProfile } from "@/types";
 
 function countryLabel(code: string | null) {
@@ -71,7 +72,10 @@ export function ProfileHeader({
               {profile.firstName} {profile.lastName}
             </h1>
             {profile.activeTitle && !(foundingNumber && profile.activeTitle.name === "Membre fondateur") && (
-              <Badge variant="gold">{profile.activeTitle.name}</Badge>
+              <Badge variant="gold">
+                {profile.activeTitle.name}
+                {profile.activeTitle.editionNumber != null && ` ${formatEdition(profile.activeTitle.editionNumber)}`}
+              </Badge>
             )}
             {foundingNumber && (
               <Badge variant={profile.activeTitle?.name === "Membre fondateur" ? "gold" : "exclusive"}>
