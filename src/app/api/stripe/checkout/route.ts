@@ -5,6 +5,7 @@ import { getOrCreateStripeCustomerId, isTrialEligible } from "@/services/subscri
 import { getAppUrl } from "@/lib/utils";
 import { getBetaMode } from "@/services/platform.service";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { PLANS } from "@/lib/pricing";
 
 const TRIAL_DAYS = 14;
 
@@ -61,10 +62,21 @@ export async function GET(request: NextRequest) {
     // the client asked for, since query params can't be trusted.
     const grantTrial = trialRequested && tier === "elite" && (await isTrialEligible(user.id));
 
+    // Never charge another amount than the one shown on the site: a Stripe
+    // price left on an old amount stops the checkout instead.
+    const priceId = priceIdForTier(tier, interval);
+    const plan = PLANS.find((p) => p.tier === tier);
+    const shownCents = interval === "year" ? plan?.annualCents : plan?.monthlyCents;
+    const stripePrice = await stripe.prices.retrieve(priceId);
+    if (shownCents == null || stripePrice.unit_amount !== shownCents || !stripePrice.active) {
+      console.error(`Price mismatch for ${tier}/${interval}: Stripe ${stripePrice.unit_amount}, site ${shownCents}`);
+      throw new Error("Ce tarif est en cours de mise à jour. Réessaie dans quelques minutes ou écris-nous.");
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
-      line_items: [{ price: priceIdForTier(tier, interval), quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
       billing_address_collection: "required",
       submit_type: "subscribe",

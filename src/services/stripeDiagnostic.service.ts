@@ -141,7 +141,13 @@ export async function runStripeDiagnostic(): Promise<DiagnosticCheck[]> {
         add("Webhook", "Adresse", e.status === "enabled" ? "ok" : "error", `${e.url} · ${e.status === "enabled" ? "actif" : "désactivé"}`);
         add("Webhook", "Événements écoutés", missing.length ? "error" : "ok", missing.length ? `Manquent : ${missing.join(", ")}.` : "Tous les événements utiles sont reçus.");
       }
-      if (ours.length > 1) add("Webhook", "Doublons", "warn", `${ours.length} webhooks vers la même adresse : chaque paiement serait traité plusieurs fois.`);
+      if (ours.length > 1)
+        add(
+          "Webhook",
+          "Doublons",
+          "warn",
+          `${ours.length} webhooks vers la même adresse. Un seul a le secret enregistré dans ASCEND : les envois de l'autre échouent à chaque paiement. Supprime celui dont les envois sont en échec (Développeurs → Webhooks).`,
+        );
     }
     const others = endpoints.data.filter((e) => e.url !== target && e.status === "enabled");
     if (others.length) add("Webhook", "Autres webhooks actifs", "info", others.map((e) => e.url).join(", "));
