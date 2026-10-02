@@ -168,9 +168,9 @@ export async function runStripeDiagnostic(): Promise<DiagnosticCheck[]> {
       const f = c.features;
       const su = f.subscription_update;
       const offered = (su.products ?? []).flatMap((pr) => pr.prices ?? []);
-      const elitePrices = [process.env.STRIPE_PRICE_ELITE, process.env.STRIPE_PRICE_ELITE_ANNUAL].filter(Boolean) as string[];
-      const proPrices = [process.env.STRIPE_PRICE_PRO, process.env.STRIPE_PRICE_PRO_ANNUAL].filter(Boolean) as string[];
-      const missingPrices = [...proPrices, ...elitePrices].filter((id) => !offered.includes(id));
+      const missingPrices = EXPECTED_PRICES.filter((p) => process.env[p.env] && !offered.includes(process.env[p.env]!)).map(
+        (p) => `${p.label} (${process.env[p.env]})`,
+      );
       add(
         "Portail client",
         "Changer d'offre (Pro ↔ Elite)",
@@ -180,14 +180,18 @@ export async function runStripeDiagnostic(): Promise<DiagnosticCheck[]> {
           : su.products == null
             ? "Autorisé (liste des offres non lisible : vérifie dans Stripe que Pro et Elite y sont)."
             : missingPrices.length
-              ? `Autorisé, mais ${missingPrices.length} prix utilisé(s) par ASCEND absent(s) du portail : ${missingPrices.join(", ")}. Ajoute-les (Paramètres → Billing → Portail client → Produits).`
+              ? `Autorisé, mais absent(s) du portail : ${missingPrices.join(", ")}. Ajoute-les (Paramètres → Billing → Portail client → Produits).`
               : `Autorisé : ${offered.length} prix proposés, dont ceux de Pro et Elite.`,
       );
       add(
         "Portail client",
         "Réglages du changement d'offre",
-        "info",
-        `Modifications autorisées : ${su.default_allowed_updates.join(", ") || "aucune"} · prorata : ${su.proration_behavior}`,
+        su.proration_behavior === "none" ? "warn" : "info",
+        `Modifications autorisées : ${su.default_allowed_updates.join(", ") || "aucune"} · prorata : ${
+          su.proration_behavior === "none"
+            ? "aucun (un Pro qui passe Elite ne paie la différence qu'au renouvellement : choisis « facturer immédiatement »)"
+            : su.proration_behavior
+        }`,
       );
       add("Portail client", "Codes promo au changement d'offre", "info", "Stripe n'accepte un code que si l'option est activée dans les réglages du portail.");
       add("Portail client", "Résiliation", f.subscription_cancel.enabled ? "ok" : "warn", f.subscription_cancel.enabled ? `Autorisée (${f.subscription_cancel.mode === "at_period_end" ? "à la fin de la période" : "immédiate"}).` : "Désactivée : obligatoire en France de permettre la résiliation en ligne.");
