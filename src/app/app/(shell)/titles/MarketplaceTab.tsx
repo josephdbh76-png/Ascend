@@ -105,6 +105,10 @@ export function MarketplaceTab({
 
   return (
     <div className="flex flex-col gap-8">
+      <p className="-mb-4 max-w-2xl text-sm text-text-secondary">
+        Les membres s&apos;y échangent leurs titres : trouve une édition épuisée en boutique, ou revends les tiennes au prix
+        que tu fixes. Le paiement passe par Stripe et le titre change de propriétaire automatiquement.
+      </p>
       {paymentsClosed && (
         <div className="flex items-start gap-3 rounded-md border border-gold/40 bg-gold/10 p-4 text-sm text-text-primary">
           <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-gold" />

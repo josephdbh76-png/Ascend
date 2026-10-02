@@ -41,7 +41,7 @@ export function Tabs({
           aria-selected={active === item.value}
           onClick={() => select(item.value)}
           className={cn(
-            "shrink-0 rounded-sm px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+            "shrink-0 rounded-sm px-2.5 py-1.5 text-sm sm:px-3.5 font-medium whitespace-nowrap transition-colors",
             active === item.value
               ? "bg-card-active text-gold"
               : "text-text-secondary hover:text-text-primary",

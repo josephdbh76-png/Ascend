@@ -159,6 +159,13 @@ export function TitleCard({
               {sold} déjà vendu{sold > 1 ? "s" : ""}
             </p>
           )}
+          {/* An open edition is always in stock: reselling it means nothing. */}
+          {tradeable && supply != null && (
+            <p className="flex items-center gap-1.5 text-[11px] text-text-secondary">
+              <Repeat className="h-3 w-3 text-gold" />
+              {owned ? "Tu peux le revendre sur le Marché, au prix que tu fixes." : "Revendable sur le Marché, au prix que tu fixes."}
+            </p>
+          )}
         </div>
       )}
 
@@ -198,15 +205,8 @@ export function TitleCard({
                 {soldOut ? "Épuisé · à retrouver sur le Marché" : "Obtenir ce titre"}
               </Button>
               {!soldOut && (
-                <p className="mt-2 flex items-center justify-center gap-3 text-[10px] text-text-muted">
-                  <span className="flex items-center gap-1">
-                    <ShieldCheck className="h-3 w-3" /> Paiement Stripe
-                  </span>
-                  {tradeable && (
-                    <span className="flex items-center gap-1">
-                      <Repeat className="h-3 w-3" /> Revendable
-                    </span>
-                  )}
+                <p className="mt-2 flex items-center justify-center gap-1 text-[10px] text-text-muted">
+                  <ShieldCheck className="h-3 w-3" /> Paiement sécurisé par Stripe
                 </p>
               )}
             </>

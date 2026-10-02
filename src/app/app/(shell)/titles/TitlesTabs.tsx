@@ -6,14 +6,23 @@ import { TitleCard } from "@/components/titles/TitleCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MarketplaceTab } from "./MarketplaceTab";
 import { BETA_COPY } from "@/lib/beta";
-import { Gem } from "lucide-react";
+import { Gem, ShoppingBag, UserRound, Repeat } from "lucide-react";
 import type { TitleRow, EarnedTitle } from "@/types";
 import type { SellerAccountStatus, TradeableOwnedTitle, MarketplaceListing } from "@/services/marketplace.service";
+
+// Says what the shop is for — owning a scarce title and being free to resell
+// it — without ever promising a gain: presenting a purchase by its possible
+// financial return falls under the AMF's "biens divers" rules (CMF L551-1).
+const BOUTIQUE_STEPS = [
+  { icon: ShoppingBag, title: "Achète", text: "Les éditions limitées ne sont jamais rééditées : épuisées, ASCEND n'en vend plus." },
+  { icon: UserRound, title: "Affiche", text: "Il apparaît à côté de ton nom, sur ton profil et dans le Réseau." },
+  { icon: Repeat, title: "Revends", text: "Quand tu veux, sur le Marché, au prix que tu fixes." },
+];
 
 const TABS = [
   { value: "owned", label: "Obtenus" },
   { value: "available", label: "À débloquer" },
-  { value: "exclusive", label: "Exclusifs" },
+  { value: "exclusive", label: "Boutique" },
   { value: "market", label: "Marché" },
 ];
 
@@ -69,11 +78,26 @@ export function TitlesTabs({
       <Tabs items={TABS} defaultValue={initialTab} onChange={setTab} className="sm:w-fit" />
 
       {tab === "exclusive" && exclusiveTitles.length > 0 && (
-        <p className="rounded-md border border-gold/25 bg-gold/5 px-4 py-3 text-xs text-text-secondary">
-          {paymentsClosed
-            ? BETA_COPY.titles
-            : "Éditions limitées. Une fois épuisé, un titre ne se trouve plus que sur le Marché, revendu par son propriétaire au prix qu'il fixe."}
-        </p>
+        <div className="flex flex-col gap-3">
+          {paymentsClosed && (
+            <p className="rounded-md border border-gold/25 bg-gold/5 px-4 py-3 text-xs text-text-secondary">{BETA_COPY.titles}</p>
+          )}
+          <ol className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {BOUTIQUE_STEPS.map(({ icon: Icon, title, text }, i) => (
+              <li key={title} className="flex items-start gap-3 rounded-md border border-border bg-card p-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gold/10">
+                  <Icon className="h-3.5 w-3.5 text-gold" />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold text-text-primary">
+                    {i + 1}. {title}
+                  </p>
+                  <p className="mt-0.5 text-xs text-text-secondary">{text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
       )}
 
       {tab === "market" ? (
