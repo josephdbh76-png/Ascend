@@ -1,10 +1,14 @@
 // Sliding commission scale: 10% at 50€ or below, down to 5% at 1000€ or
-// above, linearly interpolated in between. Shared so the sell form shows the
-// exact net amount the server will compute.
+// above, linearly interpolated in between, never under 0.50€: on a
+// destination charge the Stripe fee (about 0.25€ + 1.5%) is paid by ASCEND,
+// so a 10% cut of a 1€ sale cost more than it earned. Shared so the sell form
+// shows the exact net amount the server will compute.
 const COMMISSION_LOW_CENTS = 5000;
 const COMMISSION_HIGH_CENTS = 100000;
 const COMMISSION_LOW_RATE = 0.1;
 const COMMISSION_HIGH_RATE = 0.05;
+export const MIN_COMMISSION_CENTS = 50;
+export const MIN_LISTING_PRICE_CENTS = 300;
 
 export function commissionRateForPrice(priceCents: number): number {
   if (priceCents <= COMMISSION_LOW_CENTS) return COMMISSION_LOW_RATE;
@@ -14,5 +18,10 @@ export function commissionRateForPrice(priceCents: number): number {
 }
 
 export function commissionCentsForPrice(priceCents: number): number {
-  return Math.round(priceCents * commissionRateForPrice(priceCents));
+  return Math.min(priceCents, Math.max(MIN_COMMISSION_CENTS, Math.round(priceCents * commissionRateForPrice(priceCents))));
+}
+
+/** True when the 0.50€ floor, not the percentage, sets the commission. */
+export function isMinimumCommission(priceCents: number): boolean {
+  return Math.round(priceCents * commissionRateForPrice(priceCents)) < MIN_COMMISSION_CENTS;
 }

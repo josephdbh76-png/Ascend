@@ -56,6 +56,7 @@ import {
 import { generateLeagueSeason } from "@/services/league.service";
 import { verifyUpload } from "@/services/upload.service";
 import { createPromoCode, setPromoCodeActive, type PromoCodeInput } from "@/services/promo.service";
+import { runStripeDiagnostic, type DiagnosticCheck } from "@/services/stripeDiagnostic.service";
 import { createTitle, createTrophy, createAchievement, grantRewardToMember } from "@/services/catalog.service";
 import {
   reviewTraining,
@@ -420,6 +421,17 @@ export async function uploadAdminImageAction(path: string): Promise<ActionResult
     return { success: true, data: { url: file.publicUrl! } };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Le téléversement a échoué." };
+  }
+}
+
+// ---------------------------------------------------------------- stripe diagnostic
+
+export async function runStripeDiagnosticAction(): Promise<ActionResult<DiagnosticCheck[]>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    return { success: true, data: await runStripeDiagnostic() };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }
 }
 

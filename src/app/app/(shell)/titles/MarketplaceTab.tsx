@@ -11,7 +11,13 @@ import { BETA_COPY } from "@/lib/beta";
 import { cn, formatCurrency, timeAgo } from "@/lib/utils";
 import { TITLE_ICONS, TITLE_RARITY_STYLES, TITLE_RARITY_LABELS } from "@/lib/titleDisplay";
 import { createListingAction, cancelListingAction } from "./actions";
-import { commissionCentsForPrice, commissionRateForPrice } from "@/lib/marketplaceCommission";
+import {
+  commissionCentsForPrice,
+  commissionRateForPrice,
+  isMinimumCommission,
+  MIN_COMMISSION_CENTS,
+  MIN_LISTING_PRICE_CENTS,
+} from "@/lib/marketplaceCommission";
 
 function formatPercentRate(rate: number): string {
   return `${(rate * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`;
@@ -26,6 +32,10 @@ function TitleBadge({ icon, rarity }: { icon: string; rarity: keyof typeof TITLE
     </span>
   );
 }
+
+
+/** To the cent: what a seller gets must not be rounded. */
+const exactEuros = (cents: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(cents / 100);
 
 export function MarketplaceTab({
   sellerStatus,
@@ -110,6 +120,15 @@ export function MarketplaceTab({
           </p>
           <Button href="/api/marketplace/connect" size="sm" className="shrink-0">
             {sellerStatus.connected ? "Terminer la configuration" : "Configurer mon compte vendeur"}
+          </Button>
+        </div>
+      )}
+
+      {!paymentsClosed && sellerStatus.payoutsEnabled && (
+        <div className="flex flex-col items-start gap-2 rounded-md border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-text-secondary">Compte vendeur actif : tes ventes sont versées sur ton compte bancaire par Stripe.</p>
+          <Button href="/api/marketplace/dashboard" variant="secondary" size="sm" className="shrink-0">
+            Mes versements
           </Button>
         </div>
       )}
@@ -233,20 +252,35 @@ export function MarketplaceTab({
 
       <Modal open={modalTitle !== null} onClose={() => setModalTitle(null)} title={`Vendre « ${modalTitle?.name ?? ""} »`}>
         <form onSubmit={submitListing} className="flex flex-col gap-4">
-          <Field label="Prix de vente (€)" hint="Commission ASCEND de 10 % jusqu'à 50 €, dégressive jusqu'à 5 % à partir de 1 000 €.">
-            <Input type="number" min={1} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required autoFocus />
+          <Field
+            label="Prix de vente (€)"
+            hint={`${exactEuros(MIN_LISTING_PRICE_CENTS)} minimum. Commission ASCEND de 10 % (${exactEuros(MIN_COMMISSION_CENTS)} minimum) jusqu'à 50 €, dégressive jusqu'à 5 % à partir de 1 000 €.`}
+          >
+            <Input
+              type="number"
+              min={MIN_LISTING_PRICE_CENTS / 100}
+              step="0.01"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+              autoFocus
+            />
           </Field>
-          {priceCents >= 100 && (
+          {priceCents >= MIN_LISTING_PRICE_CENTS && (
             <div className="flex items-center justify-between rounded-md border border-border-strong bg-card-elevated px-3.5 py-2.5 text-sm">
               <span className="text-text-secondary">
-                Tu recevras <span className="text-text-muted">(commission {formatPercentRate(commissionRateForPrice(priceCents))})</span>
+                Tu recevras{" "}
+                <span className="text-text-muted">
+                  (commission{" "}
+                  {isMinimumCommission(priceCents) ? exactEuros(MIN_COMMISSION_CENTS) : formatPercentRate(commissionRateForPrice(priceCents))})
+                </span>
               </span>
               <span className="font-semibold tabular-nums text-text-primary">
-                {formatCurrency(priceCents - commissionCentsForPrice(priceCents))}
+                {exactEuros(priceCents - commissionCentsForPrice(priceCents))}
               </span>
             </div>
           )}
-          <Button type="submit" disabled={pending || !price || Number(price) <= 0} className="self-start">
+          <Button type="submit" disabled={pending || priceCents < MIN_LISTING_PRICE_CENTS} className="self-start">
             Publier l&apos;annonce
           </Button>
         </form>

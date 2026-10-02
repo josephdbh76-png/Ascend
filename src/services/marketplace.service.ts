@@ -7,7 +7,7 @@ import { createNotificationForUser } from "@/services/notification.service";
 import { getAppUrl } from "@/lib/utils";
 import type { TitleRarity } from "@/types/database.types";
 
-import { commissionCentsForPrice } from "@/lib/marketplaceCommission";
+import { commissionCentsForPrice, MIN_LISTING_PRICE_CENTS } from "@/lib/marketplaceCommission";
 
 export interface SellerAccountStatus {
   connected: boolean;
@@ -50,11 +50,18 @@ export async function startSellerOnboarding(userId: string, email: string): Prom
 
   let accountId = existing?.stripe_account_id;
   if (!accountId) {
-    const { data: profile } = await supabase.from("profiles").select("country").eq("id", userId).maybeSingle();
+    const { data: profile } = await supabase.from("profiles").select("country, username").eq("id", userId).maybeSingle();
     const account = await stripe.accounts.create({
       type: "express",
       country: profile?.country || "FR",
       email,
+      // Pre-filled so Stripe doesn't ask an individual seller for a website
+      // or a business description they don't have.
+      business_profile: {
+        product_description: "Revente de titres numériques de collection sur ASCEND.",
+        ...(profile?.username ? { url: `${appUrl}/profile/${profile.username}` } : {}),
+      },
+      metadata: { ascend_user_id: userId },
       // Requesting transfers alone requires Stripe's manual approval (an
       // anti-money-laundering safeguard against "receive-only" accounts).
       // card_payments is never actually used — all charges happen on the
@@ -94,6 +101,18 @@ export async function refreshSellerAccountStatus(userId: string): Promise<boolea
     .update({ payouts_enabled: account.payouts_enabled, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
   return account.payouts_enabled;
+}
+
+/**
+ * One-time link to the seller's Stripe Express space (balance, payouts,
+ * bank account). Links expire within minutes, so one is made per click.
+ */
+export async function createSellerDashboardLink(userId: string): Promise<string> {
+  const admin = createAdminClient();
+  const { data } = await admin.from("seller_accounts").select("stripe_account_id").eq("user_id", userId).maybeSingle();
+  if (!data) throw new Error("Tu n'as pas encore de compte vendeur.");
+  const link = await getStripe().accounts.createLoginLink(data.stripe_account_id);
+  return link.url;
 }
 
 export interface TradeableOwnedTitle {
@@ -217,7 +236,7 @@ export async function listRecentSales(limit = 8): Promise<MarketplaceListing[]> 
 // migration) — every mutation validates ownership/eligibility in code
 // first, since RLS can't do it for us here.
 export async function createListing(sellerId: string, userTitleId: string, priceCents: number): Promise<void> {
-  if (priceCents < 100) throw new Error("Le prix minimum est de 1€.");
+  if (priceCents < MIN_LISTING_PRICE_CENTS) throw new Error(`Le prix minimum est de ${MIN_LISTING_PRICE_CENTS / 100} €.`);
 
   const admin = createAdminClient();
   const { data: userTitle } = await admin
