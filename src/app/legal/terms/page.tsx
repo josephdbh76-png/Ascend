@@ -97,11 +97,14 @@ export default function TermsPage() {
 
       <h2 className={h2}>6. Marché entre membres</h2>
       <p>
-        Les titres revendables peuvent être mis en vente par leur propriétaire au prix qu&apos;il fixe. Le
-        paiement est traité par Stripe : le vendeur reçoit le prix de vente diminué de la commission
-        d&apos;ASCEND (10 % jusqu&apos;à 50 €, puis dégressive jusqu&apos;à 5 % à partir de 1 000 €), le titre est
-        transféré à l&apos;acheteur dès le paiement confirmé et le vendeur le perd. Pour vendre, le membre
-        doit configurer un compte vendeur Stripe et faire vérifier son identité par Stripe. Si
+        Les titres revendables peuvent être mis en vente par leur propriétaire au prix qu&apos;il fixe, à
+        partir de 10 €. Le paiement est traité par Stripe : le vendeur reçoit le prix de vente diminué de la
+        commission d&apos;ASCEND (10 % jusqu&apos;à 50 €, avec un minimum de 2,50 €, puis dégressive jusqu&apos;à 5 %
+        à partir de 1 000 €), le titre est transféré à l&apos;acheteur dès le paiement confirmé et le vendeur le
+        perd. Les sommes dues au vendeur lui sont versées sur son compte bancaire une fois par mois, le 5,
+        dès que Stripe a validé le paiement (quelques jours après la vente) ; son solde et ses versements
+        sont affichés dans l&apos;onglet Marché. Pour vendre, le membre doit configurer un compte vendeur
+        Stripe et faire vérifier son identité par Stripe. Si
         l&apos;annonce est vendue ou retirée pendant ton paiement, tu es remboursé intégralement et
         automatiquement.
       </p>

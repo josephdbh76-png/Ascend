@@ -13,6 +13,7 @@ import {
 } from "@/services/marketplace.service";
 import { TitlesTabs } from "./TitlesTabs";
 import { PurchaseStatusToast } from "./PurchaseStatusToast";
+import { SellerPayoutsPanel, SellerPayoutsSkeleton } from "./SellerPayoutsPanel";
 
 export const metadata: Metadata = { title: "Titres" };
 
@@ -59,6 +60,14 @@ export default async function TitlesPage() {
         myListings={myListings}
         activeListings={activeListings}
         recentSales={recentSales}
+        payoutsPanel={
+          // Streamed: reading the balance from Stripe must not hold up the page.
+          sellerStatus.payoutsEnabled ? (
+            <Suspense fallback={<SellerPayoutsSkeleton />}>
+              <SellerPayoutsPanel userId={user.id} />
+            </Suspense>
+          ) : null
+        }
       />
     </div>
   );

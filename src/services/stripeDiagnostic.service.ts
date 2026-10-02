@@ -4,6 +4,7 @@ import { getStripe, isStripeTestKey } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAppUrl } from "@/lib/utils";
 import { LEGAL } from "@/lib/legal";
+import { SELLER_PAYOUT_DAY, isSellerPayoutSchedule } from "@/lib/sellerPayouts";
 
 // Read-only health check of the Stripe setup, run from the admin with the
 // production keys: account, prices, webhook, customer portal, sellers.
@@ -226,12 +227,19 @@ export async function runStripeDiagnostic(): Promise<DiagnosticCheck[]> {
       const dashboard = a.controller?.stripe_dashboard?.type ?? a.type ?? "?";
       const due = [...(a.requirements?.currently_due ?? []), ...(a.requirements?.past_due ?? [])];
       const who = seller ? `vendeur @${(seller.profiles as unknown as { username: string } | null)?.username ?? "?"}` : "pas un vendeur ASCEND (compte relié pour la vérification de revenus, ou ancien test)";
-      const status: CheckStatus = seller ? (a.payouts_enabled ? "ok" : "warn") : "info";
+      const monthly = isSellerPayoutSchedule(a.settings?.payouts?.schedule);
+      const status: CheckStatus = seller ? (a.payouts_enabled && monthly ? "ok" : "warn") : "info";
+      const schedule = a.settings?.payouts?.schedule;
+      const rhythm = !seller
+        ? ""
+        : monthly
+          ? ` · versé le ${SELLER_PAYOUT_DAY} de chaque mois`
+          : ` · versements ${schedule?.interval === "daily" ? "quotidiens" : schedule?.interval ?? "inconnus"} : passe en mensuel (le ${SELLER_PAYOUT_DAY}) dès que le vendeur ouvre l'onglet Marché`;
       add(
         "Comptes connectés",
         `${a.business_profile?.name || a.email || a.id}`,
         status,
-        `${a.id} · ${who} · accès Stripe : ${dashboard === "express" ? "Express" : dashboard === "full" || dashboard === "standard" ? "complet" : dashboard} · paiements ${a.charges_enabled ? "oui" : "non"}, versements ${a.payouts_enabled ? "oui" : "non"}${due.length ? ` · à fournir : ${due.slice(0, 4).join(", ")}${due.length > 4 ? "…" : ""}` : ""}${seller && seller.payouts_enabled !== a.payouts_enabled ? " · ASCEND n'est pas à jour (se corrige à la prochaine visite du vendeur)" : ""}`,
+        `${a.id} · ${who} · accès Stripe : ${dashboard === "express" ? "Express" : dashboard === "full" || dashboard === "standard" ? "complet" : dashboard} · paiements ${a.charges_enabled ? "oui" : "non"}, versements ${a.payouts_enabled ? "oui" : "non"}${due.length ? ` · à fournir : ${due.slice(0, 4).join(", ")}${due.length > 4 ? "…" : ""}` : ""}${rhythm}${seller && seller.payouts_enabled !== a.payouts_enabled ? " · ASCEND n'est pas à jour (se corrige à la prochaine visite du vendeur)" : ""}`,
       );
     }
     for (const [id, s] of known) {

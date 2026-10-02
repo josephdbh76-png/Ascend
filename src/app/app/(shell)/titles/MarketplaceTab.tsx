@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { ShoppingBag, Tag, TrendingUp, X, Clock, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
@@ -18,6 +18,7 @@ import {
   MIN_COMMISSION_CENTS,
   MIN_LISTING_PRICE_CENTS,
 } from "@/lib/marketplaceCommission";
+import { SELLER_PAYOUT_DAY, exactEuros } from "@/lib/sellerPayouts";
 
 function formatPercentRate(rate: number): string {
   return `${(rate * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`;
@@ -34,9 +35,6 @@ function TitleBadge({ icon, rarity }: { icon: string; rarity: keyof typeof TITLE
 }
 
 
-/** To the cent: what a seller gets must not be rounded. */
-const exactEuros = (cents: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(cents / 100);
-
 export function MarketplaceTab({
   sellerStatus,
   tradeableTitles,
@@ -44,9 +42,12 @@ export function MarketplaceTab({
   activeListings,
   recentSales,
   paymentsClosed = false,
+  payoutsPanel,
 }: {
   /** Beta: nothing can be bought or sold through ASCEND. */
   paymentsClosed?: boolean;
+  /** Active sellers: balance and payouts (server-rendered). */
+  payoutsPanel?: ReactNode;
   sellerStatus: SellerAccountStatus;
   tradeableTitles: TradeableOwnedTitle[];
   myListings: MarketplaceListing[];
@@ -116,7 +117,7 @@ export function MarketplaceTab({
           <p className="text-sm text-text-secondary">
             {sellerStatus.connected
               ? "Configuration de ton compte de paiement en attente. Termine-la pour pouvoir vendre."
-              : "Pour vendre tes titres, configure ton compte vendeur Stripe (vérification d'identité, une seule fois). Les paiements arrivent ensuite directement sur ton compte bancaire."}
+              : `Pour vendre tes titres, configure ton compte vendeur Stripe (vérification d'identité, une seule fois). Tes ventes te sont ensuite versées sur ton compte bancaire, une fois par mois, le ${SELLER_PAYOUT_DAY}.`}
           </p>
           <Button href="/api/marketplace/connect" size="sm" className="shrink-0">
             {sellerStatus.connected ? "Terminer la configuration" : "Configurer mon compte vendeur"}
@@ -124,14 +125,7 @@ export function MarketplaceTab({
         </div>
       )}
 
-      {!paymentsClosed && sellerStatus.payoutsEnabled && (
-        <div className="flex flex-col items-start gap-2 rounded-md border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-text-secondary">Compte vendeur actif : tes ventes sont versées sur ton compte bancaire par Stripe.</p>
-          <Button href="/api/marketplace/dashboard" variant="secondary" size="sm" className="shrink-0">
-            Mes versements
-          </Button>
-        </div>
-      )}
+      {sellerStatus.payoutsEnabled && payoutsPanel}
 
       {recentSales.length > 0 && (
         <section className="flex flex-col gap-2">
@@ -280,6 +274,9 @@ export function MarketplaceTab({
               </span>
             </div>
           )}
+          <p className="text-xs text-text-muted">
+            Versé sur ton compte bancaire le {SELLER_PAYOUT_DAY} du mois, une fois le paiement validé par Stripe (quelques jours après la vente).
+          </p>
           <Button type="submit" disabled={pending || priceCents < MIN_LISTING_PRICE_CENTS} className="self-start">
             Publier l&apos;annonce
           </Button>

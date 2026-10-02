@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Tabs } from "@/components/ui/Tabs";
 import { TitleCard } from "@/components/titles/TitleCard";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -28,7 +28,10 @@ export function TitlesTabs({
   recentSales,
   username,
   paymentsClosed = false,
+  payoutsPanel,
 }: {
+  /** Active sellers: their balance and payouts, rendered on the server. */
+  payoutsPanel?: ReactNode;
   username: string;
   /** Beta: paid titles and the Marché are closed. */
   paymentsClosed?: boolean;
@@ -76,6 +79,7 @@ export function TitlesTabs({
       {tab === "market" ? (
         <MarketplaceTab
           paymentsClosed={paymentsClosed}
+          payoutsPanel={payoutsPanel}
           sellerStatus={sellerStatus}
           tradeableTitles={tradeableTitles}
           myListings={myListings}

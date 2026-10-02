@@ -8,6 +8,14 @@ import { getAppUrl } from "@/lib/utils";
 import type { TitleRarity } from "@/types/database.types";
 
 import { commissionCentsForPrice, MIN_LISTING_PRICE_CENTS } from "@/lib/marketplaceCommission";
+import {
+  SELLER_PAYOUT_DAY,
+  exactEuros,
+  followingSellerPayoutDate,
+  isSellerPayoutSchedule,
+  nextSellerPayoutDate,
+  type PayoutDate,
+} from "@/lib/sellerPayouts";
 
 export interface SellerAccountStatus {
   connected: boolean;
@@ -71,6 +79,7 @@ export async function startSellerOnboarding(userId: string, email: string): Prom
     });
     accountId = account.id;
     await admin.from("seller_accounts").insert({ user_id: userId, stripe_account_id: accountId });
+    await ensureSellerPayoutSchedule(account);
   }
 
   const link = await stripe.accountLinks.create({
@@ -100,7 +109,91 @@ export async function refreshSellerAccountStatus(userId: string): Promise<boolea
     .from("seller_accounts")
     .update({ payouts_enabled: account.payouts_enabled, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
+  await ensureSellerPayoutSchedule(account);
   return account.payouts_enabled;
+}
+
+/**
+ * Puts a seller account on the monthly payout (see lib/sellerPayouts) —
+ * at creation, and again for accounts made before it existed. Best effort:
+ * Stripe refusing it must never block onboarding or the Marché page.
+ */
+async function ensureSellerPayoutSchedule(account: Stripe.Account): Promise<void> {
+  if (isSellerPayoutSchedule(account.settings?.payouts?.schedule)) return;
+  try {
+    await getStripe().accounts.update(account.id, {
+      settings: { payouts: { schedule: { interval: "monthly", monthly_anchor: SELLER_PAYOUT_DAY } } },
+    });
+  } catch (err) {
+    console.error(`[marketplace] monthly payout schedule for ${account.id}:`, err);
+  }
+}
+
+export interface SellerPayout {
+  id: string;
+  amountCents: number;
+  /** ISO date the money reaches (or reached) the bank. */
+  arrivalDate: string;
+  status: string;
+}
+
+export interface SellerPayoutSummary {
+  /** Validated by Stripe: leaves on the next payout day. */
+  availableCents: number;
+  /** Still being validated by Stripe (a few days after each sale). */
+  pendingCents: number;
+  nextPayoutDate: PayoutDate;
+  /** Available now plus what Stripe validates before the next payout day. */
+  nextPayoutCents: number;
+  /** Pending money validated only after that day: paid the month after. */
+  laterCents: number;
+  laterPayoutDate: PayoutDate;
+  recentPayouts: SellerPayout[];
+}
+
+/** The seller's balance on their Stripe account and their latest payouts. */
+export async function getSellerPayoutSummary(userId: string): Promise<SellerPayoutSummary | null> {
+  const admin = createAdminClient();
+  const { data } = await admin.from("seller_accounts").select("stripe_account_id").eq("user_id", userId).maybeSingle();
+  if (!data) return null;
+
+  const stripe = getStripe();
+  const onSeller = { stripeAccount: data.stripe_account_id };
+  const [account, balance, transactions, payouts] = await Promise.all([
+    stripe.accounts.retrieve(data.stripe_account_id),
+    stripe.balance.retrieve({}, onSeller),
+    stripe.balanceTransactions.list({ limit: 100 }, onSeller),
+    stripe.payouts.list({ limit: 6 }, onSeller),
+  ]);
+  await ensureSellerPayoutSchedule(account);
+
+  const euros = (amounts: { amount: number; currency: string }[]) =>
+    amounts.filter((a) => a.currency === "eur").reduce((sum, a) => sum + a.amount, 0);
+  const availableCents = euros(balance.available);
+  const pendingCents = euros(balance.pending);
+
+  // Funds Stripe releases by the start of the payout day go out that day.
+  const nextPayoutDate = nextSellerPayoutDate();
+  const cutoff = Date.UTC(nextPayoutDate.year, nextPayoutDate.month - 1, nextPayoutDate.day) / 1000;
+  const releasedInTime = transactions.data
+    .filter((t) => t.status === "pending" && t.currency === "eur" && t.available_on <= cutoff)
+    .reduce((sum, t) => sum + t.net, 0);
+  const nextPayoutCents = Math.max(0, availableCents + releasedInTime);
+
+  return {
+    availableCents,
+    pendingCents,
+    nextPayoutDate,
+    nextPayoutCents,
+    laterCents: Math.max(0, pendingCents - releasedInTime),
+    laterPayoutDate: followingSellerPayoutDate(nextPayoutDate),
+    recentPayouts: payouts.data.map((p) => ({
+      id: p.id,
+      amountCents: p.amount,
+      arrivalDate: new Date(p.arrival_date * 1000).toISOString(),
+      status: p.status,
+    })),
+  };
 }
 
 /**
@@ -395,7 +488,7 @@ export async function finalizeListingSale(
     userId: listing.seller_id,
     type: "achievement_unlocked",
     title: "Titre vendu",
-    body: `Ton titre « ${title?.name ?? listing.title_id} » a été vendu. Le paiement arrive sur ton compte vendeur.`,
+    body: `Ton titre « ${title?.name ?? listing.title_id} » a été vendu. Tu recevras ${exactEuros(listing.price_cents - commissionCents)}, versés sur ton compte bancaire le ${SELLER_PAYOUT_DAY} du mois une fois le paiement validé par Stripe.`,
     metadata: { title_id: listing.title_id },
   });
 
