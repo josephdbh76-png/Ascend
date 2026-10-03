@@ -30,8 +30,10 @@ export function AppMobileHeader({
   isAdmin,
   unreadMessageCount = 0,
   beta = false,
+  showCommunity = false,
 }: {
   beta?: boolean;
+  showCommunity?: boolean;
   notifications: NotificationItem[];
   unreadCount: number;
   isAdmin?: boolean;
@@ -39,9 +41,8 @@ export function AppMobileHeader({
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const menuLinks = isAdmin
-    ? [...MENU_LINKS, { href: "/app/admin", label: "Administration", icon: ShieldCheck }]
-    : MENU_LINKS;
+  const visible = showCommunity ? MENU_LINKS : MENU_LINKS.filter((item) => item.href !== "/app/community");
+  const menuLinks = isAdmin ? [...visible, { href: "/app/admin", label: "Administration", icon: ShieldCheck }] : visible;
 
   async function handleLogout() {
     const supabase = createClient();

@@ -67,7 +67,7 @@ import {
 } from "@/services/training.service";
 import type { TrainingInput } from "@/lib/validations";
 import { setBetaMode } from "@/services/platform.service";
-import { setCommunityInviteUrl, markWhatsappMemberAdded, deleteWhatsappMember } from "@/services/community.service";
+import { setCommunityEnabled, setCommunityInviteUrl, markWhatsappMemberAdded, deleteWhatsappMember } from "@/services/community.service";
 
 const TIERS: SubscriptionTier[] = ["free", "pro", "elite"];
 
@@ -675,6 +675,18 @@ export async function setCommunityInviteUrlAction(url: string): Promise<ActionRe
     data: { user },
   } = await supabase.auth.getUser();
   return adminRun(() => setCommunityInviteUrl(url, user!.id), ["/app/community"]);
+}
+
+export async function setCommunityEnabledAction(enabled: boolean): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const result = await adminRun(() => setCommunityEnabled(enabled, user!.id));
+  // The menu entry and the Elite plan's features show on every page.
+  if (result.success) revalidatePath("/", "layout");
+  return result;
 }
 
 export async function markWhatsappMemberAddedAction(id: string): Promise<ActionResult> {

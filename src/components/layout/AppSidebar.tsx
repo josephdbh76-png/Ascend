@@ -28,8 +28,10 @@ export function AppSidebar({
   isAdmin,
   unreadMessageCount = 0,
   beta = false,
+  showCommunity = false,
 }: {
   beta?: boolean;
+  showCommunity?: boolean;
   username: string;
   avatarUrl: string | null;
   firstName: string | null;
@@ -40,7 +42,8 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const nav = isAdmin ? [...NAV, { href: "/app/admin", label: "Administration", icon: ShieldCheck }] : NAV;
+  const visible = showCommunity ? NAV : NAV.filter((item) => item.href !== "/app/community");
+  const nav = isAdmin ? [...visible, { href: "/app/admin", label: "Administration", icon: ShieldCheck }] : visible;
 
   async function handleLogout() {
     const supabase = createClient();

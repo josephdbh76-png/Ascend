@@ -83,8 +83,8 @@ export default function TermsPage() {
         régularisation, l&apos;abonnement prend fin et le compte repasse en formule Gratuite.
       </p>
       <p>
-        La formule Elite donne accès à la communauté WhatsApp Elite d&apos;ASCEND. L&apos;accès suit
-        l&apos;abonnement : un membre qui n&apos;est plus Elite en est retiré. Les règles de la communauté
+        Lorsqu&apos;elle est ouverte, la communauté WhatsApp Elite d&apos;ASCEND est réservée aux membres
+        Elite. L&apos;accès suit l&apos;abonnement : un membre qui n&apos;est plus Elite en est retiré. Les règles de la communauté
         (respect, pas de démarchage non sollicité, pas de publicité sans accord de l&apos;équipe) y sont
         affichées ; l&apos;équipe peut retirer un membre qui ne les respecte pas, sans que cela modifie son
         abonnement.

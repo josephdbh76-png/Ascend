@@ -4,6 +4,7 @@ import { PricingPlans } from "@/components/pricing/PricingPlans";
 import { createClient } from "@/lib/supabase/server";
 import { isTrialEligible } from "@/services/subscription.service";
 import { getBetaMode } from "@/services/platform.service";
+import { getCommunitySettings } from "@/services/community.service";
 
 export async function Pricing() {
   const supabase = await createClient();
@@ -11,7 +12,11 @@ export async function Pricing() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [trialEligible, beta] = await Promise.all([user ? isTrialEligible(user.id) : Promise.resolve(true), getBetaMode()]);
+  const [trialEligible, beta, community] = await Promise.all([
+    user ? isTrialEligible(user.id) : Promise.resolve(true),
+    getBetaMode(),
+    getCommunitySettings(),
+  ]);
 
   return (
     <section id="tarifs" className="relative overflow-hidden border-b border-border">
@@ -23,7 +28,13 @@ export async function Pricing() {
           </h2>
         </Reveal>
         <Reveal as="div" delay={0.1}>
-          <PricingPlans trialEligible={trialEligible} loggedIn={!!user} beta={beta.enabled} className="mt-12" />
+          <PricingPlans
+            trialEligible={trialEligible}
+            loggedIn={!!user}
+            beta={beta.enabled}
+            communityOpen={community.enabled}
+            className="mt-12"
+          />
         </Reveal>
       </div>
     </section>

@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getBetaMode } from "@/services/platform.service";
@@ -11,11 +12,36 @@ import { isWhatsappInviteUrl, normalizeWhatsappNumber } from "@/lib/whatsapp";
 
 const SETTINGS_KEY = "whatsapp_community";
 
-export async function getCommunityInviteUrl(): Promise<string | null> {
+export interface CommunitySettings {
+  /** Shown to members (menu and page). Off until the team is ready. */
+  enabled: boolean;
+  inviteUrl: string | null;
+}
+
+async function readCommunitySettings(): Promise<CommunitySettings> {
   const admin = createAdminClient();
   const { data } = await admin.from("platform_settings").select("value").eq("key", SETTINGS_KEY).maybeSingle();
-  const url = (data?.value as { inviteUrl?: unknown } | null)?.inviteUrl;
-  return typeof url === "string" && url ? url : null;
+  const value = (data?.value ?? {}) as { enabled?: unknown; inviteUrl?: unknown };
+  return {
+    enabled: value.enabled === true,
+    inviteUrl: typeof value.inviteUrl === "string" && value.inviteUrl ? value.inviteUrl : null,
+  };
+}
+
+/** Read once per request: the menu and the page both need it. */
+export const getCommunitySettings = cache(readCommunitySettings);
+
+async function saveCommunitySettings(patch: Partial<CommunitySettings>, adminUserId: string): Promise<void> {
+  const value = { ...(await readCommunitySettings()), ...patch };
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("platform_settings")
+    .upsert({ key: SETTINGS_KEY, value: { ...value }, updated_at: new Date().toISOString(), updated_by: adminUserId });
+  if (error) throw new Error(error.message);
+}
+
+export async function setCommunityEnabled(enabled: boolean, adminUserId: string): Promise<void> {
+  await saveCommunitySettings({ enabled }, adminUserId);
 }
 
 export async function setCommunityInviteUrl(url: string, adminUserId: string): Promise<void> {
@@ -23,11 +49,7 @@ export async function setCommunityInviteUrl(url: string, adminUserId: string): P
   if (inviteUrl && !isWhatsappInviteUrl(inviteUrl)) {
     throw new Error("Colle le lien d'invitation WhatsApp, il commence par https://chat.whatsapp.com/");
   }
-  const admin = createAdminClient();
-  const { error } = await admin
-    .from("platform_settings")
-    .upsert({ key: SETTINGS_KEY, value: { inviteUrl: inviteUrl || null }, updated_at: new Date().toISOString(), updated_by: adminUserId });
-  if (error) throw new Error(error.message);
+  await saveCommunitySettings({ inviteUrl: inviteUrl || null }, adminUserId);
 }
 
 export interface MyWhatsappMembership {

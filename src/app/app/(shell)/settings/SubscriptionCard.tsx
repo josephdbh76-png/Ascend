@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { PricingPlans } from "@/components/pricing/PricingPlans";
 import type { SubscriptionInfo } from "@/types";
 
-export function SubscriptionCard({ subscription }: { subscription: SubscriptionInfo }) {
+export function SubscriptionCard({ subscription, communityOpen = false }: { subscription: SubscriptionInfo; communityOpen?: boolean }) {
   const { paidTier: currentTier, beta, status, currentPeriodEnd, hasStripeCustomer, trialUsed, trialEndsAt } = subscription;
   const isTrialing = trialEndsAt != null && new Date(trialEndsAt) > new Date();
   const trialEligible = !trialUsed;
@@ -18,7 +18,7 @@ export function SubscriptionCard({ subscription }: { subscription: SubscriptionI
         </div>
       )}
 
-      <PricingPlans currentTier={currentTier} trialEligible={trialEligible} loggedIn compact beta={beta} />
+      <PricingPlans currentTier={currentTier} trialEligible={trialEligible} loggedIn compact beta={beta} communityOpen={communityOpen} />
 
       {currentTier !== "free" && (
         <div className="flex flex-col gap-2 rounded-md border border-border-strong bg-card-elevated p-4 sm:flex-row sm:items-center sm:justify-between">

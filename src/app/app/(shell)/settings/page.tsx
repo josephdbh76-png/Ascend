@@ -12,6 +12,7 @@ import {
   getRecentRevenueDeclarations,
 } from "@/services/revenue.service";
 import { getSubscription, hasProAccess, hasEliteAccess } from "@/services/subscription.service";
+import { getCommunitySettings } from "@/services/community.service";
 import { isCurrentUserAdmin } from "@/services/admin.service";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -67,6 +68,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/app/set
     trainings,
     { data: apiSourceRows },
     bankAvailability,
+    community,
   ] = await Promise.all([
     supabase.from("businesses").select("*").eq("user_id", user.id).maybeSingle(),
     supabase
@@ -113,6 +115,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/app/set
         API_CONNECTORS.map((c) => c.id),
       ),
     bankConnectionAvailability(),
+    getCommunitySettings(),
   ]);
 
   const { data: apiVerifications } = apiSourceRows?.length
@@ -226,7 +229,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/app/set
 
       <Card id="abonnement" className="scroll-mt-6 p-6" elevated>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Abonnement</h2>
-        <SubscriptionCard subscription={subscription} />
+        <SubscriptionCard subscription={subscription} communityOpen={community.enabled} />
       </Card>
 
       <Card id="profil" className="scroll-mt-6 p-6" elevated>

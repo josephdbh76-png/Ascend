@@ -42,11 +42,14 @@ export const PLANS: PlanDefinition[] = [
       "Messages illimités",
       "Réseau de fondateurs, recherche par ville",
       "Offres de formation réservées Elite",
-      "Communauté WhatsApp Elite : support direct, événements",
+      "Support dédié",
     ],
     highlighted: true,
   },
 ];
+
+/** Added to Elite's features while the WhatsApp community is open (Admin → Communauté). */
+export const ELITE_COMMUNITY_FEATURE = "Communauté WhatsApp Elite et événements";
 
 export const ELITE_TRIAL_DAYS = 14;
 

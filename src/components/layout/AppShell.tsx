@@ -4,6 +4,7 @@ import { AppDataRefresher } from "./AppDataRefresher";
 import { InstallPrompt } from "./InstallPrompt";
 import type { NotificationItem } from "./NotificationBell";
 import { getBetaMode } from "@/services/platform.service";
+import { getCommunitySettings } from "@/services/community.service";
 
 export async function AppShell({
   username,
@@ -24,7 +25,9 @@ export async function AppShell({
   unreadMessageCount?: number;
   children: React.ReactNode;
 }) {
-  const beta = await getBetaMode();
+  const [beta, community] = await Promise.all([getBetaMode(), getCommunitySettings()]);
+  // Hidden from members until the team opens it; admins keep it to prepare it.
+  const showCommunity = community.enabled || !!isAdmin;
   return (
     <div className="min-h-screen bg-bg-primary">
       <AppDataRefresher />
@@ -37,6 +40,7 @@ export async function AppShell({
         unreadCount={unreadCount}
         isAdmin={isAdmin}
         unreadMessageCount={unreadMessageCount}
+        showCommunity={showCommunity}
       />
       <AppMobileHeader
         beta={beta.enabled}
@@ -44,6 +48,7 @@ export async function AppShell({
         unreadCount={unreadCount}
         isAdmin={isAdmin}
         unreadMessageCount={unreadMessageCount}
+        showCommunity={showCommunity}
       />
 
       <main id="main-content" className="pb-20 lg:ml-60 lg:pb-0">

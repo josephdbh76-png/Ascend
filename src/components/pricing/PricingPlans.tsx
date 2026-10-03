@@ -5,7 +5,7 @@ import { Check, Sparkles, ShieldCheck, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { cn, formatCurrency } from "@/lib/utils";
-import { PLANS, ELITE_TRIAL_DAYS, annualSavingsPercent, annualMonthlyEquivalentCents } from "@/lib/pricing";
+import { PLANS, ELITE_TRIAL_DAYS, ELITE_COMMUNITY_FEATURE, annualSavingsPercent, annualMonthlyEquivalentCents } from "@/lib/pricing";
 import type { PlanDefinition } from "@/lib/pricing";
 import { BETA_COPY } from "@/lib/beta";
 
@@ -16,7 +16,10 @@ export function PricingPlans({
   className,
   compact,
   beta = false,
+  communityOpen = false,
 }: {
+  /** The WhatsApp community is open: Elite lists it. */
+  communityOpen?: boolean;
   /** Only passed in Réglages — highlights the member's current plan and disables its button. */
   currentTier?: PlanDefinition["tier"];
   /** Whether to offer the Elite trial CTA — always true for signed-out visitors (eligibility is re-checked at checkout regardless). */
@@ -125,7 +128,7 @@ export function PricingPlans({
               )}
 
               <ul className="mt-6 flex flex-1 flex-col gap-2.5">
-                {plan.features.map((f) => (
+                {(plan.tier === "elite" && communityOpen ? [...plan.features, ELITE_COMMUNITY_FEATURE] : plan.features).map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
                     <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" /> {f}
                   </li>

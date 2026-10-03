@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { CalendarDays, Lock, Megaphone, MessageCircleQuestion, Handshake } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getSubscription, hasEliteAccess } from "@/services/subscription.service";
-import { getCommunityInviteUrl, getMyWhatsappMembership } from "@/services/community.service";
+import { getCommunitySettings, getMyWhatsappMembership } from "@/services/community.service";
+import { isCurrentUserAdmin } from "@/services/admin.service";
 import { Button } from "@/components/ui/Button";
 import { CommunityJoin } from "./CommunityJoin";
 
@@ -27,15 +29,24 @@ export default async function CommunityPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const subscription = await getSubscription(user.id);
+  const [subscription, community, isAdmin] = await Promise.all([
+    getSubscription(user.id),
+    getCommunitySettings(),
+    isCurrentUserAdmin(),
+  ]);
+  if (!community.enabled && !isAdmin) redirect("/app/dashboard");
   const isElite = hasEliteAccess(subscription.tier);
   // Non-Elite members never receive the invite link, not even in the page data.
-  const [membership, inviteUrl] = isElite
-    ? await Promise.all([getMyWhatsappMembership(user.id), getCommunityInviteUrl()])
-    : [null, null];
+  const membership = isElite ? await getMyWhatsappMembership(user.id) : null;
+  const inviteUrl = isElite ? community.inviteUrl : null;
 
   return (
     <div className="flex flex-col gap-8">
+      {!community.enabled && (
+        <p className="rounded-md border border-border-strong bg-card-elevated px-4 py-3 text-xs text-text-secondary">
+          Page masquée pour les membres : seuls les admins la voient. Affiche-la dans Admin → Communauté.
+        </p>
+      )}
       <div>
         <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-text-primary">
           Communauté Elite

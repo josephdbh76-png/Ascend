@@ -2,14 +2,19 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Check, Copy, Link2, UserMinus } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, Link2, UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { formatWhatsappNumber } from "@/lib/whatsapp";
 import { timeAgo } from "@/lib/utils";
 import type { WhatsappMemberRow } from "@/services/community.service";
-import { deleteWhatsappMemberAction, markWhatsappMemberAddedAction, setCommunityInviteUrlAction } from "./actions";
+import {
+  deleteWhatsappMemberAction,
+  markWhatsappMemberAddedAction,
+  setCommunityEnabledAction,
+  setCommunityInviteUrlAction,
+} from "./actions";
 
 const REMOVE_REASONS: Record<NonNullable<WhatsappMemberRow["removeReason"]>, string> = {
   account_deleted: "a supprimé son compte",
@@ -66,7 +71,16 @@ function Row({ r, children, note }: { r: WhatsappMemberRow; children?: React.Rea
   );
 }
 
-export function WhatsappCommunityPanel({ inviteUrl, members }: { inviteUrl: string | null; members: WhatsappMemberRow[] }) {
+export function WhatsappCommunityPanel({
+  enabled,
+  inviteUrl,
+  members,
+}: {
+  enabled: boolean;
+  inviteUrl: string | null;
+  members: WhatsappMemberRow[];
+}) {
+  const [shown, setShown] = useState(enabled);
   const [url, setUrl] = useState(inviteUrl ?? "");
   const [rows, setRows] = useState(members);
   const [pending, startTransition] = useTransition();
@@ -76,6 +90,15 @@ export function WhatsappCommunityPanel({ inviteUrl, members }: { inviteUrl: stri
   const toRemove = rows.filter((r) => r.addedAt && r.removeReason);
   const inCommunity = rows.filter((r) => r.addedAt && !r.removeReason);
   const stale = rows.filter((r) => !r.addedAt && r.removeReason);
+
+  function toggle() {
+    startTransition(async () => {
+      const result = await setCommunityEnabledAction(!shown);
+      if (!result.success) return toast.show(result.error, "error");
+      setShown(!shown);
+      toast.show(!shown ? "Communauté affichée aux membres." : "Communauté masquée aux membres.", "success");
+    });
+  }
 
   function saveUrl(e: React.FormEvent) {
     e.preventDefault();
@@ -106,6 +129,24 @@ export function WhatsappCommunityPanel({ inviteUrl, members }: { inviteUrl: stri
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3 rounded-md border border-border-strong bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="flex items-center gap-2 text-sm font-medium text-text-primary">
+            <span className={shown ? "h-2 w-2 rounded-full bg-success" : "h-2 w-2 rounded-full bg-text-muted"} />
+            {shown ? "Visible par les membres" : "Masquée pour les membres"}
+          </p>
+          <p className="mt-0.5 text-xs text-text-muted">
+            {shown
+              ? "Le menu Communauté et la page sont affichés, et l'offre Elite mentionne la communauté."
+              : "Ni le menu ni la page ne s'affichent, sauf pour les admins. Rien n'est perdu : tout revient en un clic."}
+          </p>
+        </div>
+        <Button size="sm" variant={shown ? "secondary" : "primary"} onClick={toggle} disabled={pending} className="shrink-0">
+          {shown ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          {shown ? "Masquer aux membres" : "Afficher aux membres"}
+        </Button>
+      </div>
+
       <form onSubmit={saveUrl} className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div className="flex-1">
           <Field label="Lien d'invitation de la communauté" hint="WhatsApp → ta communauté → Inviter des membres → Copier le lien. Active d'abord « Approuver les nouveaux membres ».">
