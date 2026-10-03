@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, Trophy, Flag, Gem, Users, Compass, MessageCircle, Settings, LogOut, ShieldCheck, LineChart } from "lucide-react";
+import { LayoutGrid, Trophy, Flag, Gem, Users, Compass, MessageCircle, MessagesSquare, Settings, LogOut, ShieldCheck, LineChart } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell, type NotificationItem } from "./NotificationBell";
@@ -16,6 +16,7 @@ const NAV = [
   { href: "/app/network", label: "Réseau", icon: Users },
   { href: "/app/messages", label: "Messages", icon: MessageCircle },
   { href: "/app/opportunities", label: "Opportunités", icon: Compass },
+  { href: "/app/community", label: "Communauté", icon: MessagesSquare },
 ];
 
 export function AppSidebar({

@@ -67,6 +67,7 @@ import {
 } from "@/services/training.service";
 import type { TrainingInput } from "@/lib/validations";
 import { setBetaMode } from "@/services/platform.service";
+import { setCommunityInviteUrl, markWhatsappMemberAdded, deleteWhatsappMember } from "@/services/community.service";
 
 const TIERS: SubscriptionTier[] = ["free", "pro", "elite"];
 
@@ -663,4 +664,23 @@ export async function setBetaModeAction(enabled: boolean): Promise<ActionResult>
   // Every page reads the plan: refresh them all, including the static signup page.
   revalidatePath("/", "layout");
   return { success: true, data: undefined };
+}
+
+// ---------------------------------------------------------------- WhatsApp community
+
+export async function setCommunityInviteUrlAction(url: string): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return adminRun(() => setCommunityInviteUrl(url, user!.id), ["/app/community"]);
+}
+
+export async function markWhatsappMemberAddedAction(id: string): Promise<ActionResult> {
+  return adminRun(() => markWhatsappMemberAdded(id), ["/app/community"]);
+}
+
+export async function deleteWhatsappMemberAction(id: string): Promise<ActionResult> {
+  return adminRun(() => deleteWhatsappMember(id), ["/app/community"]);
 }

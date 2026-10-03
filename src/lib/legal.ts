@@ -16,5 +16,5 @@ export const LEGAL = {
     website: "https://vercel.com",
   },
   dataHost: { name: "Supabase Inc.", website: "https://supabase.com" },
-  lastUpdated: "2 octobre 2026",
+  lastUpdated: "3 octobre 2026",
 };

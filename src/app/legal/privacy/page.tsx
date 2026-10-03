@@ -38,7 +38,8 @@ export default function PrivacyPolicyPage() {
         tes plateformes de paiement, une fourchette de chiffre d&apos;affaires et ton objectif), utilisées
         uniquement en interne pour améliorer le service et jamais affichées publiquement, et tes
         préférences d&apos;email
-        (actualités/notifications, modifiables à tout moment depuis Réglages), et, si tu y consens via la
+        (actualités/notifications, modifiables à tout moment depuis Réglages), ton numéro WhatsApp si tu
+        rejoins la communauté WhatsApp Elite, et, si tu y consens via la
         bannière de cookies, des données d&apos;usage anonymisées à des fins d&apos;analyse. Nous ne
         collectons que ce qui est nécessaire au fonctionnement décrit ci-dessous : aucune donnée n&apos;est
         demandée « au cas où ».
@@ -50,7 +51,11 @@ export default function PrivacyPolicyPage() {
         d&apos;autres membres (réseau, opportunités, messagerie), t&apos;envoyer les emails liés à ton
         compte (confirmation, notifications que tu as activées) et, si tu y as consenti, des actualités
         ASCEND, traiter tes paiements (abonnement ou achat de titre) et, avec ton consentement,
-        améliorer le produit grâce à des statistiques d&apos;usage anonymisées.
+        améliorer le produit grâce à des statistiques d&apos;usage anonymisées. Ton numéro WhatsApp, que
+        tu nous donnes avec ton accord, sert uniquement à accepter ton entrée dans la communauté
+        WhatsApp Elite et à t&apos;en retirer si tu n&apos;es plus Elite : il n&apos;est jamais utilisé pour te
+        démarcher. La communauté fonctionne sur WhatsApp (Meta) : comme dans tout groupe WhatsApp, ton
+        numéro y est visible des autres membres des groupes que tu rejoins.
       </p>
 
       <h2 className="text-base font-semibold text-text-primary">Avec qui nous les partageons</h2>
@@ -73,7 +78,8 @@ export default function PrivacyPolicyPage() {
         Tes données sont conservées tant que ton compte est actif. Tu peux demander la suppression de ton
         compte et des données associées à tout moment depuis Réglages → Compte ; la suppression est
         définitive et déclenche l&apos;effacement en cascade de tes données (revenus, titres, messages,
-        candidatures).
+        candidatures). Ton numéro WhatsApp est effacé dès que l&apos;équipe t&apos;a retiré de la communauté,
+        que tu la quittes, que tu ne sois plus Elite ou que tu supprimes ton compte.
       </p>
 
       <h2 className="text-base font-semibold text-text-primary">Tes droits</h2>

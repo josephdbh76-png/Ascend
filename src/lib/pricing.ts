@@ -42,7 +42,7 @@ export const PLANS: PlanDefinition[] = [
       "Messages illimités",
       "Réseau de fondateurs, recherche par ville",
       "Offres de formation réservées Elite",
-      "Support dédié",
+      "Communauté WhatsApp Elite : support direct, événements",
     ],
     highlighted: true,
   },

@@ -43,6 +43,14 @@ export function Button({ variant = "primary", size = "md", className, children, 
         </a>
       );
     }
+    // Another site (e.g. a WhatsApp invite): a new tab, ASCEND stays open.
+    if (/^https?:\/\//.test(href)) {
+      return (
+        <a href={href} target="_blank" rel="noopener noreferrer" className={classes}>
+          {children}
+        </a>
+      );
+    }
     return (
       <Link href={href} className={classes}>
         {children}

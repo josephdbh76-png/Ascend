@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, Trophy, Flag, User, Menu, X, Gem, Users, Compass, MessageCircle, Settings, LogOut, ShieldCheck, LineChart } from "lucide-react";
+import { LayoutGrid, Trophy, Flag, User, Menu, X, Gem, Users, Compass, MessageCircle, MessagesSquare, Settings, LogOut, ShieldCheck, LineChart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell, type NotificationItem } from "./NotificationBell";
@@ -20,6 +20,7 @@ const MENU_LINKS = [
   { href: "/app/network", label: "Réseau", icon: Users },
   { href: "/app/messages", label: "Messages", icon: MessageCircle },
   { href: "/app/opportunities", label: "Opportunités", icon: Compass },
+  { href: "/app/community", label: "Communauté", icon: MessagesSquare },
   { href: "/app/settings", label: "Réglages", icon: Settings },
 ];
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Users, Flag, Gem, GraduationCap, Mail, Megaphone, CreditCard, SlidersHorizontal } from "lucide-react";
+import { BarChart3, Users, Flag, Gem, GraduationCap, Mail, Megaphone, CreditCard, SlidersHorizontal, MessagesSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
@@ -13,6 +13,7 @@ const SECTIONS = [
   { href: "/app/admin/formations", label: "Formations", icon: GraduationCap },
   { href: "/app/admin/emails", label: "E-mails", icon: Mail },
   { href: "/app/admin/marketing", label: "Marketing", icon: Megaphone },
+  { href: "/app/admin/communaute", label: "Communauté", icon: MessagesSquare },
   { href: "/app/admin/facturation", label: "Facturation", icon: CreditCard },
   { href: "/app/admin/parametres", label: "Paramètres", icon: SlidersHorizontal },
 ];

@@ -479,6 +479,23 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["platform_settings"]["Row"]>;
         Relationships: [];
       };
+      whatsapp_members: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          display_name: string;
+          phone: string;
+          requested_at: string;
+          added_at: string | null;
+          leave_requested_at: string | null;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["whatsapp_members"]["Row"], "id">> & {
+          display_name: string;
+          phone: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["whatsapp_members"]["Row"]>;
+        Relationships: [];
+      };
       trainings: {
         Row: {
           id: string;
