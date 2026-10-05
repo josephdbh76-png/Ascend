@@ -14,13 +14,15 @@ export function TitleBadge({
     <span
       title={title.name}
       className={cn(
-        "flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+        "flex max-w-full items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
         TITLE_RARITY_STYLES[title.rarity],
       )}
     >
-      <Icon className="h-2.5 w-2.5" />
-      {title.name}
-      {title.editionNumber != null && ` ${formatEdition(title.editionNumber)}`}
+      <Icon className="h-2.5 w-2.5 shrink-0" />
+      <span className="truncate">
+        {title.name}
+        {title.editionNumber != null && ` ${formatEdition(title.editionNumber)}`}
+      </span>
     </span>
   );
 }

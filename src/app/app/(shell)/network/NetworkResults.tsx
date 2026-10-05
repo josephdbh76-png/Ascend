@@ -36,9 +36,10 @@ export function NetworkResults({ results }: { results: NetworkProfileRow[] }) {
                 initials(r.firstName, r.lastName)
               )}
             </span>
-            <span className="flex min-w-0 flex-col">
-              <span className="flex items-center gap-1.5 truncate font-medium text-text-primary">
-                <span className="truncate">
+            <span className="flex min-w-0 flex-col gap-0.5">
+              {/* The title goes under the name when the card is narrow, instead of squeezing it to nothing. */}
+              <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 font-medium text-text-primary">
+                <span className="max-w-full truncate">
                   {r.firstName} {r.lastName}
                 </span>
                 {r.activeTitle && <TitleBadge title={r.activeTitle} />}

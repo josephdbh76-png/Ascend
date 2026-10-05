@@ -76,7 +76,7 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
                     {initials(row.first_name, row.last_name)}
                   </span>
                   <span className="flex flex-col">
-                    <span className="flex items-center gap-1.5 font-medium text-text-primary">
+                    <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 font-medium text-text-primary">
                       {row.first_name} {row.last_name}
                       {row.active_title && <TitleBadge title={row.active_title} />}
                       {row.is_current_user && <Badge variant="gold">Toi</Badge>}

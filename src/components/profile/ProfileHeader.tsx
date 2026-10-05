@@ -50,7 +50,8 @@ export function ProfileHeader({
           <Crown className="h-3.5 w-3.5" /> A cofondé ASCEND
         </div>
       )}
-      <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
+      {/* The buttons move under the details when the card is too narrow for both on one row. */}
+      <div className="flex flex-col items-start gap-5 sm:flex-row sm:flex-wrap sm:items-center">
         <div
           className={cn(
             "flex h-20 w-20 shrink-0 items-center justify-center rounded-full border border-border-strong text-2xl font-semibold",
@@ -66,7 +67,7 @@ export function ProfileHeader({
           )}
         </div>
 
-        <div className="flex-1">
+        <div className="min-w-0 flex-1 sm:basis-72">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-semibold text-text-primary">
               {profile.firstName} {profile.lastName}
@@ -128,7 +129,7 @@ export function ProfileHeader({
           </div>
         </div>
 
-        <div className="flex w-full shrink-0 gap-2 sm:w-auto">
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
           {isOwner && (
             <Badge variant="neutral" className="hidden sm:inline-flex">
               Ton profil
