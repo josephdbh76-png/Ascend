@@ -97,8 +97,8 @@ export function welcomeEmailContent(firstName: string | null, foundingMemberNumb
     : "";
   return {
     subject: foundingMemberNumber ? `Bienvenue sur ASCEND, membre fondateur n°${foundingMemberNumber}` : "Bienvenue sur ASCEND",
-    body: `${greeting}\n\nTon compte ASCEND est prêt.${founding}\n\nProchaine étape : connecte ta source de revenus (Stripe, PayPal, Shopify, Lemon Squeezy ou ta banque) ou déclare-les avec un justificatif. Ton rang au classement apparaît juste après.\n\nÀ très vite sur ASCEND.`,
-    ctaLabel: "Aller sur mon tableau de bord",
-    ctaPath: "/app/dashboard",
+    body: `${greeting}\n\nBienvenue sur ASCEND, le réseau des entrepreneurs aux revenus vérifiés. Ton compte est prêt.${founding}\n\n## Pour bien démarrer\n- **Vérifie tes revenus** : connecte Stripe, Shopify, PayPal, Whop, Gumroad… en lecture seule, ou envoie un justificatif. Ton rang apparaît juste après.\n- **Découvre ta ligue** : tu joues avec des entrepreneurs de ton niveau, et la saison en cours t'attend avec ses défis.\n- **Complète ton profil** : une photo et une bio, pour que les autres membres sachent qui tu es.`,
+    ctaLabel: "Vérifier mes revenus",
+    ctaPath: "/app/settings#comptes-connectes",
   };
 }

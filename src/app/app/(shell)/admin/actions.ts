@@ -35,7 +35,7 @@ import {
   type CreateBannerInput,
 } from "@/services/banner.service";
 import { setEmailTypeEnabledPlatformWide } from "@/services/notification.service";
-import type { CampaignAudience, EmailTemplateRow } from "@/lib/emailCampaignDisplay";
+import { unfilledPlaceholders, type CampaignAudience, type EmailTemplateRow } from "@/lib/emailCampaignDisplay";
 import type { ActionResult } from "@/app/(auth)/actions";
 import type { SubscriptionTier, PhysicalRewardStatus } from "@/types/database.types";
 import { deleteMemberAccount } from "@/services/account.service";
@@ -191,7 +191,8 @@ export async function sendCampaignPreviewAction(subject: string, body: string): 
   if (!userData.user?.email) return { success: false, error: "Impossible de trouver ton adresse email." };
 
   try {
-    await sendCampaignPreview(userData.user.email, subject.trim(), body.trim());
+    const { data: me } = await supabase.from("profiles").select("first_name").eq("id", userData.user.id).maybeSingle();
+    await sendCampaignPreview(userData.user.email, subject.trim(), body.trim(), me?.first_name ?? null);
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }
@@ -205,6 +206,9 @@ export async function sendCampaignAction(
 ): Promise<ActionResult<{ recipientCount: number }>> {
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   if (!subject.trim() || !body.trim()) return { success: false, error: "Sujet et message obligatoires." };
+  // A forgotten "[date]" would reach every inbox as is.
+  const unfilled = unfilledPlaceholders(`${subject}\n${body}`);
+  if (unfilled.length) return { success: false, error: `Il reste à compléter : ${unfilled.join(", ")}.` };
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { success: false, error: "Tu n'es pas connecté." };

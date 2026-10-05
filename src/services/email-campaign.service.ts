@@ -2,7 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend, resendFromAddress, resendReplyTo } from "@/lib/resend";
-import { renderEmailHtml } from "@/lib/emailRender";
+import { personalize, renderEmailHtml } from "@/lib/emailRender";
 import { getAppUrl } from "@/lib/utils";
 import type { CampaignAudience, CampaignHistoryRow, EmailTemplateRow } from "@/lib/emailCampaignDisplay";
 
@@ -41,9 +41,10 @@ async function getConsentingProfileIds(audience: CampaignAudience): Promise<
 > {
   const admin = createAdminClient();
 
-  if (audience === "all" || audience === "verified") {
+  if (audience === "all" || audience === "verified" || audience === "unverified") {
     let query = admin.from("profiles").select("id, first_name, unsubscribe_token").eq("marketing_consent", true);
     if (audience === "verified") query = query.eq("revenue_verified", true);
+    if (audience === "unverified") query = query.eq("revenue_verified", false);
     const { data, error } = await query;
     if (error) throw new Error(error.message);
     return (data ?? []).map((p) => ({ id: p.id, firstName: p.first_name, unsubscribeToken: p.unsubscribe_token }));
@@ -93,15 +94,15 @@ export async function getAudienceCount(audience: CampaignAudience): Promise<numb
 }
 
 /** Sends a preview to a single admin-chosen address — never counted as a campaign, never requires marketing_consent. */
-export async function sendCampaignPreview(toEmail: string, subject: string, body: string) {
+export async function sendCampaignPreview(toEmail: string, subject: string, body: string, firstName: string | null) {
   const resend = getResend();
   const unsubscribeUrl = `${getAppUrl()}/api/email/unsubscribe?token=preview`;
   await resend.emails.send({
     from: resendFromAddress(),
     replyTo: resendReplyTo(),
     to: toEmail,
-    subject: `[Aperçu] ${subject}`,
-    html: renderEmailHtml(body, { unsubscribeUrl }),
+    subject: `[Aperçu] ${personalize(subject, firstName)}`,
+    html: renderEmailHtml(personalize(body, firstName), { unsubscribeUrl }),
   });
 }
 
@@ -125,8 +126,8 @@ export async function sendCampaign(input: {
           from: resendFromAddress(),
           replyTo: resendReplyTo(),
           to: r.email,
-          subject: input.subject,
-          html: renderEmailHtml(input.body, {
+          subject: personalize(input.subject, r.firstName),
+          html: renderEmailHtml(personalize(input.body, r.firstName), {
             unsubscribeUrl: `${appUrl}/api/email/unsubscribe?token=${r.unsubscribeToken}`,
           }),
         }),
