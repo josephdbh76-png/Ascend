@@ -15,7 +15,16 @@ import type { SubscriptionTier } from "@/types/database.types";
 
 const TIER_LABELS: Record<SubscriptionTier, string> = { free: "Gratuit", pro: "Pro", elite: "Elite" };
 
-export function AdminUsersTable({ users, currentUserId }: { users: AdminUserRow[]; currentUserId: string }) {
+export function AdminUsersTable({
+  users,
+  currentUserId,
+  beta = false,
+}: {
+  users: AdminUserRow[];
+  currentUserId: string;
+  /** Beta: everyone has Elite whatever their real plan, which this column shows. */
+  beta?: boolean;
+}) {
   const [query, setQuery] = useState("");
   const [rows, setRows] = useState(users);
   const [pending, startTransition] = useTransition();
@@ -81,6 +90,13 @@ export function AdminUsersTable({ users, currentUserId }: { users: AdminUserRow[
         className="max-w-sm"
       />
 
+      {beta && (
+        <p className="rounded-md border border-gold/25 bg-gold/5 px-4 py-3 text-xs text-text-secondary">
+          Pendant la bêta, tous les membres ont Elite, même ceux marqués « Gratuit » ci-dessous. La colonne Formule montre la
+          formule réelle, celle que chacun gardera au lancement : choisir Elite ici l&apos;offre aussi après la bêta.
+        </p>
+      )}
+
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
@@ -131,6 +147,7 @@ export function AdminUsersTable({ users, currentUserId }: { users: AdminUserRow[
                       </option>
                     ))}
                   </select>
+                  {beta && u.tier !== "elite" && <p className="mt-1 text-[11px] text-gold">Elite offert (bêta)</p>}
                 </td>
                 <td className="px-4 py-3">
                   <button

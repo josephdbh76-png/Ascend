@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { listUsersForAdmin } from "@/services/admin.service";
+import { getBetaMode } from "@/services/platform.service";
 import { getPendingRevenueReviews } from "@/services/revenue.service";
 import { AdminSection } from "../AdminSection";
 import { AdminUsersTable } from "../AdminUsersTable";
@@ -13,7 +14,7 @@ export default async function AdminMembersPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const [users, pendingRevenueReviews] = await Promise.all([listUsersForAdmin(), getPendingRevenueReviews()]);
+  const [users, pendingRevenueReviews, beta] = await Promise.all([listUsersForAdmin(), getPendingRevenueReviews(), getBetaMode()]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -28,7 +29,7 @@ export default async function AdminMembersPage() {
         title={`Membres (${users.filter((u) => !u.isDemo).length})`}
         description="Formule, droits d'administration et suppression de compte."
       >
-        <AdminUsersTable users={users} currentUserId={user?.id ?? ""} />
+        <AdminUsersTable users={users} currentUserId={user?.id ?? ""} beta={beta.enabled} />
       </AdminSection>
     </div>
   );
