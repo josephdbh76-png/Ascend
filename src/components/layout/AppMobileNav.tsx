@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutGrid, Trophy, Flag, User, Menu, X, Gem, Users, Compass, MessageCircle, MessagesSquare, Settings, LogOut, ShieldCheck, LineChart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AscendLogotype } from "@/components/brand/AscendLogo";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell, type NotificationItem } from "./NotificationBell";
 
@@ -54,8 +55,8 @@ export function AppMobileHeader({
   return (
     <>
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-bg-primary/95 px-4 backdrop-blur lg:hidden">
-        <Link href="/app/dashboard" className="text-base font-semibold tracking-tight text-text-primary">
-          ASCEND
+        <Link href="/app/dashboard" className="flex items-center gap-2 text-text-primary">
+          <AscendLogotype className="h-[14px]" />
           {beta && (
             <span
             title="Version bêta : Elite offert, aucun paiement"
@@ -87,7 +88,7 @@ export function AppMobileHeader({
       {open && (
         <div className="fixed inset-0 z-50 bg-bg-primary lg:hidden">
           <div className="flex h-14 items-center justify-between border-b border-border px-4">
-            <span className="text-base font-semibold tracking-tight text-text-primary">ASCEND</span>
+            <AscendLogotype className="h-[14px] text-text-primary" />
             <button onClick={() => setOpen(false)} aria-label="Fermer le menu" className="rounded-md p-2 text-text-secondary">
               <X className="h-5 w-5" />
             </button>

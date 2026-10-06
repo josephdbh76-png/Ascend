@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AscendLogotype } from "@/components/brand/AscendLogo";
 import { LEGAL } from "@/lib/legal";
 import { CATEGORY_PAGES } from "@/lib/seo";
 
@@ -11,7 +12,7 @@ export function Footer() {
       <div className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-5">
           <div className="col-span-2 sm:col-span-1">
-            <span className="text-lg font-semibold tracking-tight text-text-primary">ASCEND</span>
+            <AscendLogotype className="h-[18px] text-text-primary" />
             <p className="mt-2 text-sm text-text-muted">Construis. Prouve. Progresse.</p>
           </div>
           <div>

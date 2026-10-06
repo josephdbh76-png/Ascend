@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { AscendLogotype } from "@/components/brand/AscendLogo";
 
 const LINKS = [
   { href: "/#produit", label: "Produit" },
@@ -36,8 +37,8 @@ export function PublicNav() {
       )}
     >
       <nav className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="text-base font-semibold tracking-tight text-text-primary">
-          ASCEND
+        <Link href="/" className="text-text-primary" aria-label="ASCEND, accueil">
+          <AscendLogotype className="h-[16px]" />
         </Link>
 
         <div className="hidden items-center gap-8 lg:flex">

@@ -3,6 +3,7 @@ import { createElement, type ReactElement } from "react";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ICON_NODES } from "./icons";
+import { brandLogotype } from "@/components/brand/brandImage";
 import { SHARE_FORMATS, STICKER_SIZE, type ShareFormat, type ShareStyle } from "./params";
 import type { CardRarity, ShareCardData, ShareCardMember } from "@/services/shareCard.service";
 
@@ -114,21 +115,12 @@ function icon(name: string, size: number, color: string, strokeWidth = 1.6): Rea
   );
 }
 
-function logoMark(size: number, color: string): ReactElement {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64">
-      <path d="M32 10 L50 48 H40.5 L32 30.5 L23.5 48 H14 Z" fill={color} />
-    </svg>
-  );
-}
-
+/**
+ * The ASCEND logotype, as tall as `size`-px capitals. A gold mark keeps the
+ * brand's three golds; any other colour draws the mark in that colour.
+ */
 function brand(size: number, color: string, markColor = color): ReactElement {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: size * 0.45 }}>
-      {logoMark(size * 1.25, markColor)}
-      <div style={{ display: "flex", fontSize: size, fontWeight: 600, letterSpacing: size * 0.3, color }}>ASCEND</div>
-    </div>
-  );
+  return <div style={{ display: "flex" }}>{brandLogotype(size * 0.78, color, markColor === GOLD ? undefined : markColor)}</div>;
 }
 
 function avatar(member: ShareCardMember, image: string | null, size: number, ring: string, bg: string, fg: string) {

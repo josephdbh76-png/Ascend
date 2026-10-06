@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutGrid, Trophy, Flag, Gem, Users, Compass, MessageCircle, MessagesSquare, Settings, LogOut, ShieldCheck, LineChart } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
+import { AscendLogotype } from "@/components/brand/AscendLogo";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell, type NotificationItem } from "./NotificationBell";
 
@@ -55,8 +56,8 @@ export function AppSidebar({
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-bg-secondary lg:flex">
       <div className="flex h-16 items-center justify-between px-5">
-        <Link href="/app/dashboard" className="text-base font-semibold tracking-tight text-text-primary">
-          ASCEND
+        <Link href="/app/dashboard" className="flex items-center gap-2 text-text-primary">
+          <AscendLogotype className="h-[15px]" />
           {beta && (
             <span
             title="Version bêta : Elite offert, aucun paiement"

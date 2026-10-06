@@ -181,11 +181,8 @@ export function renderEmailHtml(body: string, options: EmailRenderOptions = {}):
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.page};">
 <tr><td align="center" style="padding:32px 12px 24px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;">
-<tr><td style="background:${COLORS.header};border-radius:16px 16px 0 0;padding:20px 32px;">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-<td valign="middle"><img src="${appUrl}/email-logo.png" width="30" height="30" alt="" style="display:block;border:0;border-radius:8px;"></td>
-<td valign="middle" style="padding-left:12px;font-family:${FONT};font-size:13px;font-weight:700;letter-spacing:0.3em;color:${COLORS.headerText};">ASCEND</td>
-</tr></table>
+<tr><td style="background:${COLORS.header};border-radius:16px 16px 0 0;padding:24px 32px;">
+<img src="${appUrl}/email-logotype.png" width="140" height="16" alt="ASCEND" style="display:block;border:0;width:140px;height:16px;font-family:${FONT};font-size:13px;font-weight:700;letter-spacing:0.3em;color:${COLORS.headerText};">
 </td></tr>
 <tr><td style="height:3px;line-height:3px;font-size:0;background:${COLORS.gold};">&nbsp;</td></tr>
 <tr><td style="background:${COLORS.card};border:1px solid ${COLORS.line};border-top:0;border-radius:0 0 16px 16px;padding:36px 32px 34px;">
