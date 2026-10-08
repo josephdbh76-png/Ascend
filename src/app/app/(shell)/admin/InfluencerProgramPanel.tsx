@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Copy, Check, ChevronDown, ChevronUp, Power, Banknote } from "lucide-react";
+import { Plus, Copy, Check, ChevronDown, ChevronUp, Power, Banknote, Link2, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -12,6 +12,8 @@ import {
   setInfluencerStatusAction,
   listInfluencerCommissionsAction,
   markCommissionPaidAction,
+  linkCreatorAction,
+  setCreatorTermsAction,
 } from "./actions";
 import type { InfluencerRow, InfluencerCommissionRow } from "@/services/influencer.service";
 
@@ -22,7 +24,13 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState("10");
-  const [commissionPercent, setCommissionPercent] = useState("20");
+  const [commissionPercent, setCommissionPercent] = useState("30");
+  const [commissionMonths, setCommissionMonths] = useState("12");
+  const [linkFor, setLinkFor] = useState<InfluencerRow | null>(null);
+  const [linkUsername, setLinkUsername] = useState("");
+  const [termsFor, setTermsFor] = useState<InfluencerRow | null>(null);
+  const [termsPercent, setTermsPercent] = useState("30");
+  const [termsMonths, setTermsMonths] = useState("12");
   const [duration, setDuration] = useState<"forever" | "once">("forever");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [commissions, setCommissions] = useState<InfluencerCommissionRow[]>([]);
@@ -41,6 +49,7 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
         Number(discountPercent),
         Number(commissionPercent),
         duration,
+        commissionMonths === "life" ? null : Number(commissionMonths),
       );
       if (!result.success) return toast.show(result.error, "error");
       setInfluencers((prev) => [result.data, ...prev]);
@@ -50,8 +59,40 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
       setEmail("");
       setCode("");
       setDiscountPercent("10");
-      setCommissionPercent("20");
+      setCommissionPercent("30");
+      setCommissionMonths("12");
       setDuration("forever");
+    });
+  }
+
+  function linkMember(e: React.FormEvent) {
+    e.preventDefault();
+    if (!linkFor) return;
+    const target = linkFor;
+    startTransition(async () => {
+      const result = await linkCreatorAction(target.id, linkUsername);
+      if (!result.success) return toast.show(result.error, "error");
+      const username = linkUsername.trim().toLowerCase().replace(/^@/, "");
+      setInfluencers((prev) => prev.map((i) => (i.id === target.id ? { ...i, linkedUsername: username } : i)));
+      toast.show(`Relié à @${username}, passé en Elite.`, "success");
+      setLinkFor(null);
+      setLinkUsername("");
+    });
+  }
+
+  function saveTerms(e: React.FormEvent) {
+    e.preventDefault();
+    if (!termsFor) return;
+    const target = termsFor;
+    const months = termsMonths === "life" ? null : Number(termsMonths);
+    startTransition(async () => {
+      const result = await setCreatorTermsAction(target.id, Number(termsPercent), months);
+      if (!result.success) return toast.show(result.error, "error");
+      setInfluencers((prev) =>
+        prev.map((i) => (i.id === target.id ? { ...i, commissionRate: Number(termsPercent) / 100, commissionMonths: months } : i)),
+      );
+      toast.show("Conditions mises à jour.", "success");
+      setTermsFor(null);
     });
   }
 
@@ -110,8 +151,8 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <p className="text-xs text-text-secondary">
-          Réduction, commission et durée sont réglables par influenceur — la commission se calcule sur le
-          premier paiement, une fois, quelle que soit la durée de la réduction.
+          Chaque créateur a un lien (/c/CODE) et un code promo. La commission est prise sur chaque paiement de ses
+          membres pendant la durée choisie. Relie-le à son compte ASCEND : il voit son espace créateur et passe Elite.
         </p>
         <Button size="sm" onClick={() => setModalOpen(true)} className="shrink-0">
           <Plus className="h-3.5 w-3.5" /> Nouveau code
@@ -146,9 +187,17 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
                     </button>
                     <span className="text-[11px] text-text-muted">
                       -{i.discountPercent}% {i.duration === "forever" ? "à vie" : "au 1er paiement"} · commission{" "}
-                      {Math.round(i.commissionRate * 100)}%
+                      {Math.round(i.commissionRate * 100)}% {i.commissionMonths == null ? "à vie" : `pendant ${i.commissionMonths} mois`}
                     </span>
                   </div>
+                  <p className="mt-1 text-[11px] text-text-muted">
+                    <span className="font-mono">/c/{i.code.toLowerCase()}</span> · {i.linkClicks} clic{i.linkClicks > 1 ? "s" : ""} · {i.signups} inscrit{i.signups > 1 ? "s" : ""} ·{" "}
+                    {i.linkedUsername ? (
+                      <span className="text-text-secondary">compte @{i.linkedUsername}</span>
+                    ) : (
+                      <span className="text-gold">pas relié à un compte</span>
+                    )}
+                  </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-4">
                   <div className="text-right text-xs">
@@ -160,6 +209,31 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label="Relier à un compte"
+                      title="Relier à un compte"
+                      onClick={() => {
+                        setLinkFor(i);
+                        setLinkUsername(i.linkedUsername ?? "");
+                      }}
+                    >
+                      <Link2 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label="Conditions de commission"
+                      title="Conditions de commission"
+                      onClick={() => {
+                        setTermsFor(i);
+                        setTermsPercent(String(Math.round(i.commissionRate * 100)));
+                        setTermsMonths(i.commissionMonths == null ? "life" : String(i.commissionMonths));
+                      }}
+                    >
+                      <Settings2 className="h-3.5 w-3.5" />
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => toggleExpand(i.id)}>
                       {expandedId === i.id ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                     </Button>
@@ -238,6 +312,13 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
               />
             </Field>
           </div>
+          <Field label="Durée de la commission" hint="Sur chaque paiement des membres qu'il amène.">
+            <Select value={commissionMonths} onChange={(e) => setCommissionMonths(e.target.value)}>
+              <option value="12">12 mois</option>
+              <option value="24">24 mois</option>
+              <option value="life">À vie</option>
+            </Select>
+          </Field>
           <Field label="Durée de la réduction">
             <Select value={duration} onChange={(e) => setDuration(e.target.value as "forever" | "once")}>
               <option value="forever">À vie (tant que l&apos;abonné reste abonné)</option>
@@ -250,6 +331,38 @@ export function InfluencerProgramPanel({ influencers: initial }: { influencers: 
             className="self-start"
           >
             Créer le code
+          </Button>
+        </form>
+      </Modal>
+
+      <Modal open={!!linkFor} onClose={() => setLinkFor(null)} title={`Relier ${linkFor?.name ?? ""} à son compte`}>
+        <form onSubmit={linkMember} className="flex flex-col gap-4">
+          <Field label="Nom d'utilisateur ASCEND" hint="Il voit son espace créateur, devient capitaine de sa ligue et passe en Elite.">
+            <Input value={linkUsername} onChange={(e) => setLinkUsername(e.target.value)} placeholder="lucas.tiktokshop" required autoFocus />
+          </Field>
+          <Button type="submit" disabled={pending || !linkUsername.trim()} className="self-start">
+            Relier le compte
+          </Button>
+        </form>
+      </Modal>
+
+      <Modal open={!!termsFor} onClose={() => setTermsFor(null)} title={`Commission de ${termsFor?.name ?? ""}`}>
+        <form onSubmit={saveTerms} className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Commission (%)">
+              <Input type="number" min={1} max={100} value={termsPercent} onChange={(e) => setTermsPercent(e.target.value)} required />
+            </Field>
+            <Field label="Pendant">
+              <Select value={termsMonths} onChange={(e) => setTermsMonths(e.target.value)}>
+                <option value="12">12 mois</option>
+                <option value="24">24 mois</option>
+                <option value="life">À vie</option>
+              </Select>
+            </Field>
+          </div>
+          <p className="text-xs text-text-muted">S&apos;applique aux prochains paiements ; les commissions déjà enregistrées ne changent pas.</p>
+          <Button type="submit" disabled={pending || !termsPercent} className="self-start">
+            Enregistrer
           </Button>
         </form>
       </Modal>

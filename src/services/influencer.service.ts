@@ -15,6 +15,12 @@ export interface InfluencerRow {
   createdAt: string;
   pendingCents: number;
   paidCents: number;
+  /** null = commission for as long as the member pays. */
+  commissionMonths: number | null;
+  linkClicks: number;
+  /** The creator's own member account (captain of their league, Elite while active). */
+  linkedUsername: string | null;
+  signups: number;
 }
 
 export interface InfluencerCommissionRow {
@@ -40,6 +46,7 @@ export async function createInfluencer(
   commissionRate: number,
   discountPercent: number,
   duration: "forever" | "once",
+  commissionMonths: number | null = 12,
 ): Promise<InfluencerRow> {
   const code = rawCode.trim().toUpperCase();
   if (!code) throw new Error("Le code ne peut pas être vide.");
@@ -79,6 +86,7 @@ export async function createInfluencer(
       commission_rate: commissionRate,
       discount_percent: discountPercent,
       duration,
+      commission_months: commissionMonths,
     })
     .select("id, name, email, code, commission_rate, discount_percent, duration, status, created_at")
     .single();
@@ -101,6 +109,10 @@ export async function createInfluencer(
     createdAt: data.created_at,
     pendingCents: 0,
     paidCents: 0,
+    commissionMonths,
+    linkClicks: 0,
+    linkedUsername: null,
+    signups: 0,
   };
 }
 
@@ -108,11 +120,19 @@ export async function listInfluencers(): Promise<InfluencerRow[]> {
   const admin = createAdminClient();
   const { data: influencers, error } = await admin
     .from("influencers")
-    .select("id, name, email, code, commission_rate, discount_percent, duration, status, created_at")
+    .select("id, name, email, code, commission_rate, discount_percent, duration, status, created_at, commission_months, link_clicks, user_id")
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
 
-  const { data: commissions } = await admin.from("influencer_commissions").select("influencer_id, amount_cents, status");
+  const userIds = (influencers ?? []).map((i) => i.user_id).filter((id): id is string => !!id);
+  const [{ data: commissions }, { data: owners }, { data: attributed }] = await Promise.all([
+    admin.from("influencer_commissions").select("influencer_id, amount_cents, status"),
+    userIds.length ? admin.from("profiles").select("id, username").in("id", userIds) : Promise.resolve({ data: [] as { id: string; username: string }[] }),
+    admin.from("profiles").select("influencer_id").not("influencer_id", "is", null),
+  ]);
+  const usernameById = new Map((owners ?? []).map((o) => [o.id, o.username]));
+  const signups = new Map<string, number>();
+  for (const p of attributed ?? []) if (p.influencer_id) signups.set(p.influencer_id, (signups.get(p.influencer_id) ?? 0) + 1);
 
   const totals = new Map<string, { pending: number; paid: number }>();
   for (const c of commissions ?? []) {
@@ -134,6 +154,10 @@ export async function listInfluencers(): Promise<InfluencerRow[]> {
     createdAt: i.created_at,
     pendingCents: totals.get(i.id)?.pending ?? 0,
     paidCents: totals.get(i.id)?.paid ?? 0,
+    commissionMonths: i.commission_months,
+    linkClicks: i.link_clicks,
+    linkedUsername: i.user_id ? (usernameById.get(i.user_id) ?? null) : null,
+    signups: signups.get(i.id) ?? 0,
   }));
 }
 
@@ -183,44 +207,79 @@ export async function markCommissionPaid(commissionId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-// Called from the Stripe webhook right after a subscription checkout
-// completes. The discount is only present on the subscription when the
-// customer actually entered a promotion code at checkout — everyone else
-// is a no-op. amount_total is what the customer paid on this first
-// invoice, already net of their 10% discount, so the commission is
-// computed on real money collected, not list price.
-/**
- * One-time commission on the referred member's first real payment. Called
- * from checkout completion and from invoice.paid: with a free trial the
- * checkout total is 0 and the first payment only happens at trial end.
- * The unique constraint on stripe_subscription_id keeps it to one per sub.
- */
-export async function recordInfluencerCommissionIfApplicable(
-  subscription: Stripe.Subscription,
-  paidAmountCents: number | null,
-  currency: string | null,
-  sourceId: string,
-): Promise<void> {
-  // Callers must retrieve the subscription with `expand: ["discounts"]` —
-  // without it, each entry is just a discount id string, not an object we
-  // can read a promotion code off of.
-  const discount = subscription.discounts.find((d): d is Stripe.Discount => typeof d !== "string");
-  const promotionCodeId =
-    typeof discount?.promotion_code === "string" ? discount.promotion_code : discount?.promotion_code?.id;
-  if (!promotionCodeId) return;
+/** A month is 28 to 31 days: three days of slack so the invoice due "12 months later" isn't counted as the 12th. */
+const WINDOW_SLACK_MS = 3 * 24 * 3600 * 1000;
 
+function promotionCodeOf(subscription: Stripe.Subscription): string | null {
+  // Callers must retrieve the subscription with `expand: ["discounts"]` —
+  // without it, each entry is just a discount id string.
+  const discount = subscription.discounts.find((d): d is Stripe.Discount => typeof d !== "string");
+  const code = discount?.promotion_code;
+  return (typeof code === "string" ? code : code?.id) ?? null;
+}
+
+/**
+ * Commission on a paid invoice of a member a creator brought in, through
+ * their link (profiles.influencer_id, set at signup) or their promo code
+ * (which then sticks to the member: the first creator keeps them). Paid on
+ * every invoice during the creator's `commission_months` months after the
+ * first commission, or for life when null. Keyed on the invoice id, so a
+ * redelivered webhook never pays twice. `amountPaidCents` is what the
+ * member actually paid, after their discount.
+ */
+export async function recordInfluencerCommissionForInvoice(
+  subscription: Stripe.Subscription,
+  invoice: { id: string; amountPaidCents: number; currency: string; createdAt: Date },
+): Promise<void> {
   const userId = subscription.metadata?.user_id;
-  if (!userId || !paidAmountCents) return;
+  if (!userId || invoice.amountPaidCents <= 0) return;
 
   const admin = createAdminClient();
+  const { data: profile } = await admin.from("profiles").select("influencer_id").eq("id", userId).maybeSingle();
+  let influencerId = profile?.influencer_id ?? null;
+
+  if (!influencerId) {
+    const promotionCodeId = promotionCodeOf(subscription);
+    if (!promotionCodeId) return;
+    const { data: byCode } = await admin
+      .from("influencers")
+      .select("id, user_id")
+      .eq("stripe_promotion_code_id", promotionCodeId)
+      .maybeSingle();
+    if (!byCode || byCode.user_id === userId) return;
+    influencerId = byCode.id;
+    await admin
+      .from("profiles")
+      .update({ influencer_id: byCode.id, influencer_joined_at: new Date().toISOString() })
+      .eq("id", userId)
+      .is("influencer_id", null);
+  }
+
   const { data: influencer } = await admin
     .from("influencers")
-    .select("id, commission_rate, status")
-    .eq("stripe_promotion_code_id", promotionCodeId)
+    .select("id, user_id, commission_rate, commission_months, status")
+    .eq("id", influencerId)
     .maybeSingle();
-  if (!influencer || influencer.status !== "active") return;
+  // A creator paying for their own account earns nothing on it.
+  if (!influencer || influencer.status !== "active" || influencer.user_id === userId) return;
 
-  const amountCents = Math.round(paidAmountCents * influencer.commission_rate);
+  if (influencer.commission_months != null) {
+    const { data: first } = await admin
+      .from("influencer_commissions")
+      .select("created_at")
+      .eq("influencer_id", influencer.id)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (first) {
+      const end = new Date(first.created_at);
+      end.setMonth(end.getMonth() + influencer.commission_months);
+      if (invoice.createdAt.getTime() >= end.getTime() - WINDOW_SLACK_MS) return;
+    }
+  }
+
+  const amountCents = Math.round(invoice.amountPaidCents * influencer.commission_rate);
   if (amountCents <= 0) return;
 
   const { error } = await admin.from("influencer_commissions").upsert(
@@ -228,11 +287,11 @@ export async function recordInfluencerCommissionIfApplicable(
       influencer_id: influencer.id,
       user_id: userId,
       stripe_subscription_id: subscription.id,
-      stripe_checkout_session_id: sourceId,
+      stripe_invoice_id: invoice.id,
       amount_cents: amountCents,
-      currency: currency ?? "eur",
+      currency: invoice.currency,
     },
-    { onConflict: "stripe_subscription_id", ignoreDuplicates: true },
+    { onConflict: "stripe_invoice_id", ignoreDuplicates: true },
   );
   if (error) throw new Error(`influencer commission failed: ${error.message}`);
 }

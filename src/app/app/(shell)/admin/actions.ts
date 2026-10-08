@@ -26,6 +26,14 @@ import {
   type InfluencerRow,
   type InfluencerCommissionRow,
 } from "@/services/influencer.service";
+import { linkCreatorToMember, setCreatorCommissionTerms } from "@/services/creator.service";
+import {
+  closeLeagueWar,
+  createCreatorLeague,
+  createLeagueWar,
+  setCreatorLeagueActive,
+} from "@/services/creatorLeague.service";
+import { LEAGUE_SLUG_PATTERN } from "@/lib/creatorLeagues";
 import {
   createBanner,
   updateBanner,
@@ -301,12 +309,13 @@ export async function createInfluencerAction(
   discountPercent: number,
   commissionPercent: number,
   duration: "forever" | "once",
+  commissionMonths: number | null = 12,
 ): Promise<ActionResult<InfluencerRow>> {
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   if (!name.trim() || !email.trim() || !code.trim()) return { success: false, error: "Nom, email et code obligatoires." };
 
   try {
-    const influencer = await createInfluencer(name, email, code, commissionPercent / 100, discountPercent, duration);
+    const influencer = await createInfluencer(name, email, code, commissionPercent / 100, discountPercent, duration, commissionMonths);
     revalidatePath("/app/admin", "layout");
     return { success: true, data: influencer };
   } catch (err) {
@@ -329,6 +338,99 @@ export async function listInfluencerCommissionsAction(influencerId: string): Pro
   if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
   try {
     return { success: true, data: await listCommissionsForInfluencer(influencerId) };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function linkCreatorAction(influencerId: string, username: string): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    await linkCreatorToMember(influencerId, username);
+    revalidatePath("/app/admin", "layout");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function setCreatorTermsAction(influencerId: string, commissionPercent: number, months: number | null): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    await setCreatorCommissionTerms(influencerId, commissionPercent / 100, months);
+    revalidatePath("/app/admin", "layout");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function createCreatorLeagueAction(input: {
+  influencerId: string;
+  name: string;
+  slug: string;
+  tagline: string;
+}): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  const name = input.name.trim();
+  const slug = input.slug.trim();
+  if (name.length < 2 || name.length > 40) return { success: false, error: "Le nom fait entre 2 et 40 caractères." };
+  if (!LEAGUE_SLUG_PATTERN.test(slug)) return { success: false, error: "Adresse invalide : lettres minuscules, chiffres et tirets." };
+  try {
+    await createCreatorLeague({ influencerId: input.influencerId, name, slug, tagline: input.tagline.trim().slice(0, 140) || null });
+    revalidatePath("/app/admin", "layout");
+    revalidatePath("/ligues");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+export async function setCreatorLeagueActiveAction(leagueId: string, isActive: boolean): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    await setCreatorLeagueActive(leagueId, isActive);
+    revalidatePath("/app/admin", "layout");
+    revalidatePath("/ligues");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+/** Dates as "YYYY-MM-DD", Paris time: the war runs from the start day at 00:00 to the end day at 23:59. */
+export async function createLeagueWarAction(leagueA: string, leagueB: string, startDay: string, endDay: string): Promise<ActionResult> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDay) || !/^\d{4}-\d{2}-\d{2}$/.test(endDay)) return { success: false, error: "Dates invalides." };
+  const startsAt = parisMidnight(startDay);
+  const endsAt = parisMidnight(endDay, 1);
+  try {
+    await createLeagueWar(leagueA, leagueB, startsAt, endsAt);
+    revalidatePath("/app/admin", "layout");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+}
+
+/** Midnight in Paris on `day` (+ `addDays`), as an ISO instant. */
+function parisMidnight(day: string, addDays = 0): string {
+  const utcNoon = new Date(`${day}T12:00:00Z`);
+  utcNoon.setUTCDate(utcNoon.getUTCDate() + addDays);
+  const date = utcNoon.toISOString().slice(0, 10);
+  const offset = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Paris", timeZoneName: "longOffset" })
+    .formatToParts(utcNoon)
+    .find((p) => p.type === "timeZoneName")
+    ?.value.replace("GMT", "") || "+01:00";
+  return new Date(`${date}T00:00:00${offset}`).toISOString();
+}
+
+export async function closeLeagueWarAction(warId: string): Promise<ActionResult<{ winner: string | null; titles: number }>> {
+  if (!(await isCurrentUserAdmin())) return { success: false, error: "Accès refusé." };
+  try {
+    const result = await closeLeagueWar(warId);
+    revalidatePath("/app/admin", "layout");
+    return { success: true, data: result };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Erreur inconnue." };
   }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, Trophy, Flag, User, Menu, X, Gem, Users, Compass, MessageCircle, MessagesSquare, Settings, LogOut, ShieldCheck, LineChart } from "lucide-react";
+import { LayoutGrid, Trophy, Flag, User, Menu, X, Gem, Users, Compass, MessageCircle, MessagesSquare, Settings, LogOut, ShieldCheck, LineChart, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AscendLogotype } from "@/components/brand/AscendLogo";
 import { createClient } from "@/lib/supabase/client";
@@ -29,6 +29,7 @@ export function AppMobileHeader({
   notifications,
   unreadCount,
   isAdmin,
+  isCreator = false,
   unreadMessageCount = 0,
   beta = false,
   showCommunity = false,
@@ -38,12 +39,14 @@ export function AppMobileHeader({
   notifications: NotificationItem[];
   unreadCount: number;
   isAdmin?: boolean;
+  isCreator?: boolean;
   unreadMessageCount?: number;
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const visible = showCommunity ? MENU_LINKS : MENU_LINKS.filter((item) => item.href !== "/app/community");
-  const menuLinks = isAdmin ? [...visible, { href: "/app/admin", label: "Administration", icon: ShieldCheck }] : visible;
+  const withCreator = isCreator ? [...visible, { href: "/app/createur", label: "Espace créateur", icon: Megaphone }] : visible;
+  const menuLinks = isAdmin ? [...withCreator, { href: "/app/admin", label: "Administration", icon: ShieldCheck }] : withCreator;
 
   async function handleLogout() {
     const supabase = createClient();

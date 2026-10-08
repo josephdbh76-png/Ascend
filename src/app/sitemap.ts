@@ -3,6 +3,7 @@ import { getAppUrl } from "@/lib/utils";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPublicLeaderboard } from "@/services/leaderboard.service";
 import { CATEGORY_PAGES } from "@/lib/seo";
+import { listCreatorLeagues } from "@/services/creatorLeague.service";
 
 // New verified members and newly populated categories show up within the hour.
 export const revalidate = 3600;
@@ -53,10 +54,11 @@ async function getCategoryUrls(appUrl: string): Promise<MetadataRoute.Sitemap> {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const appUrl = getAppUrl();
-  const [profileUrls, categoryUrls, trainingUrls] = await Promise.all([
+  const [profileUrls, categoryUrls, trainingUrls, leagues] = await Promise.all([
     getPublicProfileUrls(appUrl),
     getCategoryUrls(appUrl),
     getTrainingUrls(appUrl).catch(() => []),
+    listCreatorLeagues().catch(() => []),
   ]);
 
   return [
@@ -66,6 +68,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${appUrl}/formations`, changeFrequency: "daily", priority: 0.8 },
     ...trainingUrls,
     { url: `${appUrl}/verification`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${appUrl}/ligues`, changeFrequency: "weekly", priority: 0.6 },
+    ...leagues.map((l) => ({ url: `${appUrl}/ligues/${l.slug}`, changeFrequency: "daily" as const, priority: 0.5 })),
     { url: `${appUrl}/changelog`, changeFrequency: "weekly", priority: 0.4 },
     { url: `${appUrl}/login`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${appUrl}/signup`, changeFrequency: "monthly", priority: 0.8 },

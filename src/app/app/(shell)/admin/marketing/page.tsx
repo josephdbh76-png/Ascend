@@ -6,6 +6,8 @@ import { listSurveyResponses, summarizeSurvey, topReferrers } from "@/services/s
 import { AdminSection } from "../AdminSection";
 import { SurveyPanel } from "../SurveyPanel";
 import { InfluencerProgramPanel } from "../InfluencerProgramPanel";
+import { CreatorLeaguesPanel } from "../CreatorLeaguesPanel";
+import { listCreatorLeagues, listLeagueWars } from "@/services/creatorLeague.service";
 import { BannersPanel } from "../BannersPanel";
 import { PromoCodesPanel } from "../PromoCodesPanel";
 import { listPromoCodes, type PromoCodeRow } from "@/services/promo.service";
@@ -13,13 +15,15 @@ import { listPromoCodes, type PromoCodeRow } from "@/services/promo.service";
 export const metadata: Metadata = { title: "Marketing · Administration" };
 
 export default async function AdminMarketingPage() {
-  const [influencers, banners, surveyResponses, promo] = await Promise.all([
+  const [influencers, banners, surveyResponses, promo, leagues, wars] = await Promise.all([
     listInfluencers(),
     listAllBannersForAdmin(),
     listSurveyResponses(),
     listPromoCodes()
       .then((codes) => ({ codes, error: null as string | null }))
       .catch((err: unknown) => ({ codes: [] as PromoCodeRow[], error: err instanceof Error ? err.message : "Stripe ne répond pas." })),
+    listCreatorLeagues(true),
+    listLeagueWars(),
   ]);
   // Codes that work today, to flag a banner showing one that doesn't.
   const usableCodes = promo.error ? null : promo.codes.filter((c) => c.usable).map((c) => c.code.toUpperCase());
@@ -41,10 +45,23 @@ export default async function AdminMarketingPage() {
       </AdminSection>
 
       <AdminSection
-        title="Programme d'influenceurs"
-        description="Codes de réduction des influenceurs et commissions qu'il te reste à leur verser."
+        title="Programme créateurs"
+        description="Liens, codes de réduction et commissions des créateurs partenaires, et ce qu'il te reste à leur verser le 5 du mois."
       >
         <InfluencerProgramPanel influencers={influencers} />
+      </AdminSection>
+
+      <AdminSection
+        title="Ligues de créateurs et guerres"
+        description="Les ligues des créateurs partenaires, et les guerres mensuelles entre elles."
+      >
+        <CreatorLeaguesPanel
+          leagues={leagues}
+          wars={wars}
+          creators={influencers
+            .filter((i) => i.linkedUsername && i.status === "active")
+            .map((i) => ({ id: i.id, name: i.name, username: i.linkedUsername! }))}
+        />
       </AdminSection>
 
       <AdminSection

@@ -13,6 +13,7 @@ export async function AppShell({
   notifications,
   unreadCount,
   isAdmin,
+  isCreator,
   unreadMessageCount,
   children,
 }: {
@@ -22,6 +23,7 @@ export async function AppShell({
   notifications: NotificationItem[];
   unreadCount: number;
   isAdmin?: boolean;
+  isCreator?: boolean;
   unreadMessageCount?: number;
   children: React.ReactNode;
 }) {
@@ -39,6 +41,7 @@ export async function AppShell({
         notifications={notifications}
         unreadCount={unreadCount}
         isAdmin={isAdmin}
+        isCreator={isCreator}
         unreadMessageCount={unreadMessageCount}
         showCommunity={showCommunity}
       />
@@ -47,6 +50,7 @@ export async function AppShell({
         notifications={notifications}
         unreadCount={unreadCount}
         isAdmin={isAdmin}
+        isCreator={isCreator}
         unreadMessageCount={unreadMessageCount}
         showCommunity={showCommunity}
       />

@@ -18,6 +18,8 @@ import { toFriendlyAuthError } from "@/lib/errors";
 import { getAppUrl } from "@/lib/utils";
 import { isUsernameAvailable } from "@/services/profile.service";
 import { resolveReferrerId, recordReferral } from "@/services/referral.service";
+import { attributeSignupToCreator, CREATOR_COOKIE } from "@/services/creator.service";
+import { cookies } from "next/headers";
 import { getResend, resendFromAddress, resendReplyTo } from "@/lib/resend";
 import { renderEmailHtml } from "@/lib/emailRender";
 import { welcomeEmailContent } from "@/lib/transactionalEmails";
@@ -94,6 +96,14 @@ export async function createAccountAction(input: {
 
   if (referrerId) {
     await recordReferral(referrerId, signUpData.user.id);
+  }
+
+  // Arrived through a creator's link (/c/CODE) in the last 30 days.
+  const cookieStore = await cookies();
+  const creatorId = cookieStore.get(CREATOR_COOKIE)?.value;
+  if (creatorId && /^[0-9a-f-]{36}$/i.test(creatorId)) {
+    await attributeSignupToCreator(signUpData.user.id, creatorId);
+    cookieStore.delete(CREATOR_COOKIE);
   }
 
   return { success: true, data: { needsEmailConfirmation: !signUpData.session } };

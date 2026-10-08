@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles, UserPlus, MessageCircle, Compass, FileCheck, Gift, RotateCcw, Crown, GraduationCap, CalendarClock } from "lucide-react";
+import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles, UserPlus, MessageCircle, Compass, FileCheck, Gift, RotateCcw, Crown, GraduationCap, CalendarClock, Swords } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
 import { markAllNotificationsReadAction } from "@/app/app/(shell)/actions";
 import type { NotificationType } from "@/types/database.types";
@@ -33,6 +33,7 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   season_reward: Crown,
   training_review_completed: GraduationCap,
   revenue_reminder: CalendarClock,
+  league_war: Swords,
 };
 
 function notificationHref(n: NotificationItem): string | null {
@@ -59,6 +60,9 @@ function notificationHref(n: NotificationItem): string | null {
   }
   if (n.type === "training_review_completed") {
     return "/app/settings#formations";
+  }
+  if (n.type === "league_war" && typeof n.metadata?.slug === "string") {
+    return `/ligues/${n.metadata.slug}`;
   }
   if (n.type === "season_reward") {
     return "/app/challenges";

@@ -3,7 +3,7 @@ import type Stripe from "stripe";
 import { getStripe, tierForPriceId, intervalForPriceId } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { grantPurchasedTitle } from "@/services/title.service";
-import { recordInfluencerCommissionIfApplicable } from "@/services/influencer.service";
+import { recordInfluencerCommissionForInvoice } from "@/services/influencer.service";
 import { finalizeListingSale } from "@/services/marketplace.service";
 import { refundCheckoutSession } from "@/services/refund.service";
 
@@ -39,9 +39,16 @@ export async function POST(request: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice;
         const subId = invoice.parent?.subscription_details?.subscription;
         const subscriptionId = typeof subId === "string" ? subId : subId?.id;
-        if (subscriptionId && invoice.amount_paid > 0) {
+        // Every paid invoice, the first one included (a subscription checkout
+        // pays through its first invoice), so commissions are recorded here only.
+        if (subscriptionId && invoice.id && invoice.amount_paid > 0) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["discounts"] });
-          await recordInfluencerCommissionIfApplicable(subscription, invoice.amount_paid, invoice.currency, invoice.id ?? subscriptionId);
+          await recordInfluencerCommissionForInvoice(subscription, {
+            id: invoice.id,
+            amountPaidCents: invoice.amount_paid,
+            currency: invoice.currency,
+            createdAt: new Date(invoice.created * 1000),
+          });
         }
         break;
       }
@@ -71,9 +78,8 @@ async function handleCheckoutSession(session: Stripe.Checkout.Session) {
   const stripe = getStripe();
 
   if (session.mode === "subscription" && typeof session.subscription === "string") {
-    const subscription = await stripe.subscriptions.retrieve(session.subscription, { expand: ["discounts"] });
+    const subscription = await stripe.subscriptions.retrieve(session.subscription);
     await syncSubscriptionFromStripe(subscription);
-    await recordInfluencerCommissionIfApplicable(subscription, session.amount_total, session.currency, session.id);
     return;
   }
 

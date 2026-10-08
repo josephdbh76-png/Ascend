@@ -5,6 +5,7 @@ import { getNotifications, getUnreadCount } from "@/services/notification.servic
 import { getUnreadMessageCount } from "@/services/message.service";
 import { isCurrentUserAdmin } from "@/services/admin.service";
 import { AppShell } from "@/components/layout/AppShell";
+import { getCreatorForUser } from "@/services/creator.service";
 
 export default async function ShellLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -22,11 +23,12 @@ export default async function ShellLayout({ children }: { children: React.ReactN
   const profile = await getProfile(user.id);
   if (!profile) redirect("/login");
 
-  const [notifications, unreadCount, isAdmin, unreadMessageCount] = await Promise.all([
+  const [notifications, unreadCount, isAdmin, unreadMessageCount, creator] = await Promise.all([
     getNotifications(user.id, 8),
     getUnreadCount(user.id),
     isCurrentUserAdmin(),
     getUnreadMessageCount(user.id),
+    getCreatorForUser(user.id),
   ]);
 
   return (
@@ -45,6 +47,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
       }))}
       unreadCount={unreadCount}
       isAdmin={isAdmin}
+      isCreator={!!creator}
       unreadMessageCount={unreadMessageCount}
     >
       {children}

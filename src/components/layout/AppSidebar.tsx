@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, Trophy, Flag, Gem, Users, Compass, MessageCircle, MessagesSquare, Settings, LogOut, ShieldCheck, LineChart } from "lucide-react";
+import { LayoutGrid, Trophy, Flag, Gem, Users, Compass, MessageCircle, MessagesSquare, Settings, LogOut, ShieldCheck, LineChart, Megaphone } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { AscendLogotype } from "@/components/brand/AscendLogo";
 import { createClient } from "@/lib/supabase/client";
@@ -20,6 +20,8 @@ const NAV = [
   { href: "/app/community", label: "Communauté", icon: MessagesSquare },
 ];
 
+const CREATOR_LINK = { href: "/app/createur", label: "Espace créateur", icon: Megaphone };
+
 export function AppSidebar({
   username,
   avatarUrl,
@@ -27,6 +29,7 @@ export function AppSidebar({
   notifications,
   unreadCount,
   isAdmin,
+  isCreator = false,
   unreadMessageCount = 0,
   beta = false,
   showCommunity = false,
@@ -39,12 +42,14 @@ export function AppSidebar({
   notifications: NotificationItem[];
   unreadCount: number;
   isAdmin?: boolean;
+  isCreator?: boolean;
   unreadMessageCount?: number;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const visible = showCommunity ? NAV : NAV.filter((item) => item.href !== "/app/community");
-  const nav = isAdmin ? [...visible, { href: "/app/admin", label: "Administration", icon: ShieldCheck }] : visible;
+  const withCreator = isCreator ? [...visible, CREATOR_LINK] : visible;
+  const nav = isAdmin ? [...withCreator, { href: "/app/admin", label: "Administration", icon: ShieldCheck }] : withCreator;
 
   async function handleLogout() {
     const supabase = createClient();

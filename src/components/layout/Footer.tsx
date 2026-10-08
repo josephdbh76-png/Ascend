@@ -20,6 +20,7 @@ export function Footer() {
             <ul className="mt-3 space-y-2 text-sm text-text-secondary">
               <li><Link href="/#produit" className="hover:text-text-primary">Fonctionnalités</Link></li>
               <li><Link href="/classement" className="hover:text-text-primary">Classement public</Link></li>
+              <li><Link href="/ligues" className="hover:text-text-primary">Ligues de créateurs</Link></li>
               <li><Link href="/#tarifs" className="hover:text-text-primary">Tarifs</Link></li>
               <li><Link href="/verification" className="hover:text-text-primary">Comment on vérifie</Link></li>
             </ul>

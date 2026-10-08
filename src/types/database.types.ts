@@ -52,7 +52,8 @@ export type NotificationType =
   | "payment_refunded"
   | "season_reward"
   | "training_review_completed"
-  | "revenue_reminder";
+  | "revenue_reminder"
+  | "league_war";
 export type TrainingStatus = "pending" | "published" | "rejected" | "archived";
 export type TrainingFormat = "online" | "live" | "coaching" | "in_person";
 export type TrainingAudience = "members" | "elite";
@@ -98,6 +99,8 @@ export interface Database {
           referred_by: string | null;
           pro_credit_until: string | null;
           notification_email_prefs: Record<string, boolean>;
+          influencer_id: string | null;
+          influencer_joined_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -477,6 +480,49 @@ export interface Database {
         };
         Insert: { key: string; value: Record<string, unknown>; updated_at?: string; updated_by?: string | null };
         Update: Partial<Database["public"]["Tables"]["platform_settings"]["Row"]>;
+        Relationships: [];
+      };
+      creator_leagues: {
+        Row: {
+          id: string;
+          slug: string;
+          name: string;
+          tagline: string | null;
+          owner_id: string | null;
+          influencer_id: string | null;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["creator_leagues"]["Row"], "id">> & { slug: string; name: string };
+        Update: Partial<Database["public"]["Tables"]["creator_leagues"]["Row"]>;
+        Relationships: [];
+      };
+      creator_league_members: {
+        Row: { user_id: string; league_id: string; joined_at: string };
+        Insert: { user_id: string; league_id: string; joined_at?: string };
+        Update: Partial<Database["public"]["Tables"]["creator_league_members"]["Row"]>;
+        Relationships: [];
+      };
+      league_wars: {
+        Row: {
+          id: string;
+          league_a: string;
+          league_b: string;
+          starts_at: string;
+          ends_at: string;
+          score_a: number | null;
+          score_b: number | null;
+          winner_league_id: string | null;
+          closed_at: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["league_wars"]["Row"], "id">> & {
+          league_a: string;
+          league_b: string;
+          starts_at: string;
+          ends_at: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["league_wars"]["Row"]>;
         Relationships: [];
       };
       whatsapp_members: {
@@ -935,6 +981,10 @@ export interface Database {
           duration: "forever" | "once";
           status: "active" | "inactive";
           notes: string | null;
+          user_id: string | null;
+          /** null = commission for as long as the member pays. */
+          commission_months: number | null;
+          link_clicks: number;
           created_at: string;
         };
         Insert: Partial<Omit<Database["public"]["Tables"]["influencers"]["Row"], "id">> & {
@@ -953,7 +1003,8 @@ export interface Database {
           influencer_id: string;
           user_id: string;
           stripe_subscription_id: string;
-          stripe_checkout_session_id: string;
+          stripe_checkout_session_id: string | null;
+          stripe_invoice_id: string;
           amount_cents: number;
           currency: string;
           status: "pending" | "paid";
@@ -964,7 +1015,7 @@ export interface Database {
           influencer_id: string;
           user_id: string;
           stripe_subscription_id: string;
-          stripe_checkout_session_id: string;
+          stripe_invoice_id: string;
           amount_cents: number;
           currency: string;
         };
@@ -1086,6 +1137,26 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      creator_league_member_stats: {
+        Args: { p_league_id: string; p_since?: string | null; p_until?: string | null };
+        Returns: {
+          user_id: string;
+          username: string;
+          first_name: string | null;
+          last_name: string | null;
+          avatar_url: string | null;
+          is_demo: boolean;
+          revenue_verified: boolean;
+          revenue_visibility: RevenueVisibility;
+          growth_percent: number | null;
+          joined_at: string;
+          challenges_completed: number;
+        }[];
+      };
+      increment_creator_link_clicks: {
+        Args: { p_influencer_id: string };
+        Returns: undefined;
+      };
       get_leaderboard: {
         Args: {
           p_scope?: string;
