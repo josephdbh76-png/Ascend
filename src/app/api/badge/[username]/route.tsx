@@ -8,7 +8,7 @@ import { BADGE_HEIGHT, BADGE_WIDTH } from "@/lib/badge";
 import { league, leagueForRevenue } from "@/lib/leagues";
 
 // The badge, drawn from what a logged-out visitor can see of the profile:
-// the league only when the member shows their revenue (exactly or as a range).
+// the league only when the member shows the exact amount of their revenue.
 
 const INK = "#0a0b0d";
 const IVORY = "#f4f1ea";
@@ -24,12 +24,8 @@ async function badgeText(username: string): Promise<BadgeText | null> {
   const row = data?.[0];
   if (!row) return null;
   if (!row.revenue_verified) return { title: "Membre ASCEND", subtitle: `@${row.username}` };
-  const cents =
-    row.revenue_visibility === "exact"
-      ? row.revenue_display_cents
-      : row.revenue_visibility === "range"
-        ? row.revenue_range_min_cents
-        : null;
+  // Ranges are 10 000 € wide, too coarse to name a league: only an exact amount does.
+  const cents = row.revenue_visibility === "exact" ? row.revenue_display_cents : null;
   const subtitle = cents != null ? `ASCEND · Ligue ${league(leagueForRevenue(Number(cents))).name}` : `ASCEND · @${row.username}`;
   return { title: "Revenus vérifiés", subtitle };
 }

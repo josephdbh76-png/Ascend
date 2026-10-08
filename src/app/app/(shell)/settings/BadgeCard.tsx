@@ -40,7 +40,7 @@ export function BadgeCard({ snippets, verified }: { snippets: BadgeSnippets; ver
         {verified
           ? "Affiche tes revenus vérifiés partout où tu vends : le badge renvoie vers ton profil, où chacun peut constater que tes chiffres viennent de la source."
           : "Ton badge affiche « Membre ASCEND » tant que tes revenus ne sont pas vérifiés. Il passe en « Revenus vérifiés » dès que tu connectes une source."}{" "}
-        Ta ligue n&apos;apparaît que si tu affiches tes revenus (montant exact ou fourchette).
+        Ta ligue n&apos;apparaît que si tu affiches le montant exact de tes revenus.
       </p>
 
       <div className="flex justify-center rounded-md border border-border-strong bg-bg-secondary p-6">
