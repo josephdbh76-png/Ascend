@@ -34,6 +34,8 @@ import { SubscriptionCard } from "./SubscriptionCard";
 import { SecuritySettings } from "./SecuritySettings";
 import { CheckoutStatusHandler } from "./CheckoutStatusHandler";
 import { HashFocus } from "@/components/ui/HashFocus";
+import { BadgeCard } from "./BadgeCard";
+import { badgeHtml, badgeImageUrl, badgeMarkdown, profileUrl } from "@/lib/badge";
 
 export const metadata: Metadata = { title: "Réglages" };
 
@@ -296,6 +298,20 @@ export default async function SettingsPage({ searchParams }: PageProps<"/app/set
           initial={{
             revenueVisibility: privacy?.revenue_visibility ?? "private",
             showCountry: privacy?.show_country ?? true,
+          }}
+        />
+      </Card>
+
+      <Card id="badge" className="scroll-mt-6 p-6" elevated>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Badge « Revenus vérifiés »</h2>
+        <BadgeCard
+          verified={profile.revenueVerified}
+          snippets={{
+            imageUrl: badgeImageUrl(profile.username),
+            html: badgeHtml(profile.username),
+            markdown: badgeMarkdown(profile.username),
+            pngUrl: badgeImageUrl(profile.username, "png"),
+            link: profileUrl(profile.username),
           }}
         />
       </Card>

@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "ASCEND — Construis. Prouve. Progresse.",
     short_name: "ASCEND",
-    description: "Le réseau de performance des entrepreneurs ambitieux.",
+    description: "Le réseau des entrepreneurs aux revenus vérifiés.",
     start_url: "/",
     display: "standalone",
     background_color: "#0a0b0d",

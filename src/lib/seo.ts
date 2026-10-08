@@ -15,7 +15,7 @@ export const CATEGORY_PAGES: CategoryPage[] = [
     slug: "saas",
     audience: "fondateurs SaaS",
     intro:
-      "MRR, croissance mensuelle, clients actifs : les fondateurs SaaS classés sur leurs revenus récurrents, vérifiés directement depuis Stripe, Lemon Squeezy, PayPal ou leur banque.",
+      "MRR, croissance mensuelle, clients actifs : les fondateurs SaaS classés sur leurs revenus récurrents, vérifiés directement depuis Stripe, Lemon Squeezy, Paddle ou PayPal.",
   },
   {
     value: "ecommerce",
@@ -29,7 +29,7 @@ export const CATEGORY_PAGES: CategoryPage[] = [
     slug: "mode",
     audience: "marques de mode",
     intro:
-      "Marques de vêtements, streetwear, accessoires : les créateurs de mode classés sur leurs ventes réelles, vérifiées depuis leur boutique ou leur banque.",
+      "Marques de vêtements, streetwear, accessoires : les créateurs de mode classés sur leurs ventes réelles, vérifiées depuis leur boutique (Shopify, WooCommerce) ou leur compte Qonto.",
   },
   {
     value: "agency",
@@ -99,7 +99,7 @@ export const CATEGORY_PAGES: CategoryPage[] = [
     slug: "restauration",
     audience: "restaurateurs et marques food",
     intro:
-      "Restaurants, food trucks, marques alimentaires : le chiffre d'affaires mensuel vérifié depuis la caisse en ligne ou la banque.",
+      "Restaurants, food trucks, marques alimentaires : le chiffre d'affaires mensuel vérifié depuis la caisse en ligne ou le compte Qonto.",
   },
   {
     value: "realestate",

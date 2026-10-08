@@ -10,18 +10,19 @@ import { Features } from "@/components/landing/Features";
 import { LeaderboardPreview } from "@/components/landing/LeaderboardPreview";
 import { ProfileShowcase } from "@/components/landing/ProfileShowcase";
 import { AchievementsPreview } from "@/components/landing/AchievementsPreview";
-import { TitlesPreview } from "@/components/landing/TitlesPreview";
 import { CommunityPreview } from "@/components/landing/CommunityPreview";
 import { ChallengesPreview } from "@/components/landing/ChallengesPreview";
 import { Pricing } from "@/components/landing/Pricing";
 import { FAQ } from "@/components/landing/FAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { getFoundingSpotsLeft } from "@/services/founding.service";
+import { getCofounders } from "@/services/team.service";
+import { Founders } from "@/components/landing/Founders";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default async function LandingPage() {
-  const foundingSpotsLeft = await getFoundingSpotsLeft();
+  const [foundingSpotsLeft, cofounders] = await Promise.all([getFoundingSpotsLeft(), getCofounders()]);
 
   return (
     <div className="flex min-h-screen flex-col bg-bg-primary">
@@ -36,11 +37,11 @@ export default async function LandingPage() {
         <LeaderboardPreview />
         <ProfileShowcase />
         <AchievementsPreview />
-        <TitlesPreview />
         <CommunityPreview />
         <ChallengesPreview />
         <Pricing />
         <FAQ />
+        <Founders cofounders={cofounders} />
         <FinalCTA />
       </main>
       <Footer />

@@ -35,10 +35,10 @@ export function Hero({ foundingSpotsLeft }: { foundingSpotsLeft: number | null }
               <span className="text-gold">Progresse.</span>
             </motion.h1>
             <motion.p variants={fadeUp} className="mt-6 max-w-md text-lg text-text-secondary">
-              Le réseau de performance des entrepreneurs ambitieux.
+              Le réseau des entrepreneurs aux revenus vérifiés.
             </motion.p>
             <motion.p variants={fadeUp} className="mt-3 max-w-md text-sm text-text-muted">
-              Vérifie tes performances, découvre ta position et construis une réputation qui se mesure.
+              Prouve tes chiffres à la source, mesure-toi à des entrepreneurs de ton niveau et trouve les bons associés.
             </motion.p>
             <motion.div variants={fadeUp} className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button href="/signup" size="lg">

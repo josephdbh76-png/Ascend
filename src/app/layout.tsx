@@ -13,7 +13,7 @@ const inter = Inter({
 });
 
 const DESCRIPTION =
-  "Vérifie tes revenus via Stripe, Shopify, PayPal ou ta banque et découvre ton rang parmi les entrepreneurs. Profil public, saisons, titres et réseau de fondateurs.";
+  "Le réseau des entrepreneurs aux revenus vérifiés. Prouve tes chiffres via Stripe, Shopify, PayPal, Whop ou Gumroad, mesure-toi à des entrepreneurs de ton niveau et trouve tes associés.";
 const DEFAULT_TITLE = "ASCEND · Le classement des entrepreneurs aux revenus vérifiés";
 
 export const metadata: Metadata = {

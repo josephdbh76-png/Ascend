@@ -57,7 +57,7 @@ export default function TermsPage() {
       <h2 className={h2}>3. Vérification des revenus et classement</h2>
       <p>
         Les revenus sont vérifiés à partir des données transmises par les services que tu connectes
-        (Stripe, Shopify, PayPal, Lemon Squeezy, banque) ou à partir des justificatifs que tu fournis,
+        (Stripe, Shopify, PayPal, Lemon Squeezy, Whop, Gumroad, Paddle, Mollie, WooCommerce, Qonto) ou à partir des justificatifs que tu fournis,
         contrôlés par un administrateur. ASCEND lit ces données sans jamais initier de paiement, de
         remboursement ni de virement depuis tes comptes. Le classement reflète les données disponibles au
         moment du calcul et ne constitue ni une certification comptable ni un conseil financier.

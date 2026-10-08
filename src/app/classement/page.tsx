@@ -6,7 +6,7 @@ export const revalidate = 3600;
 
 const TITLE = "Classement des entrepreneurs aux revenus vérifiés";
 const DESCRIPTION =
-  "Le classement public des entrepreneurs francophones, établi sur des revenus vérifiés à la source (Stripe, Shopify, PayPal, banque). Global et par activité, mis à jour toutes les heures.";
+  "Le classement public des entrepreneurs francophones, établi sur des revenus vérifiés à la source (Stripe, Shopify, PayPal, Whop, Gumroad…). Global et par activité, mis à jour toutes les heures.";
 
 export const metadata: Metadata = {
   title: TITLE,

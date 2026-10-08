@@ -35,7 +35,10 @@ export function CommunityPreview() {
               <h3 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
                 <Users className="h-4 w-4 text-gold" /> Réseau
               </h3>
-              <Badge variant="gold">Pro · Elite</Badge>
+              <span className="flex items-center gap-2">
+                <span className="text-[11px] text-text-muted">Exemple</span>
+                <Badge variant="gold">Pro · Elite</Badge>
+              </span>
             </div>
             {FOUNDERS.map((f) => (
               <RevealItem
@@ -63,7 +66,10 @@ export function CommunityPreview() {
               <h3 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
                 <Compass className="h-4 w-4 text-gold" /> Opportunités
               </h3>
-              <Badge variant="gold">Pro · Elite</Badge>
+              <span className="flex items-center gap-2">
+                <span className="text-[11px] text-text-muted">Exemple</span>
+                <Badge variant="gold">Pro · Elite</Badge>
+              </span>
             </div>
             {OPPORTUNITIES.map((o) => (
               <RevealItem

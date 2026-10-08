@@ -16,7 +16,7 @@ export function PublicLeaderboardView({ rows, category }: { rows: LeaderboardRow
   const heading = category ? `Classement des ${category.audience}` : "Classement des entrepreneurs aux revenus vérifiés";
   const intro = category
     ? category.intro
-    : "Fondateurs SaaS, e-commerçants, marques, agences et créateurs, classés sur leurs revenus mensuels vérifiés à la source. Pas de captures d'écran retouchées ni de chiffres arrondis : chaque montant vient directement de Stripe, Shopify, PayPal, Lemon Squeezy ou de la banque du membre.";
+    : "Fondateurs SaaS, e-commerçants, marques, agences et créateurs, classés sur leurs revenus mensuels vérifiés à la source. Pas de captures d'écran retouchées ni de chiffres arrondis : chaque montant vient directement de Stripe, Shopify, PayPal, Whop, Gumroad, Lemon Squeezy ou du compte Qonto du membre.";
 
   const structuredData = [
     {

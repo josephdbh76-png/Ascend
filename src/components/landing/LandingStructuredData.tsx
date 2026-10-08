@@ -37,7 +37,7 @@ export function LandingStructuredData() {
     operatingSystem: "Web, iOS, Android",
     inLanguage: "fr-FR",
     description:
-      "Classement des entrepreneurs établi sur des revenus vérifiés à la source (Stripe, Shopify, PayPal, Lemon Squeezy, banque), avec profil public, saisons, titres et réseau de fondateurs.",
+      "Le réseau des entrepreneurs aux revenus vérifiés à la source (Stripe, Shopify, PayPal, Lemon Squeezy, Whop, Gumroad, Paddle, Mollie, WooCommerce, Qonto ou justificatif) : classement, ligues par niveau, saisons et réseau de fondateurs.",
     offers: PLANS.map((plan) => ({
       "@type": "Offer",
       name: plan.name.charAt(0) + plan.name.slice(1).toLowerCase(),

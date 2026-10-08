@@ -6,12 +6,12 @@ const FEATURES = [
   {
     icon: ShieldCheck,
     title: "Revenus vérifiés",
-    description: "Vérifie tes revenus via Stripe, PayPal, Shopify ou ta banque, ou déclare-les avec un justificatif. Les captures d'écran ne comptent pas.",
+    description: "Vérifie tes revenus via Stripe, Shopify, PayPal, Whop, Gumroad ou ton compte Qonto, ou déclare-les avec un justificatif. Les captures d'écran ne comptent pas.",
   },
   { icon: Trophy, title: "Classement", description: "Classements mondial, pays et catégorie, mis à jour à partir de données réelles." },
   { icon: Flag, title: "Défis", description: "De la première vente aux 10 000 € mensuels, il y a un défi pour chaque étape." },
   { icon: Award, title: "Accomplissements", description: "Des récompenses collectibles qui retracent ton parcours." },
-  { icon: Gem, title: "Titres", description: "Débloque des titres selon tes performances, ou obtiens un titre exclusif en édition limitée." },
+  { icon: Gem, title: "Ligues", description: "Tu es classé avec des entrepreneurs de ton niveau, de Bronze à Diamant. Chaque saison, ta croissance te fait monter de ligue." },
   {
     icon: Users,
     title: "Réseau d'entrepreneurs",
