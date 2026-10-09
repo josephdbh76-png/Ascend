@@ -28,6 +28,7 @@ import { activityLabel, ofName } from "@/lib/business";
 import { isShareKind, shareCardPath, type ShareTarget } from "@/lib/share/params";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { Award, Trophy, Gem, TrendingUp, ArrowRight } from "lucide-react";
+import { secondFactorPending } from "@/lib/supabase/mfa";
 
 export async function generateMetadata({
   params,
@@ -95,8 +96,7 @@ export default async function PublicProfilePage({
   } = await supabase.auth.getUser();
 
   if (user) {
-    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aal && aal.currentLevel !== aal.nextLevel) redirect("/mfa-challenge");
+    if (await secondFactorPending(supabase)) redirect("/mfa-challenge");
   }
 
   const isOwner = user?.id === profile.userId;

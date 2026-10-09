@@ -8,6 +8,7 @@ import { isCurrentUserAdmin } from "@/services/admin.service";
 import { AppShell } from "./AppShell";
 import { PublicNav } from "./PublicNav";
 import { Footer } from "./Footer";
+import { secondFactorPending } from "@/lib/supabase/mfa";
 
 /**
  * For public pages that members browse too (formations): the app shell
@@ -20,8 +21,7 @@ export async function ViewerShell({ children }: { children: ReactNode }) {
   } = await supabase.auth.getUser();
 
   if (user) {
-    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aal && aal.currentLevel !== aal.nextLevel) redirect("/mfa-challenge");
+    if (await secondFactorPending(supabase)) redirect("/mfa-challenge");
   }
 
   const profile = user ? await getProfile(user.id) : null;

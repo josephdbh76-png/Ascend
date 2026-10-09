@@ -3,6 +3,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SubscriptionTier, SubscriptionStatus } from "@/types/database.types";
+import { secondFactorPending } from "@/lib/supabase/mfa";
 
 export const isCurrentUserAdmin = cache(async (): Promise<boolean> => {
   const supabase = await createClient();
@@ -10,6 +11,8 @@ export const isCurrentUserAdmin = cache(async (): Promise<boolean> => {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return false;
+  // Admin actions can be called without opening a page: the second factor is checked here too.
+  if (await secondFactorPending(supabase)) return false;
 
   const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle();
   return profile?.is_admin ?? false;
