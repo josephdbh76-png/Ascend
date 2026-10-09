@@ -44,7 +44,7 @@ export async function getSellerAccountStatus(userId: string): Promise<SellerAcco
  * (revenue_sources.provider='stripe'), since that one only ever reads
  * charge history and was never granted transfer capabilities.
  */
-export async function startSellerOnboarding(userId: string, email: string): Promise<string> {
+export async function startSellerOnboarding(userId: string, email: string, from: "gains" | null = null): Promise<string> {
   const supabase = await createClient();
   const admin = createAdminClient();
   const appUrl = getAppUrl();
@@ -66,7 +66,7 @@ export async function startSellerOnboarding(userId: string, email: string): Prom
       // Pre-filled so Stripe doesn't ask an individual seller for a website
       // or a business description they don't have.
       business_profile: {
-        product_description: "Revente de titres numériques de collection sur ASCEND.",
+        product_description: "Revente de titres numériques de collection et gains d'invitation sur ASCEND.",
         ...(profile?.username ? { url: `${appUrl}/profile/${profile.username}` } : {}),
       },
       metadata: { ascend_user_id: userId },
@@ -84,8 +84,8 @@ export async function startSellerOnboarding(userId: string, email: string): Prom
 
   const link = await stripe.accountLinks.create({
     account: accountId,
-    refresh_url: `${appUrl}/api/marketplace/connect`,
-    return_url: `${appUrl}/api/marketplace/connect/return`,
+    refresh_url: `${appUrl}/api/marketplace/connect${from ? `?from=${from}` : ""}`,
+    return_url: `${appUrl}/api/marketplace/connect/return${from ? `?from=${from}` : ""}`,
     type: "account_onboarding",
   });
 

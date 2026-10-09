@@ -3,12 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 import { startSellerOnboarding } from "@/services/marketplace.service";
 import { getAppUrl } from "@/lib/utils";
 import { getBetaMode } from "@/services/platform.service";
+import { onboardingOrigin } from "@/lib/sellerPayouts";
 
-export async function GET() {
+export async function GET(request: Request) {
   const appUrl = getAppUrl();
+  const from = new URL(request.url).searchParams.get("from");
+  const origin = onboardingOrigin(from);
   // Beta: no sale goes through ASCEND, so there is no seller account to open.
   if ((await getBetaMode()).enabled) {
-    const closed = new URL("/app/titles", appUrl);
+    const closed = new URL(origin, appUrl);
     closed.searchParams.set("beta", "paiements");
     return NextResponse.redirect(closed);
   }
@@ -22,10 +25,10 @@ export async function GET() {
   }
 
   try {
-    const url = await startSellerOnboarding(user.id, user.email);
+    const url = await startSellerOnboarding(user.id, user.email, from === "gains" ? "gains" : null);
     return NextResponse.redirect(url);
   } catch (err) {
-    const titlesUrl = new URL("/app/titles", appUrl);
+    const titlesUrl = new URL(origin, appUrl);
     titlesUrl.searchParams.set("seller_error", err instanceof Error ? err.message : "unknown");
     return NextResponse.redirect(titlesUrl);
   }

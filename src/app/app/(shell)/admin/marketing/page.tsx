@@ -6,8 +6,10 @@ import { listSurveyResponses, summarizeSurvey, topReferrers } from "@/services/s
 import { AdminSection } from "../AdminSection";
 import { SurveyPanel } from "../SurveyPanel";
 import { InfluencerProgramPanel } from "../InfluencerProgramPanel";
-import { CreatorLeaguesPanel } from "../CreatorLeaguesPanel";
-import { listCreatorLeagues, listLeagueWars } from "@/services/creatorLeague.service";
+import { ClansAdminPanel } from "../ClansAdminPanel";
+import { listClans } from "@/services/clan.service";
+import { listAllWars } from "@/services/clanWar.service";
+import { listPayableRewards } from "@/services/invite.service";
 import { BannersPanel } from "../BannersPanel";
 import { PromoCodesPanel } from "../PromoCodesPanel";
 import { listPromoCodes, type PromoCodeRow } from "@/services/promo.service";
@@ -15,15 +17,16 @@ import { listPromoCodes, type PromoCodeRow } from "@/services/promo.service";
 export const metadata: Metadata = { title: "Marketing · Administration" };
 
 export default async function AdminMarketingPage() {
-  const [influencers, banners, surveyResponses, promo, leagues, wars] = await Promise.all([
+  const [influencers, banners, surveyResponses, promo, clans, wars, payouts] = await Promise.all([
     listInfluencers(),
     listAllBannersForAdmin(),
     listSurveyResponses(),
     listPromoCodes()
       .then((codes) => ({ codes, error: null as string | null }))
       .catch((err: unknown) => ({ codes: [] as PromoCodeRow[], error: err instanceof Error ? err.message : "Stripe ne répond pas." })),
-    listCreatorLeagues(true),
-    listLeagueWars(),
+    listClans({ includeInactive: true }),
+    listAllWars(),
+    listPayableRewards(),
   ]);
   // Codes that work today, to flag a banner showing one that doesn't.
   const usableCodes = promo.error ? null : promo.codes.filter((c) => c.usable).map((c) => c.code.toUpperCase());
@@ -51,15 +54,35 @@ export default async function AdminMarketingPage() {
         <InfluencerProgramPanel influencers={influencers} />
       </AdminSection>
 
-      <AdminSection
-        title="Ligues de créateurs et guerres"
-        description="Les ligues des créateurs partenaires, et les guerres mensuelles entre elles."
-      >
-        <CreatorLeaguesPanel
-          leagues={leagues}
-          wars={wars}
-          creators={influencers
-            .filter((i) => i.linkedUsername && i.status === "active")
+      <AdminSection title="Ligues, guerres et gains d'invitation" description="Les ligues ouvertes par les membres, leurs guerres, et les gains d'invitation à verser le 5.">
+        <ClansAdminPanel
+          clans={clans.map((c) => ({
+            id: c.id,
+            slug: c.slug,
+            name: c.name,
+            emblem: c.emblem,
+            color: c.color,
+            leader: c.leader?.username ?? null,
+            memberCount: c.memberCount,
+            verifiedCount: c.verifiedCount,
+            trophies: c.trophies,
+            isPartner: c.isPartner,
+            isActive: c.isActive,
+          }))}
+          wars={wars.map((w) => ({
+            id: w.id,
+            phase: w.phase,
+            a: w.a.clan.name,
+            b: w.b.clan.name,
+            totalA: w.a.total,
+            totalB: w.b.total,
+            startsAt: w.startsAt,
+            endsAt: w.endsAt,
+            winner: w.winner === "a" ? w.a.clan.name : w.winner === "b" ? w.b.clan.name : null,
+          }))}
+          payouts={payouts.map((p) => ({ userId: p.userId, username: p.username, availableCents: p.availableCents, holdingCents: p.holdingCents, payoutAccount: p.payoutAccount }))}
+          partners={influencers
+            .filter((i) => i.linkedUsername && i.status === "active" && !clans.some((c) => c.influencerId === i.id))
             .map((i) => ({ id: i.id, name: i.name, username: i.linkedUsername! }))}
         />
       </AdminSection>

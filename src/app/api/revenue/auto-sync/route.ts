@@ -1,18 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { syncStripeRevenue, PLATFORM_ACCOUNT_SENTINEL } from "@/services/stripe.service";
-import { syncShopifyRevenue } from "@/services/shopify.service";
-import { syncPayPalRevenue } from "@/services/paypal.service";
-import { syncLemonSqueezyRevenue } from "@/services/lemonsqueezy.service";
-import { isRevenueSyncStale, AUTO_SYNC_PROVIDERS } from "@/lib/revenueSync";
-import { isApiConnector, syncApiSource } from "@/services/apiConnector.service";
+import { syncMemberSources } from "@/services/revenueSync.service";
 
 export const maxDuration = 60;
 
 /**
  * Keeps verified revenue (and so the leaderboard) current without the member
- * clicking "resync": the dashboard calls this when a source is stale. Runs
- * with the member's own session, like a manual sync, so RLS still applies.
+ * clicking "resync": the dashboard calls this when a source is stale.
  */
 export async function POST() {
   const supabase = await createClient();
@@ -21,46 +15,6 @@ export async function POST() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
 
-  const { data: sources } = await supabase
-    .from("revenue_sources")
-    .select("id, provider, status, external_account_id, last_synced_at")
-    .eq("user_id", user.id)
-    .eq("status", "connected")
-    .in("provider", [...AUTO_SYNC_PROVIDERS]);
-
-  const { data: profile } = await supabase.from("profiles").select("is_cofounder").eq("id", user.id).maybeSingle();
-  const stale = (sources ?? []).filter(
-    (s) =>
-      isRevenueSyncStale(s.last_synced_at) &&
-      // The platform's own Stripe account is only ever read for cofounders.
-      (s.external_account_id !== PLATFORM_ACCOUNT_SENTINEL || profile?.is_cofounder),
-  );
-
-  let synced = 0;
-  for (const source of stale) {
-    try {
-      const result = isApiConnector(source.provider)
-        ? await syncApiSource(user.id, source.provider, source.id)
-        : source.provider === "stripe"
-          ? await syncStripeRevenue(
-              user.id,
-              source.id,
-              !source.external_account_id || source.external_account_id === PLATFORM_ACCOUNT_SENTINEL
-                ? null
-                : source.external_account_id,
-            )
-          : source.provider === "shopify"
-            ? source.external_account_id
-              ? await syncShopifyRevenue(user.id, source.id, source.external_account_id)
-              : { success: false as const }
-            : source.provider === "paypal"
-              ? await syncPayPalRevenue(user.id, source.id)
-              : await syncLemonSqueezyRevenue(user.id, source.id);
-      if (result.success) synced++;
-    } catch (err) {
-      console.error(`Auto-sync ${source.provider} failed for ${user.id}:`, err);
-    }
-  }
-
+  const synced = await syncMemberSources(user.id);
   return NextResponse.json({ synced });
 }

@@ -53,7 +53,13 @@ export type NotificationType =
   | "season_reward"
   | "training_review_completed"
   | "revenue_reminder"
-  | "league_war";
+  | "league_war"
+  | "league_activity";
+export type ClanAccess = "open" | "request" | "invite";
+export type ClanRole = "leader" | "coleader" | "member";
+export type ClanWarStatus = "proposed" | "declined" | "expired" | "scheduled" | "closed" | "canceled";
+export type ClanRewardKind = "invite" | "invite_bonus" | "leader_share" | "leader_bonus";
+export type ClanInviteOutcome = "rewarded" | "not_in_league" | "same_card" | "late" | "already_subscribed";
 export type TrainingStatus = "pending" | "published" | "rejected" | "archived";
 export type TrainingFormat = "online" | "live" | "coaching" | "in_person";
 export type TrainingAudience = "members" | "elite";
@@ -482,47 +488,138 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["platform_settings"]["Row"]>;
         Relationships: [];
       };
-      creator_leagues: {
+      clans: {
         Row: {
           id: string;
           slug: string;
           name: string;
           tagline: string | null;
+          emblem: string;
+          color: string;
+          access: ClanAccess;
+          max_members: number;
           owner_id: string | null;
           influencer_id: string | null;
+          trophies: number;
+          wars_won: number;
+          wars_lost: number;
+          wars_drawn: number;
           is_active: boolean;
           created_at: string;
         };
-        Insert: Partial<Omit<Database["public"]["Tables"]["creator_leagues"]["Row"], "id">> & { slug: string; name: string };
-        Update: Partial<Database["public"]["Tables"]["creator_leagues"]["Row"]>;
+        Insert: Partial<Omit<Database["public"]["Tables"]["clans"]["Row"], "id">> & { slug: string; name: string };
+        Update: Partial<Database["public"]["Tables"]["clans"]["Row"]>;
         Relationships: [];
       };
-      creator_league_members: {
-        Row: { user_id: string; league_id: string; joined_at: string };
-        Insert: { user_id: string; league_id: string; joined_at?: string };
-        Update: Partial<Database["public"]["Tables"]["creator_league_members"]["Row"]>;
+      clan_members: {
+        Row: { user_id: string; clan_id: string; role: ClanRole; invited_by: string | null; joined_at: string };
+        Insert: { user_id: string; clan_id: string; role?: ClanRole; invited_by?: string | null; joined_at?: string };
+        Update: Partial<Database["public"]["Tables"]["clan_members"]["Row"]>;
         Relationships: [];
       };
-      league_wars: {
+      clan_join_requests: {
+        Row: { clan_id: string; user_id: string; created_at: string };
+        Insert: { clan_id: string; user_id: string; created_at?: string };
+        Update: Partial<Database["public"]["Tables"]["clan_join_requests"]["Row"]>;
+        Relationships: [];
+      };
+      clan_wars: {
         Row: {
           id: string;
-          league_a: string;
-          league_b: string;
-          starts_at: string;
-          ends_at: string;
+          clan_a: string;
+          clan_b: string;
+          status: ClanWarStatus;
+          declared_by: string | null;
+          respond_by: string;
+          accepted_at: string | null;
+          declined_at: string | null;
+          starts_at: string | null;
+          ends_at: string | null;
+          started_at: string | null;
           score_a: number | null;
           score_b: number | null;
-          winner_league_id: string | null;
+          winner_clan_id: string | null;
+          trophies_a: number | null;
+          trophies_b: number | null;
           closed_at: string | null;
           created_at: string;
         };
-        Insert: Partial<Omit<Database["public"]["Tables"]["league_wars"]["Row"], "id">> & {
-          league_a: string;
-          league_b: string;
-          starts_at: string;
-          ends_at: string;
+        Insert: Partial<Omit<Database["public"]["Tables"]["clan_wars"]["Row"], "id">> & {
+          clan_a: string;
+          clan_b: string;
+          respond_by: string;
         };
-        Update: Partial<Database["public"]["Tables"]["league_wars"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["clan_wars"]["Row"]>;
+        Relationships: [];
+      };
+      clan_war_fighters: {
+        Row: {
+          war_id: string;
+          user_id: string;
+          clan_id: string;
+          verified_at_start: boolean;
+          revenue_eligible: boolean;
+          baseline_weekly_cents: number;
+          start_period: string | null;
+          start_mtd_cents: number;
+          points: number | null;
+          result: "won" | "lost" | "draw" | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["clan_war_fighters"]["Row"]> & { war_id: string; user_id: string; clan_id: string };
+        Update: Partial<Database["public"]["Tables"]["clan_war_fighters"]["Row"]>;
+        Relationships: [];
+      };
+      clan_war_days: {
+        Row: { war_id: string; day: string; score_a: number; score_b: number };
+        Insert: { war_id: string; day: string; score_a: number; score_b: number };
+        Update: Partial<Database["public"]["Tables"]["clan_war_days"]["Row"]>;
+        Relationships: [];
+      };
+      clan_invites: {
+        Row: {
+          invitee_id: string;
+          inviter_id: string;
+          clan_id: string | null;
+          source: "signup" | "join";
+          had_paid_subscription: boolean;
+          eligible_until: string;
+          outcome: ClanInviteOutcome | null;
+          resolved_at: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["clan_invites"]["Row"]> & {
+          invitee_id: string;
+          inviter_id: string;
+          source: "signup" | "join";
+          eligible_until: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["clan_invites"]["Row"]>;
+        Relationships: [];
+      };
+      clan_rewards: {
+        Row: {
+          id: string;
+          beneficiary_id: string;
+          kind: ClanRewardKind;
+          amount_cents: number;
+          invitee_id: string | null;
+          clan_id: string | null;
+          stripe_invoice_id: string | null;
+          dedupe_key: string;
+          status: "pending" | "paid" | "canceled";
+          available_at: string;
+          paid_at: string | null;
+          stripe_transfer_id: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Omit<Database["public"]["Tables"]["clan_rewards"]["Row"], "id">> & {
+          beneficiary_id: string;
+          kind: ClanRewardKind;
+          amount_cents: number;
+          dedupe_key: string;
+          available_at: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["clan_rewards"]["Row"]>;
         Relationships: [];
       };
       whatsapp_members: {
@@ -1137,8 +1234,8 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
-      creator_league_member_stats: {
-        Args: { p_league_id: string; p_since?: string | null; p_until?: string | null };
+      clan_member_stats: {
+        Args: { p_clan_id: string };
         Returns: {
           user_id: string;
           username: string;
@@ -1149,8 +1246,8 @@ export interface Database {
           revenue_verified: boolean;
           revenue_visibility: RevenueVisibility;
           growth_percent: number | null;
+          role: ClanRole;
           joined_at: string;
-          challenges_completed: number;
         }[];
       };
       increment_creator_link_clicks: {

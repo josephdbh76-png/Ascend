@@ -75,8 +75,8 @@ export function transactionalEmailContent(
       return {
         subject: params.title,
         body: `${greeting}\n\n${params.body}`,
-        ctaLabel: "Voir mes réglages",
-        ctaPath: "/app/settings#parrainage",
+        ctaLabel: "Voir mes gains",
+        ctaPath: "/app/ligue/gains",
       };
     case "training_review_completed":
       return {

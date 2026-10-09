@@ -14,6 +14,12 @@ export async function resolveReferrerId(refUsername: string, newUserId?: string)
   return data.id;
 }
 
+/** The inviter left in the invite cookie, if they still exist. */
+export async function resolveReferrerById(id: string): Promise<string | null> {
+  const { data } = await createAdminClient().from("profiles").select("id").eq("id", id).maybeSingle();
+  return data?.id ?? null;
+}
+
 export async function recordReferral(referrerId: string, referredId: string): Promise<void> {
   const supabase = await createClient();
   await supabase.from("referrals").insert({ referrer_id: referrerId, referred_id: referredId });

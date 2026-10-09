@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendManualRevenueReminders } from "@/services/revenue.service";
+import { runWarJobs } from "@/services/clanWar.service";
+
+// Room for the league wars' nightly job (it syncs everyone at war).
+export const maxDuration = 60;
 
 /**
  * Runs the `capture_leaderboard_snapshot` Postgres function (see
@@ -32,5 +36,11 @@ export async function GET(request: Request) {
     });
   }
 
-  return NextResponse.json({ success: true, reminders });
+  // League wars: start, sync, score of the day, close (vercel.json runs this at 06:00 UTC, the wars' hour).
+  const wars = await runWarJobs(40_000).catch((err) => {
+    console.error("War jobs failed:", err);
+    return null;
+  });
+
+  return NextResponse.json({ success: true, reminders, wars });
 }

@@ -63,3 +63,8 @@ export function isSellerPayoutSchedule(
 export function exactEuros(cents: number): string {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(cents / 100);
 }
+
+/** Where a member started their payout account: the Marché, or their invite earnings (?from=gains). */
+export function onboardingOrigin(from: string | null): "/app/titles" | "/app/ligue/gains" {
+  return from === "gains" ? "/app/ligue/gains" : "/app/titles";
+}

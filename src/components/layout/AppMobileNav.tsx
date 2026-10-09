@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, Trophy, Flag, User, Menu, X, Gem, Users, Compass, MessageCircle, MessagesSquare, Settings, LogOut, ShieldCheck, LineChart, Megaphone } from "lucide-react";
+import { LayoutGrid, Trophy, Flag, User, Menu, X, Gem, Users, Compass, MessageCircle, MessagesSquare, Settings, LogOut, ShieldCheck, LineChart, Megaphone, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AscendLogotype } from "@/components/brand/AscendLogo";
 import { createClient } from "@/lib/supabase/client";
@@ -16,6 +16,7 @@ const TABS = [
 ];
 
 const MENU_LINKS = [
+  { href: "/app/ligue", label: "Ma ligue", icon: Shield },
   { href: "/app/analytics", label: "Analyses", icon: LineChart },
   { href: "/app/titles", label: "Titres", icon: Gem },
   { href: "/app/network", label: "Réseau", icon: Users },

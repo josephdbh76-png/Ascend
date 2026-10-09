@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { CREATOR_COOKIE, CREATOR_COOKIE_DAYS, getActiveCreatorByCode, recordCreatorLinkClick } from "@/services/creator.service";
-import { getCreatorLeagueForInfluencer } from "@/services/creatorLeague.service";
+import { getClanForInfluencer } from "@/services/clan.service";
 
-// A creator's personal link: remembers who sent the visitor for 30 days
+// A partner creator's link: remembers who sent the visitor for 30 days
 // (the signup reads it), then shows the creator's league, or the home page.
 // ?to=signup goes straight to the signup (the league page's join button).
 export async function GET(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const toSignup = request.nextUrl.searchParams.get("to") === "signup";
-  const league = toSignup ? null : await getCreatorLeagueForInfluencer(creator.id);
-  url.pathname = toSignup ? "/signup" : league?.isActive ? `/ligues/${league.slug}` : "/";
+  const clan = toSignup ? null : await getClanForInfluencer(creator.id);
+  url.pathname = toSignup ? "/signup" : clan?.isActive ? `/ligues/${clan.slug}` : "/";
   // Router prefetches and link previews aren't visits.
   const prefetch = request.headers.has("next-router-prefetch") || /prefetch/i.test(request.headers.get("sec-purpose") ?? request.headers.get("purpose") ?? "");
   if (!toSignup && !prefetch) await recordCreatorLinkClick(creator.id);

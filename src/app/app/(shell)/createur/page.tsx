@@ -7,9 +7,9 @@ import { Card } from "@/components/ui/Card";
 import { getAppUrl, cn } from "@/lib/utils";
 import { exactEuros, formatPayoutDate, nextSellerPayoutDate, SELLER_PAYOUT_DAY } from "@/lib/sellerPayouts";
 import { CREATOR_BONUS_EUROS, CREATOR_BONUS_VERIFIED, getCreatorDashboard, getCreatorForUser } from "@/services/creator.service";
-import { getCurrentWarForLeague } from "@/services/creatorLeague.service";
-import { LeagueWarCard } from "@/components/leagues/LeagueWarCard";
-import { CopyField } from "./CopyField";
+import { getClanWarState } from "@/services/clanWar.service";
+import { WarBoard } from "@/components/clans/WarBoard";
+import { CopyField } from "@/components/ui/CopyField";
 
 export const metadata: Metadata = { title: "Espace créateur" };
 
@@ -24,7 +24,7 @@ export default async function CreatorPage() {
   if (!creator) redirect("/app/dashboard");
 
   const dashboard = await getCreatorDashboard(creator);
-  const war = dashboard.league ? await getCurrentWarForLeague(dashboard.league.id) : null;
+  const war = dashboard.league ? (await getClanWarState(dashboard.league.id, auth.user.id)).current : null;
   const link = `${getAppUrl()}/c/${creator.code.toLowerCase()}`;
   const rate = Math.round(creator.commissionRate * 100);
   const term = creator.commissionMonths == null ? "à vie" : `pendant ${creator.commissionMonths} mois`;
@@ -118,7 +118,7 @@ export default async function CreatorPage() {
               Voir ma ligue <ArrowRight className="h-4 w-4" />
             </Link>
           </Card>
-          {war && <LeagueWarCard war={war} />}
+          {war && <WarBoard war={war} ownClanId={dashboard.league.id} viewerId={auth.user.id} compact />}
         </div>
       ) : (
         <Card className="p-5 sm:p-6" elevated>
@@ -126,8 +126,11 @@ export default async function CreatorPage() {
             <Swords className="h-4 w-4 text-gold" /> Ta ligue
           </h2>
           <p className="mt-1 text-xs text-text-secondary">
-            Ta ligue n&apos;est pas encore ouverte. Choisis son nom avec l&apos;équipe ASCEND : tes abonnés y entreront
-            automatiquement en s&apos;inscrivant avec ton lien.
+            Ta ligue n&apos;est pas encore ouverte. Crée-la depuis{" "}
+            <Link href="/app/ligue" className="text-gold hover:underline">
+              Ma ligue
+            </Link>{" "}
+            : elle portera le badge Partenaire, et tes abonnés y entreront automatiquement en s&apos;inscrivant avec ton lien.
           </p>
         </Card>
       )}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, Trophy, Flag, Gem, Users, Compass, MessageCircle, MessagesSquare, Settings, LogOut, ShieldCheck, LineChart, Megaphone } from "lucide-react";
+import { LayoutGrid, Trophy, Flag, Gem, Users, Compass, MessageCircle, MessagesSquare, Settings, LogOut, ShieldCheck, LineChart, Megaphone, Shield } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { AscendLogotype } from "@/components/brand/AscendLogo";
 import { createClient } from "@/lib/supabase/client";
@@ -13,6 +13,7 @@ const NAV = [
   { href: "/app/leaderboard", label: "Classement", icon: Trophy },
   { href: "/app/analytics", label: "Analyses", icon: LineChart },
   { href: "/app/challenges", label: "Saison", icon: Flag },
+  { href: "/app/ligue", label: "Ma ligue", icon: Shield },
   { href: "/app/titles", label: "Titres", icon: Gem },
   { href: "/app/network", label: "Réseau", icon: Users },
   { href: "/app/messages", label: "Messages", icon: MessageCircle },

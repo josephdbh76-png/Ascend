@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles, UserPlus, MessageCircle, Compass, FileCheck, Gift, RotateCcw, Crown, GraduationCap, CalendarClock, Swords } from "lucide-react";
+import { Bell, Trophy, TrendingUp, Flag, CheckCircle2, Sparkles, UserPlus, MessageCircle, Compass, FileCheck, Gift, RotateCcw, Crown, GraduationCap, CalendarClock, Swords, Shield } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
 import { markAllNotificationsReadAction } from "@/app/app/(shell)/actions";
 import type { NotificationType } from "@/types/database.types";
@@ -34,6 +34,7 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   training_review_completed: GraduationCap,
   revenue_reminder: CalendarClock,
   league_war: Swords,
+  league_activity: Shield,
 };
 
 function notificationHref(n: NotificationItem): string | null {
@@ -61,9 +62,9 @@ function notificationHref(n: NotificationItem): string | null {
   if (n.type === "training_review_completed") {
     return "/app/settings#formations";
   }
-  if (n.type === "league_war" && typeof n.metadata?.slug === "string") {
-    return `/ligues/${n.metadata.slug}`;
-  }
+  if (n.type === "league_war") return "/app/ligue/guerre";
+  if (n.type === "referral_rewarded") return "/app/ligue/gains";
+  if (n.type === "league_activity") return "/app/ligue";
   if (n.type === "season_reward") {
     return "/app/challenges";
   }

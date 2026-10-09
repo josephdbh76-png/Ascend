@@ -3,7 +3,7 @@ import { getAppUrl } from "@/lib/utils";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPublicLeaderboard } from "@/services/leaderboard.service";
 import { CATEGORY_PAGES } from "@/lib/seo";
-import { listCreatorLeagues } from "@/services/creatorLeague.service";
+import { listClans } from "@/services/clan.service";
 
 // New verified members and newly populated categories show up within the hour.
 export const revalidate = 3600;
@@ -58,7 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getPublicProfileUrls(appUrl),
     getCategoryUrls(appUrl),
     getTrainingUrls(appUrl).catch(() => []),
-    listCreatorLeagues().catch(() => []),
+    listClans().catch(() => []),
   ]);
 
   return [

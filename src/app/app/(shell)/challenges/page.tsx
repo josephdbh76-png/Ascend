@@ -14,7 +14,8 @@ import {
   rewardsForLeague,
 } from "@/services/season.service";
 import { getSeasonLeague, getLeaguePointTotals } from "@/services/league.service";
-import { getCurrentWarForLeague, getMemberCreatorLeague, listCreatorLeagues } from "@/services/creatorLeague.service";
+import { getMembership } from "@/services/clan.service";
+import { getClanWarState } from "@/services/clanWar.service";
 import { LEAGUES, isLeagueId, league as leagueDef, leagueRangeLabel, nextLeague } from "@/lib/leagues";
 import { ChallengeCard } from "@/components/challenges/ChallengeCard";
 import { ShareCardButton } from "@/components/achievements/ShareCardButton";
@@ -117,8 +118,8 @@ export default async function SeasonPage({ searchParams }: PageProps<"/app/chall
   const myLeague = placement?.league ?? "bronze";
   const requested = (await searchParams).ligue;
   const viewLeague = isLeagueId(requested) ? requested : myLeague;
-  const [creatorLeague, creatorLeagues] = await Promise.all([getMemberCreatorLeague(user.id), listCreatorLeagues()]);
-  const creatorWar = creatorLeague ? await getCurrentWarForLeague(creatorLeague.id) : null;
+  const clanMembership = await getMembership(user.id);
+  const clanWar = clanMembership ? (await getClanWarState(clanMembership.clan.id)).current : null;
   const [challenges, completionRates, allRewards, allStandings, myStanding, pastResults, profile, leaguePoints, activity] = await Promise.all([
     getActiveChallengesWithProgress(user.id, season?.id),
     getChallengeCompletionRates(),
@@ -218,31 +219,29 @@ export default async function SeasonPage({ searchParams }: PageProps<"/app/chall
         )}
       </section>
 
-      {(creatorLeague || creatorLeagues.length > 0) && (
-        <Link
-          href={creatorLeague ? `/ligues/${creatorLeague.slug}` : "/ligues"}
-          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-5 transition-colors hover:border-gold/40"
-        >
-          <span className="flex min-w-0 items-center gap-3">
-            <Swords className="h-5 w-5 shrink-0 text-gold" />
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold text-text-primary">
-                {creatorLeague ? creatorLeague.name : "Rejoins la ligue d'un créateur"}
-              </span>
-              <span className="block text-xs text-text-secondary">
-                {creatorLeague
-                  ? creatorWar && creatorWar.status !== "closed"
-                    ? `Guerre ${creatorWar.status === "upcoming" ? "à venir" : "en cours"} contre ${
-                        creatorWar.a.league.id === creatorLeague.id ? creatorWar.b.league.name : creatorWar.a.league.name
-                      }`
-                    : `${creatorLeague.memberCount} membre${creatorLeague.memberCount > 1 ? "s" : ""} · classement interne sur la croissance`
-                  : `${creatorLeagues.length} ligue${creatorLeagues.length > 1 ? "s" : ""} ouverte${creatorLeagues.length > 1 ? "s" : ""} : joue en équipe, en plus de ta ligue de niveau.`}
-              </span>
+      <Link
+        href="/app/ligue"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-5 transition-colors hover:border-gold/40"
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          <Swords className="h-5 w-5 shrink-0 text-gold" />
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-text-primary">
+              {clanMembership ? clanMembership.clan.name : "Rejoins une ligue, ou crée la tienne"}
+            </span>
+            <span className="block text-xs text-text-secondary">
+              {clanMembership
+                ? clanWar?.phase === "live"
+                  ? `Guerre en cours contre ${clanWar.a.clan.id === clanMembership.clan.id ? clanWar.b.clan.name : clanWar.a.clan.name} : chaque défi réussi rapporte des points à ta ligue.`
+                  : clanWar?.phase === "preparing"
+                    ? "Une guerre se prépare : la bataille commence bientôt."
+                    : `${clanMembership.clan.trophies} trophées · ${clanMembership.clan.memberCount} membres`
+                : "Joue en équipe en plus de ta ligue de niveau, défie d'autres ligues et gagne 5 € par filleul abonné."}
             </span>
           </span>
-          <ArrowUpRight className="h-4 w-4 shrink-0 text-text-muted" />
-        </Link>
-      )}
+        </span>
+        <ArrowUpRight className="h-4 w-4 shrink-0 text-text-muted" />
+      </Link>
 
       {season && placement && (
         <section className="rounded-lg border border-border bg-card p-5">

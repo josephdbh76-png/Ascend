@@ -4,6 +4,7 @@ import { getStripe, tierForPriceId, intervalForPriceId } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { grantPurchasedTitle } from "@/services/title.service";
 import { recordInfluencerCommissionForInvoice } from "@/services/influencer.service";
+import { recordInviteRewardForInvoice } from "@/services/invite.service";
 import { finalizeListingSale } from "@/services/marketplace.service";
 import { refundCheckoutSession } from "@/services/refund.service";
 
@@ -43,12 +44,9 @@ export async function POST(request: NextRequest) {
         // pays through its first invoice), so commissions are recorded here only.
         if (subscriptionId && invoice.id && invoice.amount_paid > 0) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["discounts"] });
-          await recordInfluencerCommissionForInvoice(subscription, {
-            id: invoice.id,
-            amountPaidCents: invoice.amount_paid,
-            currency: invoice.currency,
-            createdAt: new Date(invoice.created * 1000),
-          });
+          const paid = { id: invoice.id, amountPaidCents: invoice.amount_paid, currency: invoice.currency, createdAt: new Date(invoice.created * 1000) };
+          await recordInfluencerCommissionForInvoice(subscription, paid);
+          await recordInviteRewardForInvoice(subscription, paid);
         }
         break;
       }

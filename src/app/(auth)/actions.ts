@@ -17,8 +17,9 @@ import {
 import { toFriendlyAuthError } from "@/lib/errors";
 import { getAppUrl } from "@/lib/utils";
 import { isUsernameAvailable } from "@/services/profile.service";
-import { resolveReferrerId, recordReferral } from "@/services/referral.service";
+import { resolveReferrerId, resolveReferrerById, recordReferral } from "@/services/referral.service";
 import { attributeSignupToCreator, CREATOR_COOKIE } from "@/services/creator.service";
+import { attributeSignupToInviter, INVITE_COOKIE } from "@/services/invite.service";
 import { cookies } from "next/headers";
 import { getResend, resendFromAddress, resendReplyTo } from "@/lib/resend";
 import { renderEmailHtml } from "@/lib/emailRender";
@@ -80,7 +81,14 @@ export async function createAccountAction(input: {
     return { success: false, error: toFriendlyAuthError(signUpError?.message) };
   }
 
-  const referrerId = input.referredBy ? await resolveReferrerId(input.referredBy, signUpData.user.id) : null;
+  // An invite link (/i/username) leaves its inviter in a cookie; ?ref= still works.
+  const cookieStore = await cookies();
+  const invitedBy = cookieStore.get(INVITE_COOKIE)?.value;
+  const referrerId = input.referredBy
+    ? await resolveReferrerId(input.referredBy, signUpData.user.id)
+    : invitedBy && /^[0-9a-f-]{36}$/i.test(invitedBy) && invitedBy !== signUpData.user.id
+      ? await resolveReferrerById(invitedBy)
+      : null;
 
   const { error: profileError } = await supabase.from("profiles").insert({
     id: signUpData.user.id,
@@ -98,13 +106,16 @@ export async function createAccountAction(input: {
     await recordReferral(referrerId, signUpData.user.id);
   }
 
-  // Arrived through a creator's link (/c/CODE) in the last 30 days.
-  const cookieStore = await cookies();
+  // Arrived through a creator's link (/c/CODE) in the last 30 days: the
+  // partner deal wins. Otherwise through a member's invite.
   const creatorId = cookieStore.get(CREATOR_COOKIE)?.value;
   if (creatorId && /^[0-9a-f-]{36}$/i.test(creatorId)) {
     await attributeSignupToCreator(signUpData.user.id, creatorId);
     cookieStore.delete(CREATOR_COOKIE);
+  } else if (referrerId) {
+    await attributeSignupToInviter(signUpData.user.id, referrerId);
   }
+  if (invitedBy) cookieStore.delete(INVITE_COOKIE);
 
   return { success: true, data: { needsEmailConfirmation: !signUpData.session } };
 }

@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getCreatorLeagueForInfluencer, joinCreatorLeague, type CreatorLeague } from "@/services/creatorLeague.service";
+import { getClanForInfluencer, joinClan, type ClanSummary } from "@/services/clan.service";
 
 // Creator partners: their personal link (/c/CODE) attributes the people it
 // brings to them, for life. The commission itself is recorded on every paid
@@ -83,8 +83,8 @@ export async function attributeSignupToCreator(userId: string, creatorId: string
       .update({ influencer_id: creator.id, influencer_joined_at: new Date().toISOString() })
       .eq("id", userId)
       .is("influencer_id", null);
-    const league = await getCreatorLeagueForInfluencer(creator.id);
-    if (league?.isActive) await joinCreatorLeague(userId, league.id);
+    const clan = await getClanForInfluencer(creator.id);
+    if (clan?.isActive) await joinClan(userId, clan.id, { force: true });
   } catch (err) {
     console.error("Creator attribution failed:", err);
   }
@@ -98,7 +98,7 @@ export const getCreatorForUser = cache(async (userId: string): Promise<Creator |
 
 export interface CreatorDashboard {
   creator: Creator;
-  league: CreatorLeague | null;
+  league: ClanSummary | null;
   signups: number;
   verified: number;
   paying: number;
@@ -119,7 +119,7 @@ export async function getCreatorDashboard(creator: Creator): Promise<CreatorDash
       .eq("influencer_id", creator.id)
       .order("influencer_joined_at", { ascending: false }),
     admin.from("influencer_commissions").select("amount_cents, status, created_at").eq("influencer_id", creator.id),
-    getCreatorLeagueForInfluencer(creator.id),
+    getClanForInfluencer(creator.id),
   ]);
   const ids = (members ?? []).map((m) => m.id);
   const { data: subs } = ids.length
